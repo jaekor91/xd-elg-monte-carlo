@@ -1837,11 +1837,11 @@ def combine_tractor_nocut(fits_directory):
     Given the file directory, find all Tractor fits files combine them and return as a rec-array.
     """
     onlyfiles = [f for f in listdir(fits_directory) if isfile(join(fits_directory, f))]
-    print("Number of files in %s %d" % (fits_directory, len(onlyfiles)-1))
+    print("Number of files in %s %d" % (fits_directory, len(onlyfiles)))
     
     
     DR3 = None
-    for i,e in enumerate(onlyfiles,start=1):
+    for i,e in enumerate(onlyfiles, start=0):
         # If the file ends with "fits"
         if e[-4:] == "fits":
             print("Combining file %d. %s" % (i,e))
@@ -1919,12 +1919,16 @@ def cross_match_catalogs(pcat, pcat_ref, tol=0.5):
 
 
 def load_brick_primary(fits):
-    return fits['brick_primary'][:]
+    return fits['brick_primary']
+
+
+def load_bid(fits):
+    return fits['brickid']
 
 
 def load_shape(fits):
-    r_dev = fits['SHAPEDEV_R'][:]
-    r_exp = fits['SHAPEEXP_R'][:]
+    r_dev = fits['SHAPEDEV_R']
+    r_exp = fits['SHAPEEXP_R']
     return r_dev, r_exp
 
 
@@ -1932,7 +1936,7 @@ def load_star_mask(table):
     return table["TYCHOVETO"][:].astype(int).astype(bool)
 
 def load_oii(fits):
-    return fits["OII_3727"][:]
+    return fits["OII_3727"]
 
 def new_oii_lim(N_new, N_old=2400):
     """
