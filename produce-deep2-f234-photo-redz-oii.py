@@ -15,6 +15,8 @@ data_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-r
 zcat_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DEEP2/redz-oii-catalog/"
 color_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DEEP2/"
 windowf_directory= "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DEEP2/windowf/"
+tycho_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/"
+
 
 
 cnames = ["Gold", "Silver", "LowOII", "NoOII", "LowZ", "NoZ", "D2reject", "","D2unobserved"]
@@ -228,6 +230,18 @@ print("f3: # in pcat minus # in pcat matched %d" % (pcat3.shape[0]-(pcat3["BRI_c
 print("f4: # in pcat minus # in pcat matched %d" % (pcat4.shape[0]-(pcat4["BRI_cut"]>-1000).sum()))    
 print("The last 223 objects will be classified as DEEP2 BRI color rejected objects.")
 print("Completed.\n")
+
+
+print("7d. Append Tycho2 stark mask field.")
+# Field 2 
+pcat2 = apply_tycho_pcat(pcat2, tycho_directory+"tycho2.fits", galtype="ELG")
+# Field 3
+pcat3 = apply_tycho_pcat(pcat3, tycho_directory+"tycho2.fits", galtype="ELG")
+# Field 4 
+pcat4 = apply_tycho_pcat(pcat4, tycho_directory+"tycho2.fits", galtype="ELG")
+print("Completed.")
+
+
 
 
 
