@@ -31,25 +31,25 @@ print("Completed.")
 print("2. Impose DEEP2 window functions.")
 # Field 2
 idx = np.logical_or(window_mask(tracf2["ra"], tracf2["dec"], windowf_directory+"windowf.21.fits"), window_mask(tracf2["ra"], tracf2["dec"], windowf_directory+"windowf.22.fits"))
-tracf2_trimmed = tracf2[idx]
+tracf2 = tracf2[idx]
 
 # Field 3
 idx = np.logical_or.reduce((window_mask(tracf3["ra"], tracf3["dec"], windowf_directory+"windowf.31.fits"), window_mask(tracf3["ra"], tracf3["dec"], windowf_directory+"windowf.32.fits"),window_mask(tracf3["ra"], tracf3["dec"], windowf_directory+"windowf.33.fits")))
-tracf3_trimmed = tracf3[idx]
+tracf3 = tracf3[idx]
 
 # Field 4
 idx = np.logical_or(window_mask(tracf4["ra"], tracf4["dec"], windowf_directory+"windowf.41.fits"), window_mask(tracf4["ra"], tracf4["dec"], windowf_directory+"windowf.42.fits"))
-tracf4_trimmed = np.copy(tracf4[idx])
+tracf4 = np.copy(tracf4[idx])
 print("Completed.")
 
 
 print("3. Append Tycho2 stark mask field.")
 # Field 2 
-tracf2 = apply_tycho(tracf2_trimmed, tycho_directory+"tycho2.fits", galtype="ELG")
+tracf2 = apply_tycho(tracf2, tycho_directory+"tycho2.fits", galtype="ELG")
 # Field 3
-tracf3 = apply_tycho(tracf3_trimmed, tycho_directory+"tycho2.fits", galtype="ELG")
+tracf3 = apply_tycho(tracf3, tycho_directory+"tycho2.fits", galtype="ELG")
 # Field 4 
-tracf4 = apply_tycho(tracf4_trimmed, tycho_directory+"tycho2.fits", galtype="ELG")
+tracf4 = apply_tycho(tracf4, tycho_directory+"tycho2.fits", galtype="ELG")
 print("Completed.")
 
 
