@@ -1655,7 +1655,7 @@ def generate_class_col(pcat):
     # Extracting columns
     OII = pcat["OII_3727"]*1e17
     Z = pcat["RED_Z"]
-    ZQUALITY = pcat["ZQUALITY"]
+    ZQUALITY = pcat["Z_QUALITY"]
     OII_ERR = pcat["OII_3727_ERR"]
     BRIcut = pcat["BRI_cut"]
     
@@ -2386,6 +2386,33 @@ def apply_tycho(objgal, tychofn,galtype='LRG'):
     #
     # coordinates of objects (galaxies)
     coord = (objgal['ra'], objgal['dec'])
+    #
+    #
+    # a 0.0 / 1.0 array (1.0: means the object is contaminated by a Tycho-2 star, so 0.0s are good)
+    tychomask = (~veto(coord, center, radii)).astype('f4')
+    objgal = rec.append_fields(objgal, ['TYCHOVETO'], data=[tychomask], dtypes=tychomask.dtype, usemask=False)
+    return objgal
+
+
+
+def apply_tycho_pcat(objgal, tychofn,galtype='LRG'):
+    # reading tycho star catalogs
+    tychostar = tycho(tychofn)
+    #
+    # mag-radius relation
+    #
+    if galtype == 'LRG' or galtype == 'ELG':    # so far the mag-radius relation is the same for LRG and ELG
+        radii = DECAM_LRG(tychostar)
+    else:
+        sys.exit("Check the apply_tycho function for your galaxy type")
+    #
+    #
+    # coordinates of Tycho-2 stars
+    center = (tychostar['RA'], tychostar['DEC'])
+    #
+    #
+    # coordinates of objects (galaxies)
+    coord = (objgal['RA_DEEP'], objgal['DEC_DEEP'])
     #
     #
     # a 0.0 / 1.0 array (1.0: means the object is contaminated by a Tycho-2 star, so 0.0s are good)
