@@ -20,11 +20,11 @@ from confidence_level_height_estimation import confidence_level_height_estimator
 # Matplot ticks
 import matplotlib as mpl
 mpl.rcParams['xtick.major.size'] = 15
-mpl.rcParams['xtick.major.width'] = 2.
+mpl.rcParams['xtick.major.width'] = 1.
 mpl.rcParams['ytick.major.size'] = 15
-mpl.rcParams['ytick.major.width'] = 2.
-mpl.rcParams['xtick.labelsize'] = 20
-mpl.rcParams['ytick.labelsize'] = 20
+mpl.rcParams['ytick.major.width'] = 1.
+mpl.rcParams['xtick.labelsize'] = 15
+mpl.rcParams['ytick.labelsize'] = 15
 
 colors = ["orange", "grey", "brown", "purple", "red", "salmon","black", "white","blue"]
 cnames = ["Gold", "Silver", "LowOII", "NoOII", "LowZ", "NoZ", "D2reject", "DR3unmatched","D2unobserved"]
