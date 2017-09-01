@@ -55,50 +55,50 @@ def load_tractor_DR5(fname):
 
 
 lw=3
-lw2=1.5
-mag_bins = np.arange(21, 26, 0.1)
+lw2=2
+mag_bins = np.arange(20, 25.05, 0.1)
 gmag_nominal = 23.8
 rmag_nominal = 23.4
 zmag_nominal = 22.4
+gmag_max = 25.
 
 # All objects
 gmag = []
 rmag = []
 zmag = []
-gmag_med = []
-rmag_med = []
-zmag_med = []
+# gmag_med = []
+# rmag_med = []
+# zmag_med = []
 for i, fnum in enumerate([2, 3, 4]):
     # DR5 data
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
-    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0)
-    gf_err, rf_err, zf_err = grz_flux_error([givar[ibool], rivar[ibool], zivar[ibool]])
-    gmag.append(mag_depth_Xsigma(gf_err))
-    rmag.append(mag_depth_Xsigma(rf_err))
-    zmag.append(mag_depth_Xsigma(zf_err))
-    gmag_med.append(np.median(gmag[i][gmag[i]>0]))
-    rmag_med.append(np.median(rmag[i][rmag[i]>0]))
-    zmag_med.append(np.median(zmag[i][zmag[i]>0]))
+    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0) & (gflux > mag2flux(gmag_max))
+    gmag.append(flux2mag(gflux[ibool]))
+    rmag.append(flux2mag(rflux[ibool]))
+    zmag.append(flux2mag(zflux[ibool]))
+    # gmag_med.append(np.median(gmag[i][gmag[i]>0]))
+    # rmag_med.append(np.median(rmag[i][rmag[i]>0]))
+    # zmag_med.append(np.median(zmag[i][zmag[i]>0]))
     
 # Plot all objects 
 figure, ax_list = plt.subplots(1, 3, figsize=(25,6))
 for i in range(3):
-    ax_list[i].hist(gmag[i], bins=mag_bins, histtype="stepfilled", color="green", label="DR5 g", normed=True, alpha=0.5, lw=lw2)
-    ax_list[i].hist(rmag[i], bins=mag_bins, histtype="stepfilled", color="red", label="DR5 r", normed=True, alpha=0.5, lw=lw2)
-    ax_list[i].hist(zmag[i], bins=mag_bins, histtype="stepfilled", color="purple", label="DR5 z", normed=True, alpha=0.5, lw=lw2)
-    ax_list[i].axvline(x=gmag_med[i], c="green", lw=lw)
-    ax_list[i].axvline(x=rmag_med[i], c="red", lw=lw)
-    ax_list[i].axvline(x=zmag_med[i], c="purple", lw=lw)
+    ax_list[i].hist(gmag[i], bins=mag_bins, histtype="step", color="green", label="DR5 g", alpha=1, lw=lw2)
+    ax_list[i].hist(rmag[i], bins=mag_bins, histtype="step", color="red", label="DR5 r", alpha=1, lw=lw2)
+    ax_list[i].hist(zmag[i], bins=mag_bins, histtype="step", color="purple", label="DR5 z", alpha=1, lw=lw2)
+    # ax_list[i].axvline(x=gmag_med[i], c="green", lw=lw)
+    # ax_list[i].axvline(x=rmag_med[i], c="red", lw=lw)
+    # ax_list[i].axvline(x=zmag_med[i], c="purple", lw=lw)
     # Nominal depth
     ax_list[i].axvline(x=gmag_nominal, c="green", lw=lw, ls="--")    
     ax_list[i].axvline(x=rmag_nominal, c="red", lw=lw, ls="--")
     ax_list[i].axvline(x=zmag_nominal, c="purple", lw=lw, ls="--")
-    ax_list[i].set_xlim([21.5, 25.5])
+    ax_list[i].set_xlim([20., 25.])
     ax_list[i].legend(loc="upper left")
     ax_list[i].set_xlabel("mag", fontsize=20)
     ax_list[i].set_title("Field %d"%(i+2), fontsize=20)
 plt.suptitle("All objects mags", fontsize=30, y=1.05)
-plt.savefig("dNdm-all-objects.png", dpi=400, bbox_inches="tight")
+plt.savefig("dNdm-all-objects.png", dpi=200, bbox_inches="tight")
 # plt.show()
 plt.close()
 
@@ -108,40 +108,39 @@ plt.close()
 gmag = []
 rmag = []
 zmag = []
-gmag_med = []
-rmag_med = []
-zmag_med = []
+# gmag_med = []
+# rmag_med = []
+# zmag_med = []
 for i, fnum in enumerate([2, 3, 4]):
 
     # DR5 data
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
-    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (r_exp>0.35) & (r_exp<0.55)  & (tycho==0)
-    gf_err, rf_err, zf_err = grz_flux_error([givar[ibool], rivar[ibool], zivar[ibool]])
-    gmag.append(mag_depth_Xsigma(gf_err))
-    rmag.append(mag_depth_Xsigma(rf_err))
-    zmag.append(mag_depth_Xsigma(zf_err))
-    gmag_med.append(np.median(gmag[i][gmag[i]>0]))
-    rmag_med.append(np.median(rmag[i][rmag[i]>0]))
-    zmag_med.append(np.median(zmag[i][zmag[i]>0]))
+    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (r_exp>0.35) & (r_exp<0.55)  & (tycho==0) & (gflux > mag2flux(gmag_max))
+    gmag.append(flux2mag(gflux[ibool]))
+    rmag.append(flux2mag(rflux[ibool]))
+    zmag.append(flux2mag(zflux[ibool]))
+    # gmag_med.append(np.median(gmag[i][gmag[i]>0]))
+    # rmag_med.append(np.median(rmag[i][rmag[i]>0]))
+    # zmag_med.append(np.median(zmag[i][zmag[i]>0]))
     
-
+mag_bins = np.arange(20, 25.05, 0.2)
 figure, ax_list = plt.subplots(1, 3, figsize=(25,6))
 for i in range(3):
-    ax_list[i].hist(gmag[i], bins=mag_bins, histtype="stepfilled", color="green", label="DR5 g", normed=True, alpha=0.5, lw=lw2)
-    ax_list[i].hist(rmag[i], bins=mag_bins, histtype="stepfilled", color="red", label="DR5 r", normed=True, alpha=0.5, lw=lw2)
-    ax_list[i].hist(zmag[i], bins=mag_bins, histtype="stepfilled", color="purple", label="DR5 z", normed=True, alpha=0.5, lw=lw2)
-    ax_list[i].axvline(x=gmag_med[i], c="green", lw=lw)
-    ax_list[i].axvline(x=rmag_med[i], c="red", lw=lw)
-    ax_list[i].axvline(x=zmag_med[i], c="purple", lw=lw)
+    ax_list[i].hist(gmag[i], bins=mag_bins, histtype="step", color="green", label="DR5 g", alpha=1, lw=lw2)
+    ax_list[i].hist(rmag[i], bins=mag_bins, histtype="step", color="red", label="DR5 r", alpha=1, lw=lw2)
+    ax_list[i].hist(zmag[i], bins=mag_bins, histtype="step", color="purple", label="DR5 z", alpha=1, lw=lw2)
+    # ax_list[i].axvline(x=gmag_med[i], c="green", lw=lw)
+    # ax_list[i].axvline(x=rmag_med[i], c="red", lw=lw)
+    # ax_list[i].axvline(x=zmag_med[i], c="purple", lw=lw)
     # Nominal depth
     ax_list[i].axvline(x=gmag_nominal, c="green", lw=lw, ls="--")    
     ax_list[i].axvline(x=rmag_nominal, c="red", lw=lw, ls="--")
     ax_list[i].axvline(x=zmag_nominal, c="purple", lw=lw, ls="--")    
-    ax_list[i].set_xlim([21.5, 25.5])
+    ax_list[i].set_xlim([20., 25.])
     ax_list[i].legend(loc="upper left")
     ax_list[i].set_xlabel("mag", fontsize=20)
     ax_list[i].set_title("Field %d"%(i+2), fontsize=20)
 plt.suptitle("r_exp [0.35, 0.55] objects magss", fontsize=30, y=1.05)
-plt.savefig("dNdm-rexp.png", dpi=400, bbox_inches="tight")
+plt.savefig("dNdm-rexp.png", dpi=200, bbox_inches="tight")
 # plt.show()
 plt.close()
