@@ -45,11 +45,11 @@ print("Completed.")
 
 print("3. Append Tycho2 stark mask field.")
 # Field 2 
-tracf2 = apply_tycho(tracf2, tycho_directory+"tycho2.fits", galtype="ELG")
+tracf2 = apply_tycho(tracf2_trimmed, tycho_directory+"tycho2.fits", galtype="ELG")
 # Field 3
-tracf3 = apply_tycho(tracf3, tycho_directory+"tycho2.fits", galtype="ELG")
+tracf3 = apply_tycho(tracf3_trimmed, tycho_directory+"tycho2.fits", galtype="ELG")
 # Field 4 
-tracf4 = apply_tycho(tracf4, tycho_directory+"tycho2.fits", galtype="ELG")
+tracf4 = apply_tycho(tracf4_trimmed, tycho_directory+"tycho2.fits", galtype="ELG")
 print("Completed.")
 
 
