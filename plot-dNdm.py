@@ -66,9 +66,6 @@ gmag_max = 25.
 gmag = []
 rmag = []
 zmag = []
-# gmag_med = []
-# rmag_med = []
-# zmag_med = []
 for i, fnum in enumerate([2, 3, 4]):
     # DR5 data
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
@@ -76,9 +73,6 @@ for i, fnum in enumerate([2, 3, 4]):
     gmag.append(flux2mag(gflux[ibool]))
     rmag.append(flux2mag(rflux[ibool]))
     zmag.append(flux2mag(zflux[ibool]))
-    # gmag_med.append(np.median(gmag[i][gmag[i]>0]))
-    # rmag_med.append(np.median(rmag[i][rmag[i]>0]))
-    # zmag_med.append(np.median(zmag[i][zmag[i]>0]))
     
 # Plot all objects 
 figure, ax_list = plt.subplots(1, 3, figsize=(25,6))
@@ -86,9 +80,6 @@ for i in range(3):
     ax_list[i].hist(gmag[i], bins=mag_bins, histtype="step", color="green", label="DR5 g", alpha=1, lw=lw2)
     ax_list[i].hist(rmag[i], bins=mag_bins, histtype="step", color="red", label="DR5 r", alpha=1, lw=lw2)
     ax_list[i].hist(zmag[i], bins=mag_bins, histtype="step", color="purple", label="DR5 z", alpha=1, lw=lw2)
-    # ax_list[i].axvline(x=gmag_med[i], c="green", lw=lw)
-    # ax_list[i].axvline(x=rmag_med[i], c="red", lw=lw)
-    # ax_list[i].axvline(x=zmag_med[i], c="purple", lw=lw)
     # Nominal depth
     ax_list[i].axvline(x=gmag_nominal, c="green", lw=lw, ls="--")    
     ax_list[i].axvline(x=rmag_nominal, c="red", lw=lw, ls="--")
@@ -108,9 +99,6 @@ plt.close()
 gmag = []
 rmag = []
 zmag = []
-# gmag_med = []
-# rmag_med = []
-# zmag_med = []
 for i, fnum in enumerate([2, 3, 4]):
 
     # DR5 data
@@ -119,9 +107,6 @@ for i, fnum in enumerate([2, 3, 4]):
     gmag.append(flux2mag(gflux[ibool]))
     rmag.append(flux2mag(rflux[ibool]))
     zmag.append(flux2mag(zflux[ibool]))
-    # gmag_med.append(np.median(gmag[i][gmag[i]>0]))
-    # rmag_med.append(np.median(rmag[i][rmag[i]>0]))
-    # zmag_med.append(np.median(zmag[i][zmag[i]>0]))
     
 mag_bins = np.arange(20, 25.05, 0.2)
 figure, ax_list = plt.subplots(1, 3, figsize=(25,6))
@@ -129,9 +114,6 @@ for i in range(3):
     ax_list[i].hist(gmag[i], bins=mag_bins, histtype="step", color="green", label="DR5 g", alpha=1, lw=lw2)
     ax_list[i].hist(rmag[i], bins=mag_bins, histtype="step", color="red", label="DR5 r", alpha=1, lw=lw2)
     ax_list[i].hist(zmag[i], bins=mag_bins, histtype="step", color="purple", label="DR5 z", alpha=1, lw=lw2)
-    # ax_list[i].axvline(x=gmag_med[i], c="green", lw=lw)
-    # ax_list[i].axvline(x=rmag_med[i], c="red", lw=lw)
-    # ax_list[i].axvline(x=zmag_med[i], c="purple", lw=lw)
     # Nominal depth
     ax_list[i].axvline(x=gmag_nominal, c="green", lw=lw, ls="--")    
     ax_list[i].axvline(x=rmag_nominal, c="red", lw=lw, ls="--")
