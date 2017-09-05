@@ -2421,3 +2421,15 @@ def apply_tycho_pcat(objgal, tychofn,galtype='LRG'):
     return objgal
 
 
+def broad_cut(g, r, z):
+    """
+    Given grz-magnitude, return boolean array for selecting objects in the design space.
+    Note that there is no magnitude cut here.
+    """
+    ygr = g-r
+    xrz = r-z
+    return np.logical_and((ygr < 0.8), np.logical_or((xrz > (0.7*ygr+ 0.2)), (ygr < 0.2)))
+    
+
+
+
