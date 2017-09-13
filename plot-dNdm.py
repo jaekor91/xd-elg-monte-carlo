@@ -1,3 +1,5 @@
+# In the future, plot the real density per sq. deg. not just the normed version.
+
 import numpy as np
 from astropy.io import ascii, fits
 from astropy.wcs import WCS
@@ -14,25 +16,6 @@ def mag2flux(mag):
 def flux2mag(flux):
     return 22.5-2.5*np.log10(flux)    
 
-
-def load_tractor_DR3(fname):
-    """
-    Load select fields from combined Tractor (only) files.
-    DR3 only. 
-    """
-    tbl = load_fits_table(fname)
-    ra, dec = load_radec(tbl)
-    bid = load_bid(tbl)
-    bp = load_brick_primary(tbl)    
-    r_dev, r_exp =load_shape(tbl)
-    gflux_raw, rflux_raw, zflux_raw = load_grz_flux(tbl)
-    gflux, rflux, zflux = load_grz_flux_dereddened(tbl)
-    givar, rivar, zivar = load_grz_invar(tbl)
-    g_allmask, r_allmask, z_allmask = load_grz_allmask(tbl)
-    objtype = tbl["type"]
-    tycho = tbl["TYCHOVETO"]
-    
-    return bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask
 
 
 def load_tractor_DR5(fname):
@@ -69,7 +52,7 @@ zmag = []
 for i, fnum in enumerate([2, 3, 4]):
     # DR5 data
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
-    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0) & (gflux > mag2flux(gmag_max))
+    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0) & (gflux_raw > mag2flux(gmag_max))
     gmag.append(flux2mag(gflux[ibool]))
     rmag.append(flux2mag(rflux[ibool]))
     zmag.append(flux2mag(zflux[ibool]))
@@ -103,7 +86,7 @@ for i, fnum in enumerate([2, 3, 4]):
 
     # DR5 data
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
-    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (r_exp>0.35) & (r_exp<0.55)  & (tycho==0) & (gflux > mag2flux(gmag_max))
+    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (r_exp>0.35) & (r_exp<0.55)  & (tycho==0) & (gflux_raw > mag2flux(gmag_max))
     gmag.append(flux2mag(gflux[ibool]))
     rmag.append(flux2mag(rflux[ibool]))
     zmag.append(flux2mag(zflux[ibool]))
