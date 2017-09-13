@@ -1,3 +1,5 @@
+# Note the usage of flux_raw
+
 import numpy as np
 from astropy.io import ascii, fits
 from astropy.wcs import WCS
@@ -28,11 +30,12 @@ def load_tractor_DR3(fname):
     gflux_raw, rflux_raw, zflux_raw = load_grz_flux(tbl)
     gflux, rflux, zflux = load_grz_flux_dereddened(tbl)
     givar, rivar, zivar = load_grz_invar(tbl)
+    mw_g, mw_r, mw_z = tbl['decam_mw_transmission'][:,1][:], tbl['decam_mw_transmission'][:,2][:], tbl['decam_mw_transmission'][:,4][:] 
     g_allmask, r_allmask, z_allmask = load_grz_allmask(tbl)
     objtype = tbl["type"]
     tycho = tbl["TYCHOVETO"]
     
-    return bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask
+    return bid, objtype, tycho, bp, ra, dec, mw_g, mw_r, mw_z, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask
 
 
 def load_tractor_DR5(fname):
@@ -44,14 +47,15 @@ def load_tractor_DR5(fname):
     bid = tbl["brickid"]
     bp = tbl["brick_primary"]
     r_dev, r_exp = tbl["shapedev_r"], tbl["shapeexp_r"]
-    gflux, rflux, zflux = tbl["flux_g"], tbl["flux_r"], tbl["flux_z"]
-    gflux_raw, rflux_raw, zflux_raw = gflux/tbl["mw_transmission_g"], rflux/tbl["mw_transmission_r"],zflux/tbl["mw_transmission_z"]
+    gflux_raw, rflux_raw, zflux_raw = tbl["flux_g"], tbl["flux_r"], tbl["flux_z"]
+    gflux, rflux, zflux = gflux_raw/tbl["mw_transmission_g"], rflux_raw/tbl["mw_transmission_r"],zflux_raw/tbl["mw_transmission_z"]
     givar, rivar, zivar = tbl["flux_ivar_g"], tbl["flux_ivar_r"], tbl["flux_ivar_z"]
+    mw_g, mw_r, mw_z = tbl["mw_transmission_g"], tbl["mw_transmission_r"], tbl["mw_transmission_z"]
     g_allmask, r_allmask, z_allmask = tbl["allmask_g"], tbl["allmask_r"], tbl["allmask_z"]
     objtype = tbl["type"]
     tycho = tbl["TYCHOVETO"]    
     
-    return bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask
+    return bid, objtype, tycho, bp, ra, dec, mw_g, mw_r, mw_z, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask
 
 
 
@@ -76,24 +80,24 @@ rdepths_DR5_med = []
 zdepths_DR5_med = []
 for i, fnum in enumerate([2, 3, 4]):
     # DR3 data
-    bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR3("DR3-Tractor-D2f%d.fits"%fnum)
+    bid, objtype, tycho, bp, ra, dec, mw_g, mw_r, mw_z, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR3("DR3-Tractor-D2f%d.fits"%fnum)
     ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0)
     gf_err, rf_err, zf_err = grz_flux_error([givar[ibool], rivar[ibool], zivar[ibool]])
-    gdepths_DR3.append(mag_depth_Xsigma(gf_err))
-    rdepths_DR3.append(mag_depth_Xsigma(rf_err))
-    zdepths_DR3.append(mag_depth_Xsigma(zf_err))
+    gdepths_DR3.append(mag_depth_Xsigma(gf_err/mw_g[ibool]))
+    rdepths_DR3.append(mag_depth_Xsigma(rf_err/mw_r[ibool]))
+    zdepths_DR3.append(mag_depth_Xsigma(zf_err/mw_z[ibool]))
     gdepths_DR3_med.append(np.median(gdepths_DR3[i][gdepths_DR3[i]>0]))
     rdepths_DR3_med.append(np.median(rdepths_DR3[i][rdepths_DR3[i]>0]))
     zdepths_DR3_med.append(np.median(zdepths_DR3[i][zdepths_DR3[i]>0]))
     
 
     # DR5 data
-    bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
+    bid, objtype, tycho, bp, ra, dec, mw_g, mw_r, mw_z, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
     ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0)
     gf_err, rf_err, zf_err = grz_flux_error([givar[ibool], rivar[ibool], zivar[ibool]])
-    gdepths_DR5.append(mag_depth_Xsigma(gf_err))
-    rdepths_DR5.append(mag_depth_Xsigma(rf_err))
-    zdepths_DR5.append(mag_depth_Xsigma(zf_err))
+    gdepths_DR5.append(mag_depth_Xsigma(gf_err/mw_g[ibool]))
+    rdepths_DR5.append(mag_depth_Xsigma(rf_err/mw_r[ibool]))
+    zdepths_DR5.append(mag_depth_Xsigma(zf_err/mw_z[ibool]))
     gdepths_DR5_med.append(np.median(gdepths_DR5[i][gdepths_DR5[i]>0]))
     rdepths_DR5_med.append(np.median(rdepths_DR5[i][rdepths_DR5[i]>0]))
     zdepths_DR5_med.append(np.median(zdepths_DR5[i][zdepths_DR5[i]>0]))
@@ -143,24 +147,24 @@ rdepths_DR5_med = []
 zdepths_DR5_med = []
 for i, fnum in enumerate([2, 3, 4]):
     # DR3 data
-    bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR3("DR3-Tractor-D2f%d.fits"%fnum)
+    bid, objtype, tycho, bp, ra, dec, mw_g, mw_r, mw_z, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR3("DR3-Tractor-D2f%d.fits"%fnum)
     ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (r_exp>0.35) & (r_exp<0.55) & (tycho==0)
     gf_err, rf_err, zf_err = grz_flux_error([givar[ibool], rivar[ibool], zivar[ibool]])
-    gdepths_DR3.append(mag_depth_Xsigma(gf_err))
-    rdepths_DR3.append(mag_depth_Xsigma(rf_err))
-    zdepths_DR3.append(mag_depth_Xsigma(zf_err))
+    gdepths_DR3.append(mag_depth_Xsigma(gf_err/mw_g[ibool]))
+    rdepths_DR3.append(mag_depth_Xsigma(rf_err/mw_r[ibool]))
+    zdepths_DR3.append(mag_depth_Xsigma(zf_err/mw_z[ibool]))
     gdepths_DR3_med.append(np.median(gdepths_DR3[i][gdepths_DR3[i]>0]))
     rdepths_DR3_med.append(np.median(rdepths_DR3[i][rdepths_DR3[i]>0]))
     zdepths_DR3_med.append(np.median(zdepths_DR3[i][zdepths_DR3[i]>0]))
     
 
     # DR5 data
-    bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
+    bid, objtype, tycho, bp, ra, dec, mw_g, mw_r, mw_z, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
     ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (r_exp>0.35) & (r_exp<0.55)  & (tycho==0)
     gf_err, rf_err, zf_err = grz_flux_error([givar[ibool], rivar[ibool], zivar[ibool]])
-    gdepths_DR5.append(mag_depth_Xsigma(gf_err))
-    rdepths_DR5.append(mag_depth_Xsigma(rf_err))
-    zdepths_DR5.append(mag_depth_Xsigma(zf_err))
+    gdepths_DR5.append(mag_depth_Xsigma(gf_err/mw_g[ibool]))
+    rdepths_DR5.append(mag_depth_Xsigma(rf_err/mw_r[ibool]))
+    zdepths_DR5.append(mag_depth_Xsigma(zf_err/mw_z[ibool]))
     gdepths_DR5_med.append(np.median(gdepths_DR5[i][gdepths_DR5[i]>0]))
     rdepths_DR5_med.append(np.median(rdepths_DR5[i][rdepths_DR5[i]>0]))
     zdepths_DR5_med.append(np.median(zdepths_DR5[i][zdepths_DR5[i]>0]))
