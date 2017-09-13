@@ -87,96 +87,97 @@ for fnum in [2, 3, 4]:
     print "For modeling purpose, categorize unmatched objects to be part of the non-ELG set."
 
 
-    # Plot grz of unmatched objects
-    dm = 0.1
-    lw = 2
-    mag_bins = np.arange(19, 26.+dm/2., dm)
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3 , figsize=(15, 5))
-    ibool = D2matched==0
-    if np.sum(ibool) < 1000:
-        dm2 = 0.25
-    else:
+    for mag_lim in [24, 25]:
+        # Plot grz of unmatched objects
+        dm = 0.1
+        lw = 2
+        mag_bins = np.arange(19, 26.+dm/2., dm)
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3 , figsize=(15, 5))
+        ibool = (D2matched==0) & (gflux > mag2flux(mag_lim))
+        ibool2 = (D2matched==1) & (gflux > mag2flux(mag_lim))        
+        if np.sum(ibool) < 1000:
+            dm2 = 0.1
+        else:
+            dm2 = 0.1
+
+        mag_bins2 = np.arange(19, 26.+dm2/2., dm2)
+
+
+        ax1.hist(gmag[ibool], bins=mag_bins2, histtype="stepfilled", alpha=0.5, lw=lw, label="g - unmatched", color="green", normed=True)
+        ax1.hist(gmag[ibool2], bins=mag_bins, histtype="step", lw=lw, label="g", color="green", normed=True)
+        ax1.set_xlim([19, 26])
+        ax1.legend(loc="upper left", fontsize=10)
+        ax1.set_xlabel("mag")
+
+        ax2.hist(rmag[ibool], bins=mag_bins2, histtype="stepfilled", alpha=0.5, lw=lw, label="r - unmatched", color="red", normed=True)
+        ax2.hist(rmag[ibool2], bins=mag_bins, histtype="step", lw=lw, label="r", color="red", normed=True)
+        ax2.set_xlim([19, 26])
+        ax2.legend(loc="upper left", fontsize=10)
+        ax2.set_xlabel("mag")    
+
+        ax3.hist(zmag[ibool], bins=mag_bins2, histtype="stepfilled", alpha=0.5, lw=lw, label="z- unmatched", color="purple", normed=True)
+        ax3.hist(zmag[ibool2], bins=mag_bins, histtype="step", lw=lw, label="z", color="purple", normed=True)
+        ax3.set_xlim([19, 26])
+        ax3.legend(loc="upper left", fontsize=10)
+        ax3.set_xlabel("mag")    
+
+        # plt.show()
+        plt.savefig("dNdm-f%d-DR5-grz-matched-vs-unmatched-%d.png" % (fnum, mag_lim), dpi=200, bbox_inches="tight")
+        plt.close()
+
+
+
+        # Plot BRI of matched objects 19, 26 
+        dm = 0.1
         dm2 = 0.1
+        lw = 2
+        mag_bins = np.arange(19, 26.+dm/2., dm)
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3 , figsize=(15, 5))
+        ibool = (D2matched==1) & (gflux>mag2flux(mag_lim))
+        ax1.hist(B[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="B", color="green", normed=True)
+        ax1.set_xlim([19, 26])
+        ax1.legend(loc="upper left", fontsize=10)
+        ax1.set_xlabel("mag")
 
-    mag_bins2 = np.arange(19, 26.+dm2/2., dm2)
+        ax2.hist(R[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="R", color="red", normed=True)
+        ax2.set_xlim([19, 26])
+        ax2.legend(loc="upper left", fontsize=10)
+        ax2.set_xlabel("mag")
 
+        ax3.hist(I[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="I", color="purple", normed=True)
+        ax3.set_xlim([19, 26])
+        ax3.legend(loc="upper left", fontsize=10)
+        ax3.set_xlabel("mag")    
 
-    ax1.hist(gmag[ibool], bins=mag_bins2, histtype="stepfilled", alpha=0.5, lw=lw, label="g - unmatched", color="green", normed=True)
-    ax1.hist(gmag, bins=mag_bins, histtype="step", lw=lw, label="g", color="green", normed=True)
-    ax1.set_xlim([19, 26])
-    ax1.legend(loc="upper left")
-    ax1.set_xlabel("mag")
-
-    ax2.hist(rmag[ibool], bins=mag_bins2, histtype="stepfilled", alpha=0.5, lw=lw, label="r - unmatched", color="red", normed=True)
-    ax2.hist(rmag, bins=mag_bins, histtype="step", lw=lw, label="r", color="red", normed=True)
-    ax2.set_xlim([19, 26])
-    ax2.legend(loc="upper left")
-    ax2.set_xlabel("mag")    
-
-    ax3.hist(zmag[ibool], bins=mag_bins2, histtype="stepfilled", alpha=0.5, lw=lw, label="z- unmatched", color="purple", normed=True)
-    ax3.hist(zmag, bins=mag_bins, histtype="step", lw=lw, label="z", color="purple", normed=True)
-    ax3.set_xlim([19, 26])
-    ax3.legend(loc="upper left")
-    ax3.set_xlabel("mag")    
-
-    # plt.show()
-    plt.savefig("dNdm-f%d-DR5-grz-matched-vs-unmatched.png" %fnum, dpi=200, bbox_inches="tight")
-    plt.close()
+        # plt.show()
+        plt.savefig("dNdm-f%d-DEEP2-BRI-matched-mag19to26-%d.png" % (fnum, mag_lim), dpi=200, bbox_inches="tight")    
+        plt.close()
 
 
+        # Plot BRI of matched objects [21, 28] 
+        dm = 0.1
+        dm2 = 0.1
+        lw = 2
+        mag_bins = np.arange(21, 28.+dm/2., dm)
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3 , figsize=(15, 5))
+        ax1.hist(B[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="B", color="green")
+        ax1.set_xlim([21, 28])
+        ax1.legend(loc="upper left", fontsize=10)
+        ax1.set_xlabel("mag")
 
-    # Plot BRI of matched objects 19, 26 
-    dm = 0.1
-    dm2 = 0.1
-    lw = 2
-    mag_bins = np.arange(19, 26.+dm/2., dm)
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3 , figsize=(15, 5))
-    ibool = D2matched==1
-    ax1.hist(B[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="B", color="green", normed=True)
-    ax1.set_xlim([19, 26])
-    ax1.legend(loc="upper left")
-    ax1.set_xlabel("mag")
+        ax2.hist(R[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="R", color="red")
+        ax2.set_xlim([21, 28])
+        ax2.legend(loc="upper left", fontsize=10)
+        ax2.set_xlabel("mag")
 
-    ax2.hist(R[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="R", color="red", normed=True)
-    ax2.set_xlim([19, 26])
-    ax2.legend(loc="upper left")
-    ax2.set_xlabel("mag")
+        ax3.hist(I[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="I", color="purple")
+        ax3.set_xlim([21, 28])
+        ax3.legend(loc="upper left", fontsize=10)
+        ax3.set_xlabel("mag")
 
-    ax3.hist(I[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="I", color="purple", normed=True)
-    ax3.set_xlim([19, 26])
-    ax3.legend(loc="upper left")
-    ax3.set_xlabel("mag")    
-
-    # plt.show()
-    plt.savefig("dNdm-f%d-DEEP2-BRI-matched-mag19to26.png" %fnum, dpi=200, bbox_inches="tight")    
-    plt.close()
-
-
-    # Plot BRI of matched objects [21, 28] 
-    dm = 0.1
-    dm2 = 0.1
-    lw = 2
-    mag_bins = np.arange(21, 28.+dm/2., dm)
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3 , figsize=(15, 5))
-    ibool = D2matched==1
-    ax1.hist(B[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="B", color="green")
-    ax1.set_xlim([21, 28])
-    ax1.legend(loc="upper left")
-    ax1.set_xlabel("mag")
-
-    ax2.hist(R[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="R", color="red")
-    ax2.set_xlim([21, 28])
-    ax2.legend(loc="upper left")
-    ax2.set_xlabel("mag")
-
-    ax3.hist(I[ibool], bins=mag_bins, histtype="stepfilled", alpha=0.5, lw=lw, label="I", color="purple")
-    ax3.set_xlim([21, 28])
-    ax3.legend(loc="upper left")
-    ax3.set_xlabel("mag")
-
-    plt.savefig("dNdm-f%d-DEEP2-BRI-matched-mag21to28.png" %fnum, dpi=200, bbox_inches="tight")    
-    # plt.show()
-    plt.close()
+        plt.savefig("dNdm-f%d-DEEP2-BRI-matched-mag21to28-%d.png" % (fnum, mag_lim), dpi=200, bbox_inches="tight")    
+        # plt.show()
+        plt.close()
 
 
 
