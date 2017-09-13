@@ -18,7 +18,6 @@ windowf_directory= "/Users/jaehyeon/Documents/Research/ELG_target_selection/data
 
 ##############################################################################	
 print("Combine all Tractor files by field, append Tycho-2 stellar mask column and mask objects using DEEP2 window funtions.")
-print("1. Combining the tractor files: Impose mask conditions (brick_primary==True and flux inverse variance positive).")
 # Field 2
 tracf2 = combine_tractor_nocut(data_directory+"f2/")
 # Field 3

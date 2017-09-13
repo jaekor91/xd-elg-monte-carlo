@@ -11,7 +11,7 @@ import sys
 large_random_constant = -999119283571
 deg2arcsec=3600
 
-data_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DR5/f4/"
+data_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DR5/tractor-incompleteness/f4/"
 tycho_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/"
 
 ##############################################################################	
