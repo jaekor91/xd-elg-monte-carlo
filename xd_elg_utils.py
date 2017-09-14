@@ -1868,7 +1868,153 @@ def combine_tractor_nocut(fits_directory, all_models=False):
             else:
                 DR3 = tmp_table
                 
-    return DR3    
+    return DR3
+
+def category_vector_generator(z_quality, z_err, oii, oii_err, BRI_cut, cn):
+    """
+    Given the argument vectors, generate boolean vectors corresponding to
+    ELG, NoZ, and NonELG classes
+    """
+    
+    iELG = (z_quality>=3) & (z_err>0) & (oii>0) & (oii_err>0) & BRI_cut
+    iNoZ = np.logical_or.reduce(((z_quality==-2) , (z_quality==0) , (z_quality==1) ,(z_quality==2)))  & (oii_err <=0) & BRI_cut
+
+    # D2rejected group
+    iNonELG0 = (cn==6)
+    # Stars
+    iNonELG1 = (z_quality == -1) & BRI_cut
+    iNonELG = np.logical_or(iNonELG0, iNonELG1)
+        
+    return iELG, iNoZ, iNonELG
+
+def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None, colors=None, ft_size_legend=15):
+    """
+    Add correlation plots for each variable pair to a given axis list. 
+    Also, make marginalized plots in histogram.
+    ax_list: Axis list of required dimension. 
+    num_cat: Number of categories to deal with
+    num_vars: Number of variables to plot
+    variables: Nested list with num_cat lists of num_vars.
+    lims: For each variable, specify min and max.
+    binws: Binwidths for historgrams for each variable
+    var_names: Names of the variables.
+    weights: weights to assign when constructing histogram. A list of num_cat vectors. 
+    lines: For each variable, draw dotted lines as specified.
+    
+    Plot order: 
+    - The last row (num_vars-1) is reserved for histogram for variables 1 ... num_vars-1.
+    - The last column (num_vars-1) of the penultimate row (num_vars-2) is reserved for the vertical histogram of last variable.
+    - This determines the unique order of plots. For example, for three variables.
+    (x1, x2), (x2-hist-v)
+    (x1, x3), (x2, x3), (x3-hist-v)
+    (x1-hist), (x2-hist)
+    - At the end, add auxilary lines
+    """
+    # Disable panels that won't be used
+    for i in range(0, num_vars-2):
+        for j in range(i+2, num_vars):
+            ax_list[i, j].axis('off')    
+    ax_list[num_vars-1, num_vars-1].axis('off')  
+    
+    # construct a dictionary of what the plot type of each
+    # For a given axis (row, col), the dictionary returns
+    # plot-type, num_x, num_y
+    # corr, x, y
+    # hist, x
+    # v-hist, x
+    
+    ax_dict = {}
+    for i in range(num_vars): # row
+        for j in range(num_vars): # col
+            if i<num_vars-1: # If we haven't reached the last row
+                if j<i+1:
+                    ax_dict[(i, j)] = ("corr", j, i+1)
+                elif j==i+1:
+                    ax_dict[(i, j)] = ("v-hist", i+1,None)
+                else: 
+                    ax_dict[(i, j)] = (None,None,None)                    
+            else: # for the last row
+                if j<num_vars-1: # If we haven't reached the last column
+                    ax_dict[(i, j)] = ("hist", j,None)
+                else: 
+                    ax_dict[(i, j)] = (None,None,None)                    
+            
+    
+    # Plot each category
+    for i in range(num_cat): 
+        vars_tmp = variables[i]
+        w_tmp = weights[i]
+        if colors is not None:
+            color = colors[i]
+        else:
+            color = "black"
+        if category_names is not None:
+            cname = category_names[i]
+        else:
+            cname = str(i)
+        if pt_sizes is None:
+            pt_size = 5
+        else:
+            pt_size = pt_sizes[i]
+            
+        # Plot each axis
+        for i in range(num_vars): # row
+            for j in range(num_vars): # col
+                plot_type, var_num1, var_num2 = ax_dict[(i, j)]
+                if plot_type is not None:
+                    if plot_type == "corr":
+                        ax_list[i, j].scatter(vars_tmp[var_num1], vars_tmp[var_num2], s=pt_size, c=color, label=cname, edgecolor="none")
+                    elif plot_type == "hist":
+                        var_min, var_max = lims[var_num1]
+                        bin_width = binws[var_num1]
+                        hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
+                        ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname)
+                    elif plot_type == "v-hist":
+                        var_min, var_max = lims[var_num1]
+                        bin_width = binws[var_num1]
+                        hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
+                        ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal")                        
+            
+     
+    # Deocration
+    for i in range(num_vars): # row
+        for j in range(num_vars): # col
+            plot_type, var_num1, var_num2 = ax_dict[(i, j)]
+            if plot_type == "corr":            
+                # axes_labels
+                ax_list[i, j].set_xlabel(var_names[var_num1], fontsize=ft_size)            
+                ax_list[i, j].set_ylabel(var_names[var_num2], fontsize=ft_size)
+                ax_list[i, j].legend(loc="upper right", fontsize=ft_size_legend)
+                # lines
+                for vh_line in lines[var_num1]:
+                    ax_list[i, j].axvline(x=vh_line, lw=lw_dot, c="green", ls="--")
+                for vh_line in lines[var_num2]:
+                    ax_list[i, j].axhline(y=vh_line, lw=lw_dot, c="green", ls="--")                    
+                # axes_limits
+                ax_list[i, j].set_xlim(lims[var_num1])                            
+                ax_list[i, j].set_ylim(lims[var_num2])
+                
+            elif plot_type == "hist":
+                # axes_labels
+                ax_list[i, j].set_xlabel(var_names[var_num1], fontsize=ft_size)            
+                ax_list[i, j].legend(loc="upper right", fontsize=ft_size_legend)
+                # lines
+                for vh_line in lines[var_num1]:
+                    ax_list[i, j].axvline(x=vh_line, lw=lw_dot, c="green", ls="--")
+                # axes_limits
+                ax_list[i, j].set_xlim(lims[var_num1])                            
+                
+            elif plot_type == "v-hist":
+                # axes_labels
+                ax_list[i, j].set_ylabel(var_names[var_num1], fontsize=ft_size)            
+                ax_list[i, j].legend(loc="upper right", fontsize=ft_size_legend)
+                # lines
+                for vh_line in lines[var_num1]:
+                    ax_list[i, j].axhline(y=vh_line, lw=lw_dot, c="green", ls="--")
+                # axes_limits
+                ax_list[i, j].set_ylim(lims[var_num1])                                            
+                                
+    return ax_dict    
 
 def apply_mask(table):
     """
