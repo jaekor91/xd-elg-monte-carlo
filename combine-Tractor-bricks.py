@@ -19,11 +19,11 @@ windowf_directory= "/Users/jaehyeon/Documents/Research/ELG_target_selection/data
 ##############################################################################	
 print("Combine all Tractor files by field, append Tycho-2 stellar mask column and mask objects using DEEP2 window funtions.")
 # Field 2
-tracf2 = combine_tractor_nocut(data_directory+"f2/")
+tracf2 = combine_tractor_nocut(data_directory+"f2/", all_models = True)
 # Field 3
-tracf3 = combine_tractor_nocut(data_directory+"f3/")
+tracf3 = combine_tractor_nocut(data_directory+"f3/", all_models = True)
 # Field 4
-tracf4 = combine_tractor_nocut(data_directory+"f4/")
+tracf4 = combine_tractor_nocut(data_directory+"f4/", all_models = True)
 print("Completed.")
 
 
