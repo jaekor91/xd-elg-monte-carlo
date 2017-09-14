@@ -1832,9 +1832,11 @@ def combine_tractor(fits_directory):
                 
     return DR3
 
-def combine_tractor_nocut(fits_directory):
+def combine_tractor_nocut(fits_directory, all_models=False):
     """
     Given the file directory, find all Tractor fits files combine them and return as a rec-array.
+
+    If all_models is True, search within fits_directory for directory called all-models to find corresponding metrics files.
     """
     onlyfiles = [f for f in listdir(fits_directory) if isfile(join(fits_directory, f))]
     print("Number of files in %s %d" % (fits_directory, len(onlyfiles)))
@@ -1845,8 +1847,22 @@ def combine_tractor_nocut(fits_directory):
         # If the file ends with "fits"
         if e[-4:] == "fits":
             print("Combining file %d. %s" % (i,e))
-            # If DR3 has been set with something.
-            tmp_table = fits.open(fits_directory+e)[1].data
+            if all_models: # If all_models is true, then combine the tractor file with the corresponding all-models file.
+                orig_cols = fits.open(fits_directory+e)[1].data.columns
+                tmp_table2 = fits.open(fits_directory+"all-models/all-models-"+e.split("tractor-")[1])[1].data
+                new_cols = fits.ColDefs([
+                    fits.Column(name='rex_shapeExp_r', format='E',
+                        array=tmp_table2["rex_shapeExp_r"]),
+                    fits.Column(name='rex_shapeExp_r_ivar', format='E',
+                        array=tmp_table2["rex_shapeExp_r_ivar"])])
+                hdu = fits.BinTableHDU.from_columns(orig_cols + new_cols)
+                hdu.writeto('tmp_table.fits', clobber=True)
+                # name = ''; format = 'E'
+                # name = 'rex_shapeExp_r_ivar'; format = 'E'
+                tmp_table = fits.open("tmp_table.fits")[1].data
+            else:
+                tmp_table = fits.open(fits_directory+e)[1].data
+
             if DR3 is not None:
                 DR3 = np.hstack((DR3, tmp_table))
             else:
