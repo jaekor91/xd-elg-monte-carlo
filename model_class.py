@@ -30,7 +30,7 @@ def load_tractor_DR5_matched_to_DEEP2(fname, fname2=None, ibool=None):
         tbl2_size = tbl2.size
         field = np.ones(tbl1_size+tbl2_size, dtype=int)
         field[:tbl1_size] = 3 # Ad hoc solution
-        field[:tbl2_size] = 4 
+        field[tbl1_size:] = 4 
         tbl = np.hstack([tbl1, tbl2])
         if ibool is not None:
             tbl = tbl[ibool]
@@ -74,7 +74,7 @@ class parent_model:
 
         # Model variables
         self.gflux, self.gf_err, self.rflux, self.rf_err, self.zflux, self.zf_err, self.rex_expr, self.rex_expr_ivar,\
-        self.red_z, self.z_err, self.oii, self.oii_err, self.w, self.field, self.iELG, self.iNoZ, self.iNonELG\
+        self.red_z, self.z_err, self.oii, self.oii_err, self.w, self.field, self.iELG, self.iNoZ, self.iNonELG, self.objtype\
         = self.import_data_DEEP2F34()
 
         self.var_x = self.gflux
@@ -217,7 +217,7 @@ class parent_model:
         zf_err = np.sqrt(1./zivar)/mw_z
 
         return gflux, gf_err, rflux, rf_err, zflux, zf_err, rex_expr, rex_expr_ivar,\
-            red_z, z_err, oii, oii_err, w, field, iELG, iNoZ, iNonELG
+            red_z, z_err, oii, oii_err, w, field, iELG, iNoZ, iNonELG, objtype
 
 
 
