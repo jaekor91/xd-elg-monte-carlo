@@ -68,7 +68,8 @@ class parent_model:
     def __init__(self):
         # Basic class variables
         self.areas = np.load("spec-area.npy")
-        self.mag_lim = 24 # We only model below 24
+        self.mag_max = 24 # We only model between 24 and 21
+        self.mag_min = 21
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
 
@@ -76,6 +77,10 @@ class parent_model:
         self.gflux, self.gf_err, self.rflux, self.rf_err, self.zflux, self.zf_err, self.rex_expr, self.rex_expr_ivar,\
         self.red_z, self.z_err, self.oii, self.oii_err, self.w, self.field, self.iELG, self.iNoZ, self.iNonELG, self.objtype\
         = self.import_data_DEEP2F34()
+
+        # Extended vs non-extended
+        self.ipsf = (self.objtype=="PSF")
+        self.iext = (~self.ipsf)
 
         self.var_x = self.gflux
         self.var_y = self.rflux
@@ -91,10 +96,11 @@ class parent_model:
         self.lim_z = [-.25, mag2flux(21.)] # z    
 
         # bin widths
-        self.dx = self.dy = self.dz = (self.lim_x[1]-self.lim_x[0])/50.
-        self.dr = 0.01
+        self.dx = self.dy = (self.lim_x[1]-self.lim_x[0])/50.
+        self.dz = 2*self.dx
+        self.dr = 0.02
         self.dred_z = 0.025
-        self.doii = 0.25
+        self.doii = 0.5
 
         # var names
         self.var_x_name = r"$g$"
@@ -115,55 +121,100 @@ class parent_model:
         # Trainig variable
         self.iTrain = np.ones((self.var_x).size, dtype=bool)
 
-    def plot_data(self, title_tag1="", title_tag2="", train=False):
+    def plot_data(self, model_tag="", cv_tag="", train=False, plot_rex=False):
         """
         Use self model/plot variables to plot the data given an external figure ax_list.
         Save the resulting image using title_str (does not include extension)
 
         If train = True, then only plot what is designated as training data.
+        If plot_rex=False, then plot all data together. If True, plot according psf and non-psf type.
         """
 
         print "Corr plot - var_xyz and r_exp - all classes together"
-        num_cat = 3
-        num_vars = 4
-        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_exp_r]
-        binws = [self.dx, self.dy, self.dz, self.dr]
-        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.r_exp_name]
-        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.exp_r_lines]        
-
-        variables = []
-        weights = []
-        for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
-            if train:
-                ibool = ibool & self.iTrain
-            variables.append([self.var_x[ibool], self.var_y[ibool], self.var_z[ibool], self.rex_expr[ibool]])
-            weights.append(self.w[ibool])
-
-        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=[2.5, 2.5, 2.5], colors=self.colors, ft_size_legend = 15, lw_dot=2)
-        plt.savefig("%s-data-all-%s.png" % (title_tag1, title_tag2), dpi=200, bbox_inches="tight")
-        plt.close()        
-
-        print "Corr plot - var_xyz and r_exp - separately"
-        num_cat = 1
-        num_vars = 4
         lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_exp_r]
         binws = [self.dx, self.dy, self.dz, self.dr]
         var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.r_exp_name]
         lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.exp_r_lines]
+        num_cat = 3
+        num_vars = 4        
 
-        for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
-            if train:
-                ibool = ibool & self.iTrain
-            print "Plotting %s" % self.category[i]
-            variables = [[self.var_x[ibool], self.var_y[ibool], self.var_z[ibool], self.rex_expr[ibool]]]
-            weights = [self.w[ibool]]
-            
+        if plot_rex:
+            for e in [(self.ipsf, "PSF"), (self.iext, "EXT")]:
+                iselect, tag = e
+                print tag
+                variables = []
+                weights = []                
+                for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
+                    iplot = np.copy(ibool)
+                    if train:
+                        iplot = iplot & self.iTrain
+                    iplot = iplot & iselect
+                    variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
+                    weights.append(self.w[iplot])
+
+                fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+                ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=[2.5, 2.5, 2.5], colors=self.colors, ft_size_legend = 15, lw_dot=2)
+                plt.savefig("%s-%s-data-all-%s.png" % (model_tag, cv_tag, tag), dpi=200, bbox_inches="tight")
+                plt.close()           
+        else:
+            variables = []
+            weights = []            
+            for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
+                iplot = np.copy(ibool)
+                if train:
+                    iplot = iplot & self.iTrain
+                variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
+                weights.append(self.w[iplot])
             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=[2.5, 2.5, 2.5], colors=self.colors, ft_size_legend = 15, lw_dot=2)
+            plt.savefig("%s-%s-data-all.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
+            plt.close()        
 
-            plt.savefig("%s-data-%s-%s.png" % (title_tag1, self.category[i], title_tag2), dpi=200, bbox_inches="tight")
-            plt.close()
+
+
+        print "Corr plot - var_xyz and r_exp - separately"
+        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_exp_r]
+        binws = [self.dx, self.dy, self.dz, self.dr]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.r_exp_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.exp_r_lines]
+        num_cat = 1
+        num_vars = 4        
+
+        if plot_rex:
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+                print "Plotting %s" % self.category[i]                                
+                for e in [(self.ipsf, "PSF"), (self.iext, "EXT")]:
+                    iselect, tag = e
+                    print tag
+                    variables = []
+                    weights = []                
+                    fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))                
+                    iplot = np.copy(ibool)
+                    if train:
+                        iplot = iplot & self.iTrain
+                    iplot = iplot & iselect
+                    variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
+                    weights.append(self.w[iplot])
+
+                    ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
+                    plt.savefig("%s-%s-data-%s-%s.png" % (model_tag, cv_tag, self.category[i], tag), dpi=200, bbox_inches="tight")
+                    plt.close() 
+        else:
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+                print "Plotting %s" % self.category[i]                
+                variables = []
+                weights = []                
+                iplot = np.copy(ibool)
+                if train:
+                    iplot = iplot & self.iTrain
+                variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
+                weights.append(self.w[iplot])
+
+                fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+                ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
+
+                plt.savefig("%s-%s-data-%s.png" % (model_tag, cv_tag, self.category[i]), dpi=200, bbox_inches="tight")
+                plt.close()
 
 
         print "Corr plot - var_xyz, r_exp, red_z, oii - ELG only"
@@ -174,20 +225,38 @@ class parent_model:
         var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.r_exp_name, self.red_z_name, self.oii_name]
         lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.exp_r_lines, self.redz_lines, self.oii_lines]
 
-        ibool = self.iELG
-        if train:
-            ibool = ibool & self.iTrain
-        i = 2 # For category
-        variables = [[self.var_x[ibool], self.var_y[ibool], self.var_z[ibool], self.rex_expr[ibool], self.red_z[ibool], self.oii[ibool]]]
-        weights = [self.w[ibool]]
+        if plot_rex:
+            for e in [(self.ipsf, "PSF"), (self.iext, "EXT")]:
+                iselect, tag = e
+                print tag
+                variables = []
+                weights = []    
+                iplot = np.copy(self.iELG) & iselect
+                if train:
+                    iplot = iplot & self.iTrain
+                i = 2 # For category
+                variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot], self.red_z[iplot], self.oii[iplot]]]
+                weights = [self.w[iplot]]
 
-        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
-        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
+                fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
+                ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
 
-        plt.savefig("%s-data-ELG-redz-oii-%s.png" % (title_tag1, title_tag2), dpi=200, bbox_inches="tight")
-        plt.close()
+                plt.savefig("%s-%s-data-ELG-%s-redz-oii.png" % (model_tag, cv_tag, tag), dpi=200, bbox_inches="tight")
+                plt.close()            
 
+        else:
+            iplot = np.copy(self.iELG)
+            if train:
+                iplot = iplot & self.iTrain
+            i = 2 # For category
+            variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot], self.red_z[iplot], self.oii[iplot]]]
+            weights = [self.w[iplot]]
 
+            fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
+
+            plt.savefig("%s-%s-data-ELG-redz-oii.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
+            plt.close()
 
 
     def import_data_DEEP2F34(self):
@@ -196,12 +265,12 @@ class parent_model:
         rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut, cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field\
             = load_tractor_DR5_matched_to_DEEP2("DR5-matched-to-DEEP2-f3-glim25.fits", fname2 = "DR5-matched-to-DEEP2-f4-glim25.fits")
 
-        ifcut = (gflux > mag2flux(self.mag_lim))
+        ifcut = (gflux > mag2flux(self.mag_max)) & (gflux < mag2flux(self.mag_min))
         ibool = (D2matched==1) & ifcut
         nobjs_cut = ifcut.sum()
         nobjs_matched = ibool.sum()
 
-        print "Fraction of unmatched objects with g < %.1f: %.2f percent" % (self.mag_lim, 100 * (nobjs_cut-nobjs_matched)/float(nobjs_cut))
+        print "Fraction of unmatched objects with g [%.1f, %.1f]: %.2f percent" % (self.mag_min, self.mag_max, 100 * (nobjs_cut-nobjs_matched)/float(nobjs_cut))
         print "We consider only the matched set. After fitting various densities, we scale the normalization by the amount we ignored in our fit due to unmatched set."
 
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
