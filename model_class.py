@@ -64,6 +64,8 @@ def load_tractor_DR5_matched_to_DEEP2(fname, fname2=None, ibool=None):
         w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field
 
 
+
+
 class parent_model:
     def __init__(self):
         # Basic class variables
@@ -88,7 +90,7 @@ class parent_model:
 
         # Plot variables
         # var limits
-        self.lim_exp_r = [-.1, 1.1]
+        self.lim_exp_r = [-.05, 1.05]
         self.lim_redz = [0.5, 1.7]
         self.lim_oii = [0, 25]
         self.lim_x = [-.25, mag2flux(22)] # g
@@ -98,14 +100,14 @@ class parent_model:
         # bin widths
         self.dx = self.dy = (self.lim_x[1]-self.lim_x[0])/50.
         self.dz = 2*self.dx
-        self.dr = 0.02
+        self.dr = 0.01
         self.dred_z = 0.025
         self.doii = 0.5
 
         # var names
-        self.var_x_name = r"$g$"
-        self.var_y_name = r"$r$"
-        self.var_z_name = r"$z$"
+        self.var_x_name = r"$f_g$"
+        self.var_y_name = r"$f_r$"
+        self.var_z_name = r"$f_z$"
         self.oii_name =  r"$OII$"
         self.r_exp_name = r"$r_{exp}$"
         self.red_z_name = r"$\eta$"
@@ -287,6 +289,86 @@ class parent_model:
 
         return gflux, gf_err, rflux, rf_err, zflux, zf_err, rex_expr, rex_expr_ivar,\
             red_z, z_err, oii, oii_err, w, field, iELG, iNoZ, iNonELG, objtype
+
+
+
+
+class model1(parent_model):
+    """
+    parametrization: redz, oii, rex_r, rflux/gflux, zflux/rflux, gflux
+    """
+    def __init__(self):
+        parent_model.__init__(self)
+
+        self.var_x = self.zflux/self.rflux
+        self.var_y = self.rflux/self.gflux
+        self.var_z = self.gflux
+
+        # Plot variables
+        # var limits
+        self.lim_x = [-.1, 5.] # rf/gf
+        self.lim_y = [-.1, 5.] # zf/rf
+        self.lim_z = [0., mag2flux(22.)] # gf
+
+        # bin widths
+        self.dx = 0.05
+        self.dy = 0.05
+        self.dz = 2.5e-2
+
+        # var names
+        self.var_x_name = r"$f_z/f_r$"
+        self.var_y_name = r"$f_r/f_g$"
+        self.var_z_name = r"$f_g$"
+        self.oii_name =  r"$OII$"
+        self.r_exp_name = r"$r_{exp}$"
+        self.red_z_name = r"$\eta$"
+
+        # var lines
+        self.var_x_lines = [1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
+        self.var_y_lines = [1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
+        self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
+        self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
+        self.redz_lines = [0.6, 1.1, 1.6] # Redz
+        self.oii_lines = [8]
+
+
+class model2(parent_model):
+    """
+    parametrization: 
+    """
+    def __init__(self):
+        parent_model.__init__(self)
+
+        self.var_x = np.arcsinh(self.zflux/self.rflux/2.)
+        self.var_y = np.arcsinh(self.rflux/self.gflux/2.)
+        self.var_z = self.gflux
+
+        # Plot variables
+        # var limits
+        self.lim_x = [-.1, 2.] # rf/gf
+        self.lim_y = [-.1, 2.] # zf/rf
+        self.lim_z = [0., mag2flux(22.)] # gf
+
+        # bin widths
+        self.dx = 0.025
+        self.dy = 0.025
+        self.dz = 2.5e-2
+
+        # var names
+        self.var_x_name = r"$sinh^{-1} (f_z/f_r)$"  
+        self.var_y_name = r"$sinh^{-1} (f_r/f_g)$"
+        self.var_z_name = r"$f_g$"
+        self.oii_name =  r"$OII$"
+        self.r_exp_name = r"$r_{exp}$"
+        self.red_z_name = r"$\eta$"
+
+        # var lines
+        self.var_x_lines = []# np.asarray([1/2.5**2, 1/2.5, 1., 2.5, 2.5**2])
+        self.var_y_lines = []#[1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
+        self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
+        self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
+        self.redz_lines = [0.6, 1.1, 1.6] # Redz
+        self.oii_lines = [8]
 
 
 
