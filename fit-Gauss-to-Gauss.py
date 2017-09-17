@@ -12,7 +12,7 @@ def lnL_gauss(mu, sigma, data_pts):
     Given the mean and the sigma of a gaussian return the lnL.
     Note that I am computing negative lnL.
     """
-    return np.sum((data_pts-mu)**2/float(2.*sigma**2) + np.log(sigma))
+    return np.sum((data_pts-mu)**2/float(2.*sigma**2) + np.log(sigma))/float(data_pts.size)
 
 # Generate sample
 gflux = np.random.normal(size=int(1e5), loc=mag2flux(23.5), scale=mag2flux(25.5))
