@@ -77,7 +77,7 @@ class parent_model:
         # Model variables
         self.gflux, self.gf_err, self.rflux, self.rf_err, self.zflux, self.zf_err, self.rex_expr, self.rex_expr_ivar,\
         self.red_z, self.z_err, self.oii, self.oii_err, self.w, self.field, self.iELG, self.iNoZ, self.iNonELG, self.objtype\
-        = self.import_data_DEEP2_Full()
+        = self.import_data_DEEP2_full()
 
         # Extended vs non-extended
         self.ipsf = (self.objtype=="PSF")
@@ -120,7 +120,7 @@ class parent_model:
         self.oii_lines = [8]
 
         # Trainig variable
-        self.iTrain = np.ones((self.var_x).size, dtype=bool)
+        self.iTrain = self.field != 2
 
     def plot_data(self, model_tag="", cv_tag="", train=False, plot_rex=False):
         """
@@ -260,11 +260,11 @@ class parent_model:
             plt.close()
 
 
-    def import_data_DEEP2_Full(self):
+    def import_data_DEEP2_full(self):
         """Return DEEP2-DR5 data."""
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
         rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut, cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field\
-            = load_tractor_DR5_matched_to_DEEP2_Full()
+            = load_tractor_DR5_matched_to_DEEP2_full()
 
         ifcut = (gflux > mag2flux(self.mag_max)) & (gflux < mag2flux(self.mag_min))
         ibool = (D2matched==1) & ifcut
@@ -276,7 +276,7 @@ class parent_model:
 
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
         rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut, cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field\
-            = load_tractor_DR5_matched_to_DEEP2_Full(ibool = ibool)
+            = load_tractor_DR5_matched_to_DEEP2_full(ibool = ibool)
 
         # Define categories
         iELG, iNoZ, iNonELG = category_vector_generator(z_quality, z_err, oii, oii_err, BRI_cut, cn)
@@ -369,6 +369,6 @@ class model2(parent_model):
         self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
         self.oii_lines = [8]
-        
+
     def var_reparam(self, g, r, z):
         return np.arcsinh(z/r/2.), np.arcsinh(r/g/2.), g
