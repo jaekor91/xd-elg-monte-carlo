@@ -294,14 +294,13 @@ class parent_model:
 
 class model1(parent_model):
     """
-    parametrization: redz, oii, rex_r, rflux/gflux, zflux/rflux, gflux
+    parametrization: redz, oii, rex_r, zflux/rflux, rflux/gflux, gflux
     """
     def __init__(self):
         parent_model.__init__(self)
 
-        self.var_x = self.zflux/self.rflux
-        self.var_y = self.rflux/self.gflux
-        self.var_z = self.gflux
+        # Re-parametrizing variables
+        self.var_x, self.var_y, self.var_z= self.var_reparam(self.gflux, self.rflux, self.zflux) 
 
         # Plot variables
         # var limits
@@ -330,17 +329,19 @@ class model1(parent_model):
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
         self.oii_lines = [8]
 
+    def var_reparam(self, g, r, z):
+        return z/r, r/g, g
+
+
 
 class model2(parent_model):
     """
-    parametrization: 
+    parametrization: redz, oii, rex_r, arcsinh zflux/rflux, arcsinh rflux/gflux, gflux
     """
     def __init__(self):
         parent_model.__init__(self)
-
-        self.var_x = np.arcsinh(self.zflux/self.rflux/2.)
-        self.var_y = np.arcsinh(self.rflux/self.gflux/2.)
-        self.var_z = self.gflux
+        # Re-parametrizing variables
+        self.var_x, self.var_y, self.var_z= self.var_reparam(self.gflux, self.rflux, self.zflux) 
 
         # Plot variables
         # var limits
@@ -368,3 +369,6 @@ class model2(parent_model):
         self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
         self.oii_lines = [8]
+        
+    def var_reparam(self, g, r, z):
+        return np.arcsinh(z/r/2.), np.arcsinh(r/g/2.), g
