@@ -1887,7 +1887,7 @@ def category_vector_generator(z_quality, z_err, oii, oii_err, BRI_cut, cn):
         
     return iELG, iNoZ, iNonELG
 
-def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None, colors=None, ft_size_legend=15):
+def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=None, lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None, colors=None, ft_size_legend=15):
     """
     Add correlation plots for each variable pair to a given axis list. 
     Also, make marginalized plots in histogram.
@@ -1943,7 +1943,10 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
     # Plot each category
     for i in range(num_cat): 
         vars_tmp = variables[i]
-        w_tmp = weights[i]
+        if weights is not None:
+            w_tmp = weights[i]
+        else:
+            w_tmp = np.ones_like(vars_tmp[0])
         if colors is not None:
             color = colors[i]
         else:
@@ -2014,7 +2017,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                 # axes_limits
                 ax_list[i, j].set_ylim(lims[var_num1])                                            
                                 
-    return ax_dict    
+    return ax_dict
 
 def apply_mask(table):
     """
