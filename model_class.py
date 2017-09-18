@@ -66,7 +66,7 @@ def load_tractor_DR5_matched_to_DEEP2_full(ibool=None):
 
 
 class parent_model:
-    def __init__(self):
+    def __init__(self, sub_sample_num):
         # Basic class variables
         self.areas = np.load("spec-area.npy")
         self.mag_max = 24 # We only model between 24 and 21
@@ -119,8 +119,102 @@ class parent_model:
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
         self.oii_lines = [8]
 
-        # Trainig variable
-        self.iTrain = self.field != 2
+        # Trainig idices and area
+        self.sub_sample_num = sub_sample_num # Determine which sub sample to use
+        self.iTrain, self.area_train = self.gen_train_set_idx()
+
+
+    def gen_train_set_idx(self):
+        """
+        Generate sub sample set indices and corresponding area.
+        Note: Data only from Field 3 and 4 are considered
+        """
+        area_F34 = self.areas[1]+self.areas[2]
+
+        # 0: Full F34 data
+        if self.sub_sample_num == 0:
+            iTrain = self.field !=2
+            area_train = area_F34
+        # 1: F3 data only
+        if self.sub_sample_num == 1:
+            iTrain = self.field == 3
+            area_train = self.areas[1]
+        # 2: F4 data only
+        if self.sub_sample_num == 2:
+            iTrain = self.field == 4
+            area_train = self.areas[2]
+        # 3-7: CV1-CV5: Sub-sample F34 into five-fold CV sets.
+        if self.sub_sample_num in [3, 4, 5, 6, 7]:
+            iTrain, area_train = self.gen_train_set_idx_cv()
+        # 8-10: Magnitude changes. For power law use full data. 
+        # g in [22.5, 23.5], [22.75, 23.75], [23, 24]. 
+        if self.sub_sample_num == 8:
+            iTrain = (gflux > mag2flux(23.5)) & (gflux < mag2flux(22.5))
+            area_train = area_F34
+        if self.sub_sample_num == 9:
+            iTrain = (gflux > mag2flux(23.75)) & (gflux < mag2flux(22.75))
+            area_train = area_F34
+        if self.sub_sample_num == 10:
+            iTrain = (gflux > mag2flux(24.)) & (gflux < mag2flux(23.))
+            area_train = area_F34                        
+
+        return iTrain, area_train
+
+
+
+    def gen_train_set_idx_cv(self):
+        """
+        Given a cv number, return the relevant CV partition. 
+        Below hacked code was used to free the partitioning. 
+        Note that area was scaled according to the weight ratio.
+
+        from model_class import *
+
+        parent_instance = parent_model(0)
+        field = parent_instance.field
+        weight = parent_instance.w
+        areas = parent_instance.areas
+
+        nobjs_list=[]
+        for i in [2, 3, 4]:
+            nobjs_list.append((field == i).sum())
+
+        # x is your dataset
+        nobjs_F34 = nobjs_list[1]+nobjs_list[2]
+        nobjs_F2 = nobjs_list[0]
+        nobjs_per_cv = nobjs_F34/5
+        nobjs_last_cv = nobjs_F34-nobjs_per_cv*4
+        area_F34 = areas[1]+areas[2]
+        weight_F34 = weight[field!=2]
+        weight_F34_total = weight_F34.sum()
+
+        indices = np.random.permutation(nobjs_F34)+nobjs_F2
+        training_idx_list = []
+        area_list = []
+        # cv1
+        training_idx_list.append(indices[nobjs_per_cv:])
+        area_list.append(area_F34 * weight[training_idx_list[0]].sum()/weight_F34_total)
+        # cv234
+        for i in range(1, 4, 1):
+            training_idx_list.append(np.concatenate((indices[:nobjs_per_cv*i], indices[nobjs_per_cv*(i+1):]))) 
+            area_list.append(area_F34 * weight[training_idx_list[i]].sum()/weight_F34_total)
+        # cv5
+        training_idx_list.append(indices[:nobjs_per_cv*4])
+        area_list.append(area_F34 * weight[training_idx_list[4]].sum()/weight_F34_total)
+
+        training_idx_list = np.asarray(training_idx_list)
+        area_list = np.asarray(area_list)
+
+        np.save("cv_traing_idx", training_idx_list)
+        np.save("cv_area", area_list)
+        """
+
+        cv = self.sub_sample_num-3
+        train_list = np.load("cv_training_idx.npy")
+        area_list = np.load("cv_area.npy")
+        return train_list[cv], area_list[cv]
+
+
 
     def plot_data(self, model_tag="", cv_tag="", train=False, plot_rex=False):
         """
@@ -296,8 +390,8 @@ class model1(parent_model):
     """
     parametrization: redz, oii, rex_r, zflux/rflux, rflux/gflux, gflux
     """
-    def __init__(self):
-        parent_model.__init__(self)
+    def __init__(self, sub_sample_num):
+        parent_model.__init__(self, sub_sample_num)
 
         # Re-parametrizing variables
         self.var_x, self.var_y, self.var_z= self.var_reparam(self.gflux, self.rflux, self.zflux) 
@@ -338,8 +432,8 @@ class model2(parent_model):
     """
     parametrization: redz, oii, rex_r, arcsinh zflux/rflux, arcsinh rflux/gflux, gflux
     """
-    def __init__(self):
-        parent_model.__init__(self)
+    def __init__(self, sub_sample_num):
+        parent_model.__init__(self, sub_sample_num)
         # Re-parametrizing variables
         self.var_x, self.var_y, self.var_z= self.var_reparam(self.gflux, self.rflux, self.zflux) 
 
