@@ -250,7 +250,7 @@ class parent_model:
                     iplot = np.copy(ibool) & self.iTrain
                     iplot = iplot & iselect
                     variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
-                    weights.append(self.w[iplot])
+                    weights.append(self.w[iplot]/self.area_train)
 
                 fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
                 ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=[2.5, 2.5, 2.5], colors=self.colors, ft_size_legend = 15, lw_dot=2)
@@ -262,7 +262,7 @@ class parent_model:
             for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
                 iplot = np.copy(ibool) & self.iTrain
                 variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
-                weights.append(self.w[iplot])
+                weights.append(self.w[iplot]/self.area_train)
             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
             ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=[2.5, 2.5, 2.5], colors=self.colors, ft_size_legend = 15, lw_dot=2)
             plt.savefig("%s-%s-data-all.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
@@ -290,7 +290,7 @@ class parent_model:
                     iplot = np.copy(ibool) & self.iTrain
                     iplot = iplot & iselect
                     variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
-                    weights.append(self.w[iplot])
+                    weights.append(self.w[iplot]/self.area_train)
 
                     ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
                     plt.savefig("%s-%s-data-%s-%s.png" % (model_tag, cv_tag, self.category[i], tag), dpi=200, bbox_inches="tight")
@@ -302,7 +302,7 @@ class parent_model:
                 weights = []                
                 iplot = np.copy(ibool) & self.iTrain
                 variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
-                weights.append(self.w[iplot])
+                weights.append(self.w[iplot]/self.area_train)
 
                 fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
                 ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
@@ -328,7 +328,7 @@ class parent_model:
                 iplot = np.copy(self.iELG) & iselect & self.iTrain
                 i = 2 # For category
                 variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot], self.red_z[iplot], self.oii[iplot]]]
-                weights = [self.w[iplot]]
+                weights = [self.w[iplot]/self.area_train]
 
                 fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
                 ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
@@ -340,7 +340,7 @@ class parent_model:
             iplot = np.copy(self.iELG) & self.iTrain
             i = 2 # For category
             variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot], self.red_z[iplot], self.oii[iplot]]]
-            weights = [self.w[iplot]]
+            weights = [self.w[iplot]/self.area_train]
 
             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
             ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
