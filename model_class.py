@@ -149,13 +149,13 @@ class parent_model:
         # 8-10: Magnitude changes. For power law use full data. 
         # g in [22.5, 23.5], [22.75, 23.75], [23, 24]. 
         if self.sub_sample_num == 8:
-            iTrain = (gflux > mag2flux(23.5)) & (gflux < mag2flux(22.5))
+            iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(22.5))  & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 9:
-            iTrain = (gflux > mag2flux(23.75)) & (gflux < mag2flux(22.75))
+            iTrain = (self.gflux > mag2flux(23.75)) & (self.gflux < mag2flux(22.75)) & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 10:
-            iTrain = (gflux > mag2flux(24.)) & (gflux < mag2flux(23.))
+            iTrain = (self.gflux > mag2flux(24.)) & (self.gflux < mag2flux(23.)) & (self.field!=2)
             area_train = area_F34                        
 
         return iTrain, area_train
