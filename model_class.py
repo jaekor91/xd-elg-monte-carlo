@@ -15,26 +15,25 @@ def flux2mag(flux):
     return 22.5-2.5*np.log10(flux)
 
 
-def load_tractor_DR5_matched_to_DEEP2(fname, fname2=None, ibool=None):
+def load_tractor_DR5_matched_to_DEEP2_full(ibool=None):
     """
-    Load select columns
+    Load select columns. From all fields.
     """
-    if fname2 is None:
-        tbl = load_fits_table(fname)
-        if ibool is not None:
-            tbl = tbl[ibool]
-    else:
-        tbl1 = load_fits_table(fname)
-        tbl2 = load_fits_table(fname2)
-        tbl1_size = tbl1.size
-        tbl2_size = tbl2.size
-        field = np.ones(tbl1_size+tbl2_size, dtype=int)
-        field[:tbl1_size] = 3 # Ad hoc solution
-        field[tbl1_size:] = 4 
-        tbl = np.hstack([tbl1, tbl2])
-        if ibool is not None:
-            tbl = tbl[ibool]
-            field = field[ibool]
+    tbl1 = load_fits_table("DR5-matched-to-DEEP2-f2-glim25.fits")
+    tbl2 = load_fits_table("DR5-matched-to-DEEP2-f3-glim25.fits")    
+    tbl3 = load_fits_table("DR5-matched-to-DEEP2-f4-glim25.fits")
+
+    tbl1_size = tbl1.size
+    tbl2_size = tbl2.size
+    tbl3_size = tbl3.size    
+    field = np.ones(tbl1_size+tbl2_size+tbl3_size, dtype=int)
+    field[:tbl1_size] = 2 # Ad hoc solution    
+    field[tbl1_size:tbl1_size+tbl2_size] = 3 # Ad hoc solution
+    field[tbl1_size+tbl2_size:] = 4 
+    tbl = np.hstack([tbl1, tbl2, tbl3])
+    if ibool is not None:
+        tbl = tbl[ibool]
+        field = field[ibool]
 
     ra, dec = load_radec(tbl)
     bid = tbl["brickid"]
@@ -78,7 +77,7 @@ class parent_model:
         # Model variables
         self.gflux, self.gf_err, self.rflux, self.rf_err, self.zflux, self.zf_err, self.rex_expr, self.rex_expr_ivar,\
         self.red_z, self.z_err, self.oii, self.oii_err, self.w, self.field, self.iELG, self.iNoZ, self.iNonELG, self.objtype\
-        = self.import_data_DEEP2F34()
+        = self.import_data_DEEP2_Full()
 
         # Extended vs non-extended
         self.ipsf = (self.objtype=="PSF")
@@ -261,11 +260,11 @@ class parent_model:
             plt.close()
 
 
-    def import_data_DEEP2F34(self):
+    def import_data_DEEP2_Full(self):
         """Return DEEP2-DR5 data."""
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
         rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut, cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field\
-            = load_tractor_DR5_matched_to_DEEP2("DR5-matched-to-DEEP2-f3-glim25.fits", fname2 = "DR5-matched-to-DEEP2-f4-glim25.fits")
+            = load_tractor_DR5_matched_to_DEEP2_Full()
 
         ifcut = (gflux > mag2flux(self.mag_max)) & (gflux < mag2flux(self.mag_min))
         ibool = (D2matched==1) & ifcut
@@ -277,7 +276,7 @@ class parent_model:
 
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
         rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut, cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field\
-            = load_tractor_DR5_matched_to_DEEP2("DR5-matched-to-DEEP2-f3-glim25.fits", fname2 = "DR5-matched-to-DEEP2-f4-glim25.fits", ibool = ibool)
+            = load_tractor_DR5_matched_to_DEEP2_Full(ibool = ibool)
 
         # Define categories
         iELG, iNoZ, iNonELG = category_vector_generator(z_quality, z_err, oii, oii_err, BRI_cut, cn)
@@ -369,19 +368,3 @@ class model2(parent_model):
         self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
         self.oii_lines = [8]
-
-
-
-# Old code snippets
-# # Signal to noise
-# g_sn = gflux/gf_err
-# r_sn = rflux/rf_err
-# z_sn = zflux/zf_err
-
-# # OII signal to noise
-# oii_sn = oii/oii_err
-
-# Magnitudes
-# gmag, rmag, zmag = flux2mag(gflux), flux2mag(rflux), flux2mag(zflux)
-# ygr = gmag - rmag
-# xrz = rmag - zmag
