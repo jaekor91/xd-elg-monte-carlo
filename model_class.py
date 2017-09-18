@@ -182,6 +182,7 @@ class parent_model:
         # x is your dataset
         nobjs_F34 = nobjs_list[1]+nobjs_list[2]
         nobjs_F2 = nobjs_list[0]
+        nobjs_total = nobjs_F2+nobjs_F34
         nobjs_per_cv = nobjs_F34/5
         nobjs_last_cv = nobjs_F34-nobjs_per_cv*4
         area_F34 = areas[1]+areas[2]
@@ -191,21 +192,28 @@ class parent_model:
         indices = np.random.permutation(nobjs_F34)+nobjs_F2
         training_idx_list = []
         area_list = []
+
         # cv1
-        training_idx_list.append(indices[nobjs_per_cv:])
+        ibool = np.zeros(nobjs_total, dtype=bool)
+        ibool[indices[nobjs_per_cv:]]=True
+        training_idx_list.append(ibool)
         area_list.append(area_F34 * weight[training_idx_list[0]].sum()/weight_F34_total)
         # cv234
         for i in range(1, 4, 1):
-            training_idx_list.append(np.concatenate((indices[:nobjs_per_cv*i], indices[nobjs_per_cv*(i+1):]))) 
+            ibool = np.zeros(nobjs_total, dtype=bool)    
+            ibool[np.concatenate((indices[:nobjs_per_cv*i], indices[nobjs_per_cv*(i+1):]))]=True    
+            training_idx_list.append(ibool) 
             area_list.append(area_F34 * weight[training_idx_list[i]].sum()/weight_F34_total)
         # cv5
-        training_idx_list.append(indices[:nobjs_per_cv*4])
+        ibool = np.zeros(nobjs_total, dtype=bool)
+        ibool[indices[:nobjs_per_cv*4]]=True
+        training_idx_list.append(ibool)
         area_list.append(area_F34 * weight[training_idx_list[4]].sum()/weight_F34_total)
 
         training_idx_list = np.asarray(training_idx_list)
         area_list = np.asarray(area_list)
 
-        np.save("cv_traing_idx", training_idx_list)
+        np.save("cv_training_idx", training_idx_list)
         np.save("cv_area", area_list)
         """
 
