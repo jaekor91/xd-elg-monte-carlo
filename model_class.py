@@ -91,7 +91,7 @@ class parent_model:
         # var limits
         self.lim_exp_r = [-.05, 1.05]
         self.lim_redz = [0.5, 1.7]
-        self.lim_oii = [0, 25]
+        self.lim_oii = [0, 50]
         self.lim_x = [-.25, mag2flux(22)] # g
         self.lim_y = [-.25, mag2flux(21.5)] # r
         self.lim_z = [-.25, mag2flux(21.)] # z    
