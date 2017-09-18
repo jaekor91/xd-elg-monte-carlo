@@ -224,12 +224,11 @@ class parent_model:
 
 
 
-    def plot_data(self, model_tag="", cv_tag="", train=False, plot_rex=False):
+    def plot_data(self, model_tag="", cv_tag="", plot_rex=False):
         """
         Use self model/plot variables to plot the data given an external figure ax_list.
         Save the resulting image using title_str (does not include extension)
 
-        If train = True, then only plot what is designated as training data.
         If plot_rex=False, then plot all data together. If True, plot according psf and non-psf type.
         """
 
@@ -248,9 +247,7 @@ class parent_model:
                 variables = []
                 weights = []                
                 for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
-                    iplot = np.copy(ibool)
-                    if train:
-                        iplot = iplot & self.iTrain
+                    iplot = np.copy(ibool) & self.iTrain
                     iplot = iplot & iselect
                     variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
                     weights.append(self.w[iplot])
@@ -263,9 +260,7 @@ class parent_model:
             variables = []
             weights = []            
             for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
-                iplot = np.copy(ibool)
-                if train:
-                    iplot = iplot & self.iTrain
+                iplot = np.copy(ibool) & self.iTrain
                 variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
                 weights.append(self.w[iplot])
             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
@@ -292,9 +287,7 @@ class parent_model:
                     variables = []
                     weights = []                
                     fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))                
-                    iplot = np.copy(ibool)
-                    if train:
-                        iplot = iplot & self.iTrain
+                    iplot = np.copy(ibool) & self.iTrain
                     iplot = iplot & iselect
                     variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
                     weights.append(self.w[iplot])
@@ -307,9 +300,7 @@ class parent_model:
                 print "Plotting %s" % self.category[i]                
                 variables = []
                 weights = []                
-                iplot = np.copy(ibool)
-                if train:
-                    iplot = iplot & self.iTrain
+                iplot = np.copy(ibool) & self.iTrain
                 variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
                 weights.append(self.w[iplot])
 
@@ -334,9 +325,7 @@ class parent_model:
                 print tag
                 variables = []
                 weights = []    
-                iplot = np.copy(self.iELG) & iselect
-                if train:
-                    iplot = iplot & self.iTrain
+                iplot = np.copy(self.iELG) & iselect & self.iTrain
                 i = 2 # For category
                 variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot], self.red_z[iplot], self.oii[iplot]]]
                 weights = [self.w[iplot]]
@@ -348,9 +337,7 @@ class parent_model:
                 plt.close()            
 
         else:
-            iplot = np.copy(self.iELG)
-            if train:
-                iplot = iplot & self.iTrain
+            iplot = np.copy(self.iELG) & self.iTrain
             i = 2 # For category
             variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot], self.red_z[iplot], self.oii[iplot]]]
             weights = [self.w[iplot]]
