@@ -63,21 +63,21 @@ def mock_pop_1(NSAMPLE, fmin):
     return xrz, ygr, gflux
 
 
-mag_max = 24
+mag_max = 24.25
 mag_min = 23
 xrz, ygr, gflux = mock_pop_1(int(1e4), mag2flux(mag_max))
 gflux = gflux[gflux<mag2flux(mag_min)]
 
 
 fbins = np.arange(mag2flux(mag_max), mag2flux(mag_min), 2.5e-3)
-fbins_extended = np.arange(0.1, mag2flux(mag_min), 1e-3)
+fbins_extended = np.arange(0., mag2flux(mag_min)*1.1, 1e-3)
 Ndim = 1 
-Ntrial = 20 # Number of XD trials.
+Ntrial = 5 # Number of XD trials.
 #Run the code 
 ydata = gflux.reshape([gflux.size, 1])
 ycovar = gen_diag_data_covar(gflux.size, var=[0])
 
-for K in range(1, 27):
+for K in range(1, 20):
     lnL_best = -np.inf # Initially lnL is terrible
     init_mean = None
     for j in range(Ntrial):
@@ -102,7 +102,7 @@ for K in range(1, 27):
         #get help on their shapes and other options using
         # ?XD.extreme_deconvolution
 
-        lnL = XD.extreme_deconvolution(ydata, ycovar, fit_amp_tmp, fit_mean_tmp, fit_covar_tmp, w=0.01)
+        lnL = XD.extreme_deconvolution(ydata, ycovar, fit_amp_tmp, fit_mean_tmp, fit_covar_tmp, w=1e-4)
         
         if lnL > lnL_best:
             fit_mean, fit_amp, fit_covar = fit_mean_tmp, fit_amp_tmp, fit_covar_tmp
@@ -112,21 +112,22 @@ for K in range(1, 27):
     gauss_init = None
     for k in range(K):
         if gauss_init is None:
-            gauss_fit = fit_amp[k]*stats.norm.pdf(fbins_extended, loc=fit_mean[k][0], scale=fit_covar[k][0,0])
-            gauss_init = init_amp[k]*stats.norm.pdf(fbins_extended, loc=init_mean[k][0], scale=init_covar[k][0,0])        
+            gauss_fit = fit_amp[k]*stats.norm.pdf(fbins_extended, loc=fit_mean[k][0], scale=np.sqrt(fit_covar[k][0,0]))
+            gauss_init = init_amp[k]*stats.norm.pdf(fbins_extended, loc=init_mean[k][0], scale=np.sqrt(init_covar[k][0,0]))
             gauss0, gauss1 = gauss_init, gauss_fit
         else:
-            gauss0 = init_amp[k]*stats.norm.pdf(fbins_extended, loc=init_mean[k][0], scale=init_covar[k][0,0]) 
-            gauss1 = fit_amp[k]*stats.norm.pdf(fbins_extended, loc=fit_mean[k][0], scale=fit_covar[k][0,0])
+            gauss0 = init_amp[k]*stats.norm.pdf(fbins_extended, loc=init_mean[k][0], scale=np.sqrt(init_covar[k][0,0]))
+            gauss1 = fit_amp[k]*stats.norm.pdf(fbins_extended, loc=fit_mean[k][0], scale=np.sqrt(fit_covar[k][0,0]))
             gauss_fit += gauss1
             gauss_init += gauss0
             
         plt.plot(fbins_extended, gauss1, lw=0.5, c="blue", alpha=0.75)
         plt.plot(fbins_extended, gauss0, lw=0.5, c="red", alpha=0.75)
     plt.plot(fbins_extended, gauss_fit, lw=1, c="blue")
-    plt.plot(fbins_extended, gauss_init, lw=1, c="red")        
-    plt.xlim([mag2flux(mag_max), mag2flux(mag_min)])
-    plt.ylim([-2, 30])
+    plt.plot(fbins_extended, gauss_init, lw=1, c="red")
+    plt.axvline(x=mag2flux(24.))
+    plt.xlim([0., mag2flux(mag_min)*1.05])
+    plt.ylim([0, 20])
     plt.savefig("fit-gauss-to-power-K%d.png"%K, dpi=200, bbox_inches="tight")
     plt.close()
 
