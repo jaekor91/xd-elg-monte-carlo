@@ -2046,6 +2046,164 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
     return ax_dict
 
 
+
+def MoG1_mean_cov():
+    """
+    First component of MoGs
+    """
+    mean = np.array([  1.38378524,   0.73595286,   0.39708991,  38.41568733,   1.01934929])
+    cov = np.array([[  2.63368616e-01,   9.89707792e-02,   9.35181717e-04,
+         -5.62475524e+00,  -3.35425317e-02],
+       [  9.89707792e-02,   4.85536244e-02,   2.29276475e-03,
+         -2.21005023e+00,  -1.76336399e-02],
+       [  9.35181717e-04,   2.29276475e-03,   5.60998731e-02,
+         -2.09761948e+00,  -7.63744409e-03],
+       [ -5.62475524e+00,  -2.21005023e+00,  -2.09761948e+00,
+          9.00286685e+04,   1.05699023e+00],
+       [ -3.35425317e-02,  -1.76336399e-02,  -7.63744409e-03,
+          1.05699023e+00,   3.61836121e-02]])
+    cov[:,-2] *= 0.02
+    cov[-2,:] *= 0.02
+    
+    return mean, cov
+
+def MoG2_mean_cov():
+    """
+    Second component of 2 component MoG
+    """
+    mean, cov = MoG1_mean_cov()
+    mean = mean*np.array([1.5, 1.5, 1.5, 1.2, 1.1])
+    cov *= 0.25
+    cov += np.array([[ 0.03447977, -0.1071021 , -0.05680584,  0.2478375 ,  0.10232841],
+       [ 0.08766291,  0.18576923, -0.04333036, -0.00487922, -0.03921066],
+       [-0.09202787,  0.23828726,  0.10759185, -0.15039897, -0.04463796],
+       [-0.09578853, -0.00231927, -0.01224208,  0.08104045, -0.19074252],
+       [-0.09726527,  0.07063743,  0.13382492, -0.04058464,  0.1238597 ]])/10. 
+    return mean, cov
+    
+
+def MoG1(Nsample):
+    mean, cov = MoG1_mean_cov()    
+    var_x, var_y, var_z, OII, redz = np.random.multivariate_normal(mean, cov, Nsample).T
+
+    return var_x, var_y, var_z, OII, redz
+    
+def MoG2(Nsample):
+    amps = [0.5, 0.5]
+    var_x1, var_y1, var_z1, OII1, redz1 = MoG1(int(Nsample*amps[0]))
+    
+    # Second gaussian
+    mean, cov = MoG2_mean_cov()    
+    var_x2, var_y2, var_z2, OII2, redz2 = np.random.multivariate_normal(mean, cov, int(amps[1]*Nsample)).T
+    
+    return np.concatenate((var_x1, var_x2)), np.concatenate((var_y1, var_y2)), np.concatenate((var_z1, var_z2)), np.concatenate((OII1, OII2)), np.concatenate((redz1, redz2))
+
+
+def gen_init_covar_from_data(Ndim, ydata, K):
+    """
+    Generate the covariance from the data. 
+    Same covar matrix is used for all K components.
+    """
+    return np.asarray([np.cov(ydata).reshape((Ndim, Ndim))] * K)
+
+
+def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test"):
+    """
+    Given the data matrix Ydata [Nsample, ND], the error covariance matrix Ycovar [Nsample, [ND, ND]],
+    fit 1D, 2D, 3D, ..., ND multivariate gaussian for each pair of variables.
+    
+    Input: 
+    - ND: Number of dimensions of the data points. 
+    - ND_fit: Only consider variables up to ND_fit (var0, var1, ... varND-1) in making the fits.
+    - NK_list: Number of component gaussians to use for fitting.
+    - Niter: Number of trials for the XD fit.
+    
+    Output:
+    - MODELS: A dictionary that contains all models. Each model is labeled with a tuple of (ordered)
+    variables used. In each model contains a dictionary that contains entries 1, ..., NK. One level below
+    area means, covars, and amps.
+    """
+    # List of all models, labeled by a list of variables to be used.
+    model_list = None
+    for nd in range(1, ND_fit+1):
+        if model_list is None:
+            model_list =  gen_comb(ND, nd)
+        else:
+            model_list += gen_comb(ND, nd)
+    # Turn model labels from lists into tuples to use them as keys.
+    model_list = [tuple(e) for e in model_list]
+    
+    # Create an empty dictionary to save all the models
+    MODELS = {}
+    
+    # Fit each model and save the result
+    for m in model_list:
+        print "Model: ", m # Indicate which model is being trained
+        MODELS[m] = {} # Add an empty dictionary
+        
+        # Dimension of the model
+        Ndim = len(m)
+        
+        # Selecting subset of data relevant for the model being trained.
+        ydata = []
+        for i in range(Ndim):
+            ydata.append(Ydata[:, m[i]])
+        ydata_T = np.asarray(ydata)
+        ydata = ydata_T.T
+#         print ydata.shape
+        
+        # Constructing sub-convariance matrix
+        ycovar = []
+
+        for cov in Ycovar:
+            ycovar.append(cov[:, m][list(m)])
+        ycovar = np.asarray(ycovar)
+#         print "ycovar", ycovar.shape
+                    
+        for K in NK_list: # Number of component gaussians to be fit
+            lnL_best = -np.inf # Initially lnL is infinitely terrible
+            init_mean = None
+            # Initialization of amps and covariance
+            init_amp = gen_uni_init_amps(K)
+            init_covar = gen_init_covar_from_data(Ndim, ydata_T, K)            
+            for j in range(Niter): # Number of trials
+                print "NK/Trial num: %d, %d" % (K, j)
+                # Initialization of means
+                # Randomly pick K samples from the generated set.                
+                if init_mean is None:
+                    init_mean = gen_init_mean_from_sample(Ndim, ydata, K)
+                    init_mean_tmp = init_mean
+                else:
+                    init_mean_tmp = gen_init_mean_from_sample(Ndim, ydata, K)
+
+#                 For debugging 
+#                 print init_mean.shape
+#                 print init_amp.shape
+#                 print init_covar.shape
+#                 assert False
+
+                fit_mean_tmp, fit_amp_tmp, fit_covar_tmp = np.copy(init_mean_tmp), np.copy(init_amp), np.copy(init_covar)
+                #Set up your arrays: ydata has the data, ycovar the uncertainty covariances
+                #initamp, initmean, and initcovar are initial guesses
+                #get help on their shapes and other options using
+                # ?XD.extreme_deconvolution
+
+                # XD fitting. Minimal regularization for the power law is used here. w=1e-4.
+                lnL = XD.extreme_deconvolution(ydata, ycovar, fit_amp_tmp, fit_mean_tmp, fit_covar_tmp, w=1e-4)
+
+                # Take the best result so far
+                if lnL > lnL_best:
+                    fit_mean, fit_amp, fit_covar = fit_mean_tmp, fit_amp_tmp, fit_covar_tmp
+
+            # Save the dictionary after fitting each model so that 
+            # if the function crashses partial results are still saved.
+            # Format example 
+            MODELS[m][(K)] = {"means": fit_mean, "amps": fit_amp, "covs": fit_covar}
+            np.save("MODELS-"+fname_suffix+".npy", MODELS)
+            print "\n"
+        
+    return MODELS
+
 def apply_mask(table):
     """
     Given a tractor catalog table, apply the standard mask. brick_primary and flux inverse variance. 
