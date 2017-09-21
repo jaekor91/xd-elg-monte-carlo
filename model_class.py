@@ -69,8 +69,8 @@ class parent_model:
     def __init__(self, sub_sample_num):
         # Basic class variables
         self.areas = np.load("spec-area.npy")
-        self.mag_max = 24 # We only model between 24 and 21
-        self.mag_min = 21
+        self.mag_max = 24.25 # We model moderately deeper than 24. But only model down to 21.
+        self.mag_min = 21.5
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
 
@@ -83,41 +83,41 @@ class parent_model:
         self.ipsf = (self.objtype=="PSF")
         self.iext = (~self.ipsf)
 
-        self.var_x = self.gflux
-        self.var_y = self.rflux
-        self.var_z = self.zflux
+        self.var_x = self.rflux
+        self.var_y = self.zflux
+        self.var_z = self.gflux 
 
         # Plot variables
         # var limits
-        self.lim_exp_r = [-.05, 1.05]
+        # self.lim_exp_r = [-.05, 1.05]
         self.lim_redz = [0.5, 1.7]
         self.lim_oii = [0, 50]
-        self.lim_x = [-.25, mag2flux(22)] # g
-        self.lim_y = [-.25, mag2flux(21.5)] # r
-        self.lim_z = [-.25, mag2flux(21.)] # z    
+        self.lim_x = [-.25, mag2flux(self.mag_min-1)] # r
+        self.lim_y = [-.75, mag2flux(self.mag_min-1)] # z
+        self.lim_z = [-.25, mag2flux(self.mag_min)] # g    
 
         # bin widths
-        self.dx = self.dy = (self.lim_x[1]-self.lim_x[0])/50.
-        self.dz = 2*self.dx
-        self.dr = 0.01
+        self.dz = 2.5e-2
+        self.dx = self.dy = self.dz*2        
         self.dred_z = 0.025
         self.doii = 0.5
+        # self.dr = 0.01
 
         # var names
-        self.var_x_name = r"$f_g$"
-        self.var_y_name = r"$f_r$"
-        self.var_z_name = r"$f_z$"
-        self.oii_name =  r"$OII$"
-        self.r_exp_name = r"$r_{exp}$"
+        self.var_x_name = r"$f_r$"
+        self.var_y_name = r"$f_z$"
+        self.var_z_name = r"$f_g$"
         self.red_z_name = r"$\eta$"
+        self.oii_name =  r"$OII$"
+        # self.r_exp_name = r"$r_{exp}$"
 
         # var lines
-        self.var_x_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
-        self.var_y_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
-        self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
-        self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
+        self.var_x_lines = [mag2flux(f) for f in [21, 22, 23, 24, 24.25, 25.]]
+        self.var_y_lines = [mag2flux(f) for f in [21, 22, 23, 24, 24.25, 25.]]
+        self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 24.25, 25.]]
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
         self.oii_lines = [8]
+        # self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
 
         # Trainig idices and area
         self.sub_sample_num = sub_sample_num # Determine which sub sample to use
@@ -223,7 +223,6 @@ class parent_model:
         return train_list[cv], area_list[cv]
 
 
-
     def plot_data(self, model_tag="", cv_tag="", plot_rex=False):
         """
         Use self model/plot variables to plot the data given an external figure ax_list.
@@ -232,13 +231,13 @@ class parent_model:
         If plot_rex=False, then plot all data together. If True, plot according psf and non-psf type.
         """
 
-        print "Corr plot - var_xyz and r_exp - all classes together"
-        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_exp_r]
-        binws = [self.dx, self.dy, self.dz, self.dr]
-        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.r_exp_name]
-        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.exp_r_lines]
+        print "Corr plot - var_xyz - all classes together"
+        lims = [self.lim_x, self.lim_y, self.lim_z]
+        binws = [self.dx, self.dy, self.dz]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines]
         num_cat = 3
-        num_vars = 4        
+        num_vars = 3
 
         if plot_rex:
             for e in [(self.ipsf, "PSF"), (self.iext, "EXT")]:
@@ -249,11 +248,11 @@ class parent_model:
                 for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
                     iplot = np.copy(ibool) & self.iTrain
                     iplot = iplot & iselect
-                    variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
+                    variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot]])
                     weights.append(self.w[iplot]/self.area_train)
 
                 fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-                ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=[2.5, 2.5, 2.5], colors=self.colors, ft_size_legend = 15, lw_dot=2)
+                ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=None, colors=self.colors, ft_size_legend = 15, lw_dot=2)
                 plt.savefig("%s-%s-data-all-%s.png" % (model_tag, cv_tag, tag), dpi=200, bbox_inches="tight")
                 plt.close()           
         else:
@@ -261,22 +260,22 @@ class parent_model:
             weights = []            
             for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
                 iplot = np.copy(ibool) & self.iTrain
-                variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
+                variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot]])
                 weights.append(self.w[iplot]/self.area_train)
             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=[2.5, 2.5, 2.5], colors=self.colors, ft_size_legend = 15, lw_dot=2)
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=None, colors=self.colors, ft_size_legend = 15, lw_dot=2)
             plt.savefig("%s-%s-data-all.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
             plt.close()        
 
 
 
-        print "Corr plot - var_xyz and r_exp - separately"
-        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_exp_r]
-        binws = [self.dx, self.dy, self.dz, self.dr]
-        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.r_exp_name]
-        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.exp_r_lines]
+        print "Corr plot - var_xyz - separately"
+        lims = [self.lim_x, self.lim_y, self.lim_z]
+        binws = [self.dx, self.dy, self.dz]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines]
         num_cat = 1
-        num_vars = 4        
+        num_vars = 3
 
         if plot_rex:
             for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
@@ -289,10 +288,10 @@ class parent_model:
                     fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))                
                     iplot = np.copy(ibool) & self.iTrain
                     iplot = iplot & iselect
-                    variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
+                    variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot]])
                     weights.append(self.w[iplot]/self.area_train)
 
-                    ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
+                    ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
                     plt.savefig("%s-%s-data-%s-%s.png" % (model_tag, cv_tag, self.category[i], tag), dpi=200, bbox_inches="tight")
                     plt.close() 
         else:
@@ -301,23 +300,23 @@ class parent_model:
                 variables = []
                 weights = []                
                 iplot = np.copy(ibool) & self.iTrain
-                variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot]])
+                variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot]])
                 weights.append(self.w[iplot]/self.area_train)
 
                 fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-                ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
+                ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
 
                 plt.savefig("%s-%s-data-%s.png" % (model_tag, cv_tag, self.category[i]), dpi=200, bbox_inches="tight")
                 plt.close()
 
 
-        print "Corr plot - var_xyz, r_exp, red_z, oii - ELG only"
+        print "Corr plot - var_xyz, red_z, oii - ELG only"
         num_cat = 1
-        num_vars = 6
-        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_exp_r, self.lim_redz, self.lim_oii]
-        binws = [self.dx, self.dy, self.dz, self.dr, self.dred_z, self.doii]
-        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.r_exp_name, self.red_z_name, self.oii_name]
-        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.exp_r_lines, self.redz_lines, self.oii_lines]
+        num_vars = 5
+        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_oii, self.lim_redz]
+        binws = [self.dx, self.dy, self.dz, self.doii, self.dred_z]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.oii_name, self.red_z_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.oii_lines, self.redz_lines]
 
         if plot_rex:
             for e in [(self.ipsf, "PSF"), (self.iext, "EXT")]:
@@ -327,11 +326,11 @@ class parent_model:
                 weights = []    
                 iplot = np.copy(self.iELG) & iselect & self.iTrain
                 i = 2 # For category
-                variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot], self.red_z[iplot], self.oii[iplot]]]
+                variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.oii[iplot], self.red_z[iplot]]]
                 weights = [self.w[iplot]/self.area_train]
 
                 fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
-                ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
+                ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
 
                 plt.savefig("%s-%s-data-ELG-%s-redz-oii.png" % (model_tag, cv_tag, tag), dpi=200, bbox_inches="tight")
                 plt.close()            
@@ -339,14 +338,15 @@ class parent_model:
         else:
             iplot = np.copy(self.iELG) & self.iTrain
             i = 2 # For category
-            variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.rex_expr[iplot], self.red_z[iplot], self.oii[iplot]]]
+            variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.oii[iplot], self.red_z[iplot]]]
             weights = [self.w[iplot]/self.area_train]
 
             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
-            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=[2.5], colors=None, ft_size_legend = 15, lw_dot=2)
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
 
             plt.savefig("%s-%s-data-ELG-redz-oii.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
             plt.close()
+
 
 
     def import_data_DEEP2_full(self):
@@ -383,81 +383,85 @@ class parent_model:
 
 class model1(parent_model):
     """
-    parametrization: redz, oii, rex_r, zflux/rflux, rflux/gflux, gflux
+    parametrization: rflux/gflux, zflux/gflux, gflux, oii/gflux, redz
     """
     def __init__(self, sub_sample_num):
         parent_model.__init__(self, sub_sample_num)
 
         # Re-parametrizing variables
-        self.var_x, self.var_y, self.var_z= self.var_reparam(self.gflux, self.rflux, self.zflux) 
+        self.var_y, self.var_x, self.var_z, self.oii = self.var_reparam() 
 
         # Plot variables
         # var limits
-        self.lim_x = [-.1, 5.] # rf/gf
-        self.lim_y = [-.1, 5.] # zf/rf
-        self.lim_z = [0., mag2flux(22.)] # gf
+        self.lim_y = [-.25, 7.5]# rf/gf
+        self.lim_x = [-1, 14.] # zf/gf
+        self.lim_oii =[0, 100] # oii/gflux
+        # self.lim_z = [-.25, mag2flux(self.mag_min)] # gf
 
         # bin widths
-        self.dx = 0.05
-        self.dy = 0.05
-        self.dz = 2.5e-2
+        self.dy = 0.1
+        self.dx = 0.1 # zf/gf
+        self.doii = 1
+        # self.dz # from the parent
 
         # var names
-        self.var_x_name = r"$f_z/f_r$"
         self.var_y_name = r"$f_r/f_g$"
+        self.var_x_name = r"$f_z/f_g$"
         self.var_z_name = r"$f_g$"
-        self.oii_name =  r"$OII$"
-        self.r_exp_name = r"$r_{exp}$"
+        self.oii_name =  r"$OII/f_g$"
         self.red_z_name = r"$\eta$"
+        # self.r_exp_name = r"$r_{exp}$"
 
         # var lines
-        self.var_x_lines = [1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
         self.var_y_lines = [1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
-        self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
-        self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
+        self.var_x_lines = [1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
+        # self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 24.25]]
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
-        self.oii_lines = [8]
+        self.oii_lines = []
+        # self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
 
-    def var_reparam(self, g, r, z):
-        return z/r, r/g, g
+    def var_reparam(self):
+        return self.rflux/self.gflux, self.zflux/self.gflux, self.gflux, self.oii/self.gflux
 
 
 
 class model2(parent_model):
     """
-    parametrization: redz, oii, rex_r, arcsinh zflux/rflux, arcsinh rflux/gflux, gflux
+    parametrization: arcsinh zflux/gflux, arcsinh rflux/gflux, gflux, oii/gflux, redz
     """
     def __init__(self, sub_sample_num):
         parent_model.__init__(self, sub_sample_num)
         # Re-parametrizing variables
-        self.var_x, self.var_y, self.var_z= self.var_reparam(self.gflux, self.rflux, self.zflux) 
+        self.var_y, self.var_x, self.var_z, self.oii = self.var_reparam() 
 
         # Plot variables
         # var limits
-        self.lim_x = [-.1, 2.] # rf/gf
-        self.lim_y = [-.1, 2.] # zf/rf
-        self.lim_z = [0., mag2flux(22.)] # gf
+        self.lim_y = [-.1, 2.2] # rf/gf
+        self.lim_x = [-.75, 4.5] # zf/gf
+        self.lim_oii = [0, 100] # oii/gf
+        # self.lim_z = [-.25, mag2flux(self.mag_min)] # gf
 
         # bin widths
-        self.dx = 0.025
         self.dy = 0.025
-        self.dz = 2.5e-2
+        self.dx = 0.05 
+        self.doii = 1
+        # self.dz = 2.5e-2
 
         # var names
-        self.var_x_name = r"$sinh^{-1} (f_z/f_r)$"  
-        self.var_y_name = r"$sinh^{-1} (f_r/f_g)$"
+        self.var_y_name = r"$sinh^{-1} (f_r/f_g/2)$"  
+        self.var_x_name = r"$sinh^{-1} (f_z/f_g/2)$"
         self.var_z_name = r"$f_g$"
-        self.oii_name =  r"$OII$"
-        self.r_exp_name = r"$r_{exp}$"
+        self.oii_name =  r"$OII/f_g$"
         self.red_z_name = r"$\eta$"
+        # self.r_exp_name = r"$r_{exp}$"
 
         # var lines
-        self.var_x_lines = []# np.asarray([1/2.5**2, 1/2.5, 1., 2.5, 2.5**2])
-        self.var_y_lines = []#[1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
-        self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
-        self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
+        self.var_y_lines = []# np.asarray([1/2.5**2, 1/2.5, 1., 2.5, 2.5**2])
+        self.var_x_lines = []#[1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
-        self.oii_lines = [8]
+        self.oii_lines = []
+        # self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
+        # self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
 
-    def var_reparam(self, g, r, z):
-        return np.arcsinh(z/r/2.), np.arcsinh(r/g/2.), g
+    def var_reparam(self):
+        return np.arcsinh(self.rflux/self.gflux/2.), np.arcsinh(self.zflux/self.gflux/2.), self.gflux, self.oii/self.gflux
