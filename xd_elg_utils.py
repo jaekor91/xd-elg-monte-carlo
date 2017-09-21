@@ -1890,7 +1890,11 @@ def category_vector_generator(z_quality, z_err, oii, oii_err, BRI_cut, cn):
         
     return iELG, iNoZ, iNonELG
 
-def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=None, lines=None, pt_sizes=None, lw=2.5, lw_dot=1, ft_size=30, category_names = None, colors=None, ft_size_legend=15):
+def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=None,\
+                    lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None,\
+                    colors=None, ft_size_legend=15, hist_normed=False,\
+                    plot_MoG1=False, amps1=None, means1=None, covs1=None, ND1=0, color_MoG1="blue",\
+                    plot_MoG2=False, amps2=None, means2=None, covs2=None, ND2=0, color_MoG2="red"):
     """
     Add correlation plots for each variable pair to a given axis list. 
     Also, make marginalized plots in histogram.
@@ -1903,6 +1907,12 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
     var_names: Names of the variables.
     weights: weights to assign when constructing histogram. A list of num_cat vectors. 
     lines: For each variable, draw dotted lines as specified.
+    hist_normed: If True, all histograms are normalized.
+    
+    Plot_MoG:
+    The function can also plot MoG specified by the user. amps, means, and covs are required.
+    ND represents the dimension of the MoG. If ND=3, then model fit is in var1, var2, var3.
+    Arbitrary order is not used by design. The number of components is automatically inferred.
     
     Plot order: 
     - The last row (num_vars-1) is reserved for histogram for variables 1 ... num_vars-1.
@@ -1959,7 +1969,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
         else:
             cname = str(i)
         if pt_sizes is None:
-            pt_size = 3.5
+            pt_size = 5
         else:
             pt_size = pt_sizes[i]
             
@@ -1970,16 +1980,29 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                 if plot_type is not None:
                     if plot_type == "corr":
                         ax_list[i, j].scatter(vars_tmp[var_num1], vars_tmp[var_num2], s=pt_size, c=color, label=cname, edgecolor="none")
+                        if plot_MoG1 and (var_num1<ND1) and (var_num2<ND1):
+                            plot_cov_ellipse(ax_list[i, j], means1, covs1, var_num1, var_num2, MoG_color=color_MoG1)
+                        if plot_MoG2 and (var_num1<ND2) and (var_num2<ND2):
+                            plot_cov_ellipse(ax_list[i, j], means2, covs2, var_num1, var_num2, MoG_color=color_MoG2)
                     elif plot_type == "hist":
                         var_min, var_max = lims[var_num1]
                         bin_width = binws[var_num1]
                         hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
-                        ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname)
+                        ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, normed=hist_normed)
+                        if plot_MoG1 and (var_num1<ND1):
+                            plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, MoG_color=color_MoG1)
+                        if plot_MoG2 and (var_num1<ND2):
+                            plot_1D_gauss(ax_list[i, j], lims[var_num2], amps2, means2, covs2, var_num2, MoG_color=color_MoG2)                        
                     elif plot_type == "v-hist":
                         var_min, var_max = lims[var_num1]
                         bin_width = binws[var_num1]
                         hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
-                        ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal")                        
+                        ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal", normed=hist_normed)  
+                        if plot_MoG1 and (var_num1<ND1):
+                            plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, vertical=False, MoG_color=color_MoG1)
+                        if plot_MoG2 and (var_num1<ND2):
+                            plot_1D_gauss(ax_list[i, j], lims[var_num2], amps2, means2, covs2, var_num2, vertical=False, MoG_color=color_MoG2)                        
+                    
             
      
     # Deocration
@@ -2021,6 +2044,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                 ax_list[i, j].set_ylim(lims[var_num1])                                            
                                 
     return ax_dict
+
 
 def apply_mask(table):
     """
