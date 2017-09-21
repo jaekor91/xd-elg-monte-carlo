@@ -2611,7 +2611,7 @@ def gen_init_mean_from_sample(Ndim, sample, K):
     idxes = np.random.choice(range(sample.shape[0]), K, replace=False)
     init_mean = []
     for idx in idxes:
-        init_mean.append([sample[idx]])
+        init_mean.append(sample[idx])
     return np.asarray(init_mean)
 
 def gen_uni_init_amps(K):
