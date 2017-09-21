@@ -14,8 +14,11 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 # import extreme_deconvolution as XD
 
-import confidence_contours as cc
-from confidence_level_height_estimation import confidence_level_height_estimator, summed_gm, inverse_cdf_gm
+from matplotlib.patches import Ellipse
+
+
+# import confidence_contours as cc
+# from confidence_level_height_estimation import confidence_level_height_estimator, summed_gm, inverse_cdf_gm
 
 # Matplot ticks
 import matplotlib as mpl
@@ -1887,7 +1890,7 @@ def category_vector_generator(z_quality, z_err, oii, oii_err, BRI_cut, cn):
         
     return iELG, iNoZ, iNonELG
 
-def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=None, lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None, colors=None, ft_size_legend=15):
+def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=None, lines=None, pt_sizes=None, lw=2.5, lw_dot=1, ft_size=30, category_names = None, colors=None, ft_size_legend=15):
     """
     Add correlation plots for each variable pair to a given axis list. 
     Also, make marginalized plots in histogram.
@@ -1956,7 +1959,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
         else:
             cname = str(i)
         if pt_sizes is None:
-            pt_size = 5
+            pt_size = 3.5
         else:
             pt_size = pt_sizes[i]
             
@@ -2598,3 +2601,233 @@ def broad_cut(g, r, z):
 
 
 
+
+def gen_init_mean_from_sample(Ndim, sample, K):
+    """
+    Ndim: Dimensionality
+    sample [Nsample, Ndim]: Sample array
+    K: Number of components
+    """
+    idxes = np.random.choice(range(sample.shape[0]), K, replace=False)
+    init_mean = []
+    for idx in idxes:
+        init_mean.append([sample[idx]])
+    return np.asarray(init_mean)
+
+def gen_uni_init_amps(K):
+    """
+    K: Number of components
+    """
+    return np.asarray([1/float(K)]*K)
+
+def gen_diag_init_covar(Ndim, var, K):
+    """
+    Genereate diagonal covariance matrices given var [Ndim]
+    Ndim: Dimensionality
+    K: Number of components
+    """
+    return np.asarray([np.diag(var)]*K)
+    
+def gen_diag_data_covar(Nsample, var):
+    """
+    Generate covar matrix for each of Nsample data points
+    given diagonal variances of Ndim
+    """
+    return np.asarray([np.diag(var)]*Nsample)
+
+
+import numpy as np
+from scipy.stats import norm, chi2
+
+def cov_ellipse(cov, q=None, nsig=None, **kwargs):
+    """
+    Parameters
+    ----------
+    cov : (2, 2) array
+        Covariance matrix.
+    q : float, optional
+        Confidence level, should be in (0, 1)
+    nsig : int, optional
+        Confidence level in unit of standard deviations. 
+        E.g. 1 stands for 68.3% and 2 stands for 95.4%.
+
+    Returns
+    -------
+    width, height, rotation :
+         The lengths of two axises and the rotation angle in degree
+    for the ellipse.
+    """
+
+    if q is not None:
+        q = np.asarray(q)
+    elif nsig is not None:
+        q = 2 * norm.cdf(nsig) - 1
+    else:
+        raise ValueError('One of `q` and `nsig` should be specified.')
+    r2 = chi2.ppf(q, 2)
+
+    val, vec = np.linalg.eigh(cov)
+    width, height = 2 * np.sqrt(val[:, None] * r2)
+    rotation = np.degrees(np.arctan2(*vec[::-1, 0]))
+
+    return width, height, rotation
+
+
+def cartesian(arrays, out=None):
+    """
+    Generate a cartesian product of input arrays.
+
+    Parameters
+    ----------
+    arrays : list of array-like
+        1-D arrays to form the cartesian product of.
+    out : ndarray
+        Array to place the cartesian product in.
+
+    Returns
+    -------
+    out : ndarray
+        2-D array of shape (M, len(arrays)) containing cartesian products
+        formed of input arrays.
+
+    Examples
+    --------
+    >>> cartesian(([1, 2, 3], [4, 5], [6, 7]))
+    array([[1, 4, 6],
+           [1, 4, 7],
+           [1, 5, 6],
+           [1, 5, 7],
+           [2, 4, 6],
+           [2, 4, 7],
+           [2, 5, 6],
+           [2, 5, 7],
+           [3, 4, 6],
+           [3, 4, 7],
+           [3, 5, 6],
+           [3, 5, 7]])
+
+    """
+
+    arrays = [np.asarray(x) for x in arrays]
+    dtype = arrays[0].dtype
+
+    n = np.prod([x.size for x in arrays])
+    if out is None:
+        out = np.zeros([n, len(arrays)], dtype=dtype)
+
+    m = n / arrays[0].size
+    out[:,0] = np.repeat(arrays[0], m)
+    if arrays[1:]:
+        cartesian(arrays[1:], out=out[0:m,1:])
+        for j in xrange(1, arrays[0].size):
+            out[j*m:(j+1)*m,1:] = out[0:m,1:]
+    return out
+
+def gen_comb(ND, N_choose):
+    """
+    ND: Number of variables. 
+    N_choose: Number of variables to choose
+    
+    -----
+    Output: A list of all possible combinations to use without redundant entry.
+    
+    -----
+    Overview:
+    - Start with 0. Next you can choose a number from 1, ..., ND-1. 
+
+    """
+    arrays = [range(ND)] * N_choose
+
+    e_list = []
+    for e in cartesian(arrays):
+        e_list.append(list(np.sort(e)))
+
+    len_orig = len(e_list)
+    new_len = len_orig
+
+    # Eliminate list-level duplicate
+    i=0
+    while i < new_len:
+        e_current = e_list[i]
+
+        # Index of objects to be deleted
+        idx_del_list = []
+
+        for j in range(i+1, new_len):
+            if (e_list[j] == e_current):
+                idx_del_list.append(j)
+        num_del = len(idx_del_list)
+        for j in range(num_del-1, -1, -1):
+            del e_list[idx_del_list[j]]
+
+        # Update the length of e_list
+        new_len -= num_del
+
+        # Update the index 
+        i+=1
+
+    # Eliminate lists with element-level duplicates 
+    i=0
+    while i < new_len:
+        e_current = e_list[i]
+
+        # Index of objects to be deleted
+        idx_del_list = []
+
+        for j in range(i, new_len):
+            if (len(set(e_list[j]))!=N_choose):
+                idx_del_list.append(j)
+        num_del = len(idx_del_list)
+        for j in range(num_del-1, -1, -1):
+            del e_list[idx_del_list[j]]
+
+        # Update the length of e_list
+        new_len -= num_del
+
+        # Update the index 
+        i+=1
+        
+    return e_list
+
+def plot_1D_gauss(ax, xlims, amps, means, covs, var_num, vertical=True, MoG_color="blue"):
+    NK = amps.size
+    xmin, xmax = xlims[0], xlims[1]
+    dx = (xmax-xmin)/1000.
+    xgrid = np.arange(xmin, xmax+dx/2., dx)
+    gauss = None
+    for k in range(NK):
+        if gauss is None:
+            gauss = amps[k] * stats.norm.pdf(xgrid, loc=means[k][var_num], scale=np.sqrt(covs[k][var_num, var_num]))
+            gauss_tmp = gauss
+        else:
+            gauss_tmp = amps[k] * stats.norm.pdf(xgrid, loc=means[k][var_num], scale=np.sqrt(covs[k][var_num, var_num]))
+            gauss += gauss_tmp
+        if vertical:
+            ax.plot(xgrid, gauss_tmp, lw=1, alpha=0.5, c=MoG_color)            
+        else:
+            ax.plot(gauss_tmp, xgrid, lw=1, alpha=0.5, c=MoG_color)            
+    if vertical:
+        ax.plot(xgrid, gauss, lw=2, alpha=1., c=MoG_color)        
+    else:
+        ax.plot(gauss, xgrid, lw=2, alpha=1., c=MoG_color)
+        
+    return
+
+def plot_cov_ellipse(ax, mus, covs, var_num1, var_num2, MoG_color="Blue"):
+    N_ellip = len(mus)
+    for i in range(N_ellip):
+        cov = covs[i]
+        cov = [[cov[var_num1, var_num1], cov[var_num1, var_num2]], [cov[var_num2, var_num1], cov[var_num2, var_num2]]]
+        mu = mus[i]
+        mu = [mu[var_num1], mu[var_num2]]
+        for j in [1, 2]:
+            width, height, theta = cov_ellipse(cov, q=None, nsig=j)
+            e = Ellipse(xy=mu, width=width, height=height, angle=theta, lw=2)
+            ax.add_artist(e)
+            e.set_clip_box(ax.bbox)
+            e.set_alpha(1)
+            e.set_facecolor("none")
+            e.set_edgecolor(MoG_color)
+
+    return
+    
