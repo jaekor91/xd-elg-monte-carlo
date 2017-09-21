@@ -1894,7 +1894,8 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                     lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None,\
                     colors=None, ft_size_legend=15, hist_normed=False,\
                     plot_MoG1=False, amps1=None, means1=None, covs1=None, ND1=0, color_MoG1="blue",\
-                    plot_MoG2=False, amps2=None, means2=None, covs2=None, ND2=0, color_MoG2="red"):
+                    plot_MoG2=False, amps2=None, means2=None, covs2=None, ND2=0, color_MoG2="red",\
+                   plot_MoG_general=False, var_num_tuple=None, amps_general=None, means_general=None, covs_general=None, color_general="red"):
     """
     Add correlation plots for each variable pair to a given axis list. 
     Also, make marginalized plots in histogram.
@@ -1909,10 +1910,14 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
     lines: For each variable, draw dotted lines as specified.
     hist_normed: If True, all histograms are normalized.
     
-    Plot_MoG:
+    Plot_MoG1,2:
     The function can also plot MoG specified by the user. amps, means, and covs are required.
     ND represents the dimension of the MoG. If ND=3, then model fit is in var1, var2, var3.
     Arbitrary order is not used by design. The number of components is automatically inferred.
+    
+    Plot_MoG_general: 
+    Allows the user to input MoG fit in select variables specified by var_num_tuple. For example,
+    var_num_tuple = (0, 1, 4), means a Gaussian mixture was fit in var1, var2, and var5.
     
     Plot order: 
     - The last row (num_vars-1) is reserved for histogram for variables 1 ... num_vars-1.
@@ -1984,6 +1989,8 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                             plot_cov_ellipse(ax_list[i, j], means1, covs1, var_num1, var_num2, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2) and (var_num2<ND2):
                             plot_cov_ellipse(ax_list[i, j], means2, covs2, var_num1, var_num2, MoG_color=color_MoG2)
+                        if plot_MoG_general and (var_num1 in var_num_tuple) and (var_num2 in var_num_tuple):
+                            plot_cov_ellipse(ax_list[i, j], means_general, covs_general, var_num_tuple.index(var_num1), var_num_tuple.index(var_num2), MoG_color=color_general)
                     elif plot_type == "hist":
                         var_min, var_max = lims[var_num1]
                         bin_width = binws[var_num1]
@@ -1992,7 +1999,9 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         if plot_MoG1 and (var_num1<ND1):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2):
-                            plot_1D_gauss(ax_list[i, j], lims[var_num2], amps2, means2, covs2, var_num2, MoG_color=color_MoG2)                        
+                            plot_1D_gauss(ax_list[i, j], lims[var_num1], amps2, means2, covs2, var_num2, MoG_color=color_MoG2)                        
+                        if plot_MoG_general and (var_num1 in var_num_tuple):
+                            plot_1D_gauss(ax_list[i, j], lims[var_num1], amps_general, means_general, covs_general, var_num_tuple.index(var_num1), MoG_color=color_MoG2)                                                    
                     elif plot_type == "v-hist":
                         var_min, var_max = lims[var_num1]
                         bin_width = binws[var_num1]
@@ -2001,7 +2010,9 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         if plot_MoG1 and (var_num1<ND1):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, vertical=False, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2):
-                            plot_1D_gauss(ax_list[i, j], lims[var_num2], amps2, means2, covs2, var_num2, vertical=False, MoG_color=color_MoG2)                        
+                            plot_1D_gauss(ax_list[i, j], lims[var_num1], amps2, means2, covs2, var_num2, vertical=False, MoG_color=color_MoG2)                        
+                        if plot_MoG_general and (var_num1 in var_num_tuple):
+                            plot_1D_gauss(ax_list[i, j], lims[var_num1], amps_general, means_general, covs_general, var_num_tuple.index(var_num1), MoG_color=color_MoG2, vertical=False) 
                     
             
      
@@ -2044,6 +2055,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                 ax_list[i, j].set_ylim(lims[var_num1])                                            
                                 
     return ax_dict
+
 
 
 
