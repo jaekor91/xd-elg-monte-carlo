@@ -12,13 +12,6 @@ from model_class import *
 
 
 print "# ----- Error model functions ----- # "
-def gen_flux_noise(Nsample, flim, sn=5):
-    """
-    Given the limiting flux and signal to noise, generate Nsample noise sample.
-    """
-    sig = flim/float(sn)
-    return np.random.normal(0, sig, Nsample).T
-
 def MC_flux_oii_error_conv(ArcSinh_zg, ArcSinh_rg, gflux, ArcSinh_oiig, gf_lim=mag2flux(24.7), rf_lim=mag2flux(24.3), zf_lim=mag2flux(23.5)):
     """
     Given the sample from the intrinsic distribution, compute grz-flux and add
