@@ -2111,6 +2111,14 @@ def gen_init_covar_from_data(Ndim, ydata, K):
     """
     return np.asarray([np.cov(ydata).reshape((Ndim, Ndim))] * K)
 
+def gen_flux_noise(Nsample, flim, sn=5):
+    """
+    Given the limiting flux and signal to noise, generate Nsample noise sample.
+    """
+    sig = flim/float(sn)
+    return np.random.normal(0, sig, Nsample).T
+    
+
 
 def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test", MaxDIM=False, weight=None):
     """
