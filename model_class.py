@@ -83,8 +83,8 @@ class parent_model:
         self.ipsf = (self.objtype=="PSF")
         self.iext = (~self.ipsf)
 
-        self.var_x = self.rflux
-        self.var_y = self.zflux
+        self.var_x = self.zflux
+        self.var_y = self.rflux
         self.var_z = self.gflux 
 
         # Plot variables
@@ -92,20 +92,20 @@ class parent_model:
         # self.lim_exp_r = [-.05, 1.05]
         self.lim_redz = [0.5, 1.7]
         self.lim_oii = [0, 50]
-        self.lim_x = [-.25, mag2flux(self.mag_min-1)] # r
-        self.lim_y = [-.75, mag2flux(self.mag_min-1)] # z
+        self.lim_x = [-.75, mag2flux(self.mag_min-1)] # z
+        self.lim_y = [-.25, mag2flux(self.mag_min-1)] # r
         self.lim_z = [-.25, mag2flux(self.mag_min)] # g    
 
         # bin widths
-        self.dz = 2.5e-2
-        self.dx = self.dy = self.dz*2        
+        self.dz = 2.5e-2 # g
+        self.dx = self.dy = self.dz*2 # z, r 
         self.dred_z = 0.025
         self.doii = 0.5
         # self.dr = 0.01
 
         # var names
-        self.var_x_name = r"$f_r$"
-        self.var_y_name = r"$f_z$"
+        self.var_x_name = r"$f_z$"
+        self.var_y_name = r"$f_r$"
         self.var_z_name = r"$f_g$"
         self.red_z_name = r"$\eta$"
         self.oii_name =  r"$OII$"
@@ -122,6 +122,9 @@ class parent_model:
         # Trainig idices and area
         self.sub_sample_num = sub_sample_num # Determine which sub sample to use
         self.iTrain, self.area_train = self.gen_train_set_idx()
+
+        # MODELS: GMM fit to the data
+        self.MODELS = None
 
 
     def gen_train_set_idx(self):
@@ -159,6 +162,56 @@ class parent_model:
             area_train = area_F34                        
 
         return iTrain, area_train
+
+
+
+    def fit_MoG(self, NK_list, model_tag="", cv_tag=""):
+        """
+        Fit MoGs to data. Note that here we only consider fitting to 3 or 5 dimensions.
+        """
+        # Dimension of model
+        ND = 3
+        # Number of variables up to which MoG is being proposed
+        ND_fit = 3
+        for i, ibool in enumerate([self.iNonELG, self.iNoZ]):
+            print "Fitting MoGs to %s" % self.category[i]
+            ifit = ibool & self.iTrain
+            Ydata = [self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]
+            Ycovar = gen_covar(self, [self.zf_err, self.rf_err, self.gf_err], ND=3)
+            weight = self.w[ifit]
+            self.MODELS = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+
+        i = 2
+        # Dimension of model
+        ND = 5
+        # Number of variables up to which MoG is being proposed
+        ND_fit = 5
+        print "Fitting MoGs to %s" % self.category[i]        
+        ifit = self.iELG & self.iTrain
+        Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.oii[ifit], self.red_z[ifit]]).T
+        Ycovar = gen_covar(self, [self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))], ND=3)
+        weight = self.w[ifit]
+        self.MODELS = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+
+        return
+
+
+
+    def gen_covar(self, var_list, ND=5):
+        """
+        Covariance matrix in the original grz-oii-redz space is diagonal.
+        """
+        Nsample = var_list[0].size
+        Covar = np.zeros((Nsample, ND, ND))
+
+        for i in range(Nsample):
+            tmp = []
+            for j in range(ND):
+                tmp.append(var_list[j][i]**2) # var = err^2
+            Covar[i] = np.diag(tmp)
+        
+        return Covar
+
 
 
 
