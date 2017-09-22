@@ -1521,13 +1521,13 @@ def plot_2D_contour_GMM(ax, Xrange, Yrange, dX, dY, amps, means, covs, var_num1,
     # Plot isocontours
     xmin, xmax = Xrange
     ymin, ymax = Yrange
-    Xvec = np.linspace(xmin, xmax, num=1e3, endpoint=True)
-    Yvec = np.linspace(ymin, ymax, num=1e3, endpoint=True)
+    Xvec = np.arange(xmin, xmax, dX)
+    Yvec = np.arange(ymin, ymax, dY)
     X,Y = np.meshgrid(Xvec, Yvec) # grid of point
-    Z = summed_gm(np.transpose(np.array([Y,X])), means, covs, amps) # evaluation of the function on the grid
+    PDF = summed_gm(np.transpose(np.array([Y,X])), means, covs, amps) # * dX * dY # evaluation of the function on the grid
     cvs = levels # contour levels
-    cvsP = inverse_cdf_gm(cvs, Xrange, Yrange, amps, covs, means, xspacing=dX, yspacing=dY, gridnumber = 1e3)
-    ax.contour(X, Y, Z, cvsP, linewidths=1.5, colors=colors)
+    cvsP = inverse_cdf_2D(cvs, X, Y, PDF)
+    ax.contour(X, Y, PDF, cvsP, linewidths=1.5, colors=colors)
 
     return
 
