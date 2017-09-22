@@ -176,7 +176,7 @@ class parent_model:
         for i, ibool in enumerate([self.iNonELG, self.iNoZ]):
             print "Fitting MoGs to %s" % self.category[i]
             ifit = ibool & self.iTrain
-            Ydata = [self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]
+            Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]).T
             Ycovar = self.gen_covar([self.zf_err, self.rf_err, self.gf_err], ND=3)
             weight = self.w[ifit]
             self.MODELS = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
