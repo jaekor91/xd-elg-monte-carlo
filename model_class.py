@@ -238,7 +238,8 @@ class parent_model:
                 else:
                     # Models corresponding to the tuples
                     ms = MODELS[var_num_tuple]
-                    for K in ms.keys(): # For each component number tried                        
+                    for K in ms.keys(): # For each component number tried
+                        print "K: %d" % K
                         # Fits
                         m = ms[K]
                         amps_fit  = m["amps"]
