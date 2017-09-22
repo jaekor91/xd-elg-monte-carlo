@@ -438,20 +438,20 @@ class model2(parent_model):
         # var limits
         self.lim_y = [-.1, 2.2] # rf/gf
         self.lim_x = [-.75, 4.5] # zf/gf
-        self.lim_oii = [0, 100] # oii/gf
+        self.lim_oii = [0, 5] # oii/gf
         # self.lim_z = [-.25, mag2flux(self.mag_min)] # gf
 
         # bin widths
         self.dy = 0.025
         self.dx = 0.05 
-        self.doii = 1
+        self.doii = 0.05
         # self.dz = 2.5e-2
 
         # var names
         self.var_y_name = r"$sinh^{-1} (f_r/f_g/2)$"  
         self.var_x_name = r"$sinh^{-1} (f_z/f_g/2)$"
         self.var_z_name = r"$f_g$"
-        self.oii_name =  r"$OII/f_g$"
+        self.oii_name =  r"$sinh^{-1} (OII/f_g/2)$"
         self.red_z_name = r"$\eta$"
         # self.r_exp_name = r"$r_{exp}$"
 
@@ -464,4 +464,4 @@ class model2(parent_model):
         # self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
 
     def var_reparam(self):
-        return np.arcsinh(self.rflux/self.gflux/2.), np.arcsinh(self.zflux/self.gflux/2.), self.gflux, self.oii/self.gflux
+        return np.arcsinh(self.rflux/self.gflux/2.), np.arcsinh(self.zflux/self.gflux/2.), self.gflux, np.arcsinh(self.oii/self.gflux/2.)
