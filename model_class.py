@@ -85,13 +85,14 @@ class parent_model:
 
         self.var_x = self.zflux
         self.var_y = self.rflux
-        self.var_z = self.gflux 
+        self.var_z = self.gflux
+        self.var_w = self.oii 
 
         # Plot variables
         # var limits
         # self.lim_exp_r = [-.05, 1.05]
         self.lim_redz = [0.5, 1.7]
-        self.lim_oii = [0, 50]
+        self.lim_w = [0, 50]
         self.lim_x = [-.75, mag2flux(self.mag_min-1)] # z
         self.lim_y = [-.25, mag2flux(self.mag_min-1)] # r
         self.lim_z = [-.25, mag2flux(self.mag_min)] # g    
@@ -100,23 +101,23 @@ class parent_model:
         self.dz = 2.5e-2 # g
         self.dx = self.dy = self.dz*2 # z, r 
         self.dred_z = 0.025
-        self.doii = 0.5
+        self.dw = 0.5
         # self.dr = 0.01
 
         # var names
         self.var_x_name = r"$f_z$"
         self.var_y_name = r"$f_r$"
         self.var_z_name = r"$f_g$"
+        self.var_w_name =  r"$OII$"        
         self.red_z_name = r"$\eta$"
-        self.oii_name =  r"$OII$"
         # self.r_exp_name = r"$r_{exp}$"
 
         # var lines
         self.var_x_lines = [mag2flux(f) for f in [21, 22, 23, 24, 24.25, 25.]]
         self.var_y_lines = [mag2flux(f) for f in [21, 22, 23, 24, 24.25, 25.]]
         self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 24.25, 25.]]
+        self.var_w_lines = [8]        
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
-        self.oii_lines = [8]
         # self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
 
         # Trainig idices and area
@@ -189,7 +190,7 @@ class parent_model:
                 print "Fitting MoGs to %s" % self.category[i]
                 ifit = ibool & self.iTrain
                 Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]).T
-                Ycovar = self.gen_covar([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]], [self.zf_err, self.rf_err, self.gf_err], ND=3)
+                Ycovar = self.gen_covar(ifit, ND=3)
                 weight = self.w[ifit]
                 self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
@@ -200,8 +201,8 @@ class parent_model:
             ND_fit = 5
             print "Fitting MoGs to %s" % self.category[i]        
             ifit = self.iELG & self.iTrain
-            Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.oii[ifit], self.red_z[ifit]]).T
-            Ycovar = self.gen_covar([self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]], [self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))], ND=5)
+            Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.var_w[ifit], self.red_z[ifit]]).T
+            Ycovar = self.gen_covar(ifit, ND=5)
             weight = self.w[ifit]
             self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
@@ -260,17 +261,17 @@ class parent_model:
 
 
 
-        print "Corr plot - var_xyz, red_z, oii - ELG only"
+        print "Corr plot - var_xyz, var_w, red_z - ELG only"
         num_cat = 1
         num_vars = 5
-        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_oii, self.lim_redz]
-        binws = [self.dx, self.dy, self.dz, self.doii, self.dred_z]
-        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.oii_name, self.red_z_name]
-        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.oii_lines, self.redz_lines]
+        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_w, self.lim_redz]
+        binws = [self.dx, self.dy, self.dz, self.dw, self.dred_z]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.var_w_name, self.red_z_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.var_w_lines, self.redz_lines]
 
         iplot = np.copy(self.iELG) & self.iTrain
         i = 2 # For category
-        variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.oii[iplot], self.red_z[iplot]]]
+        variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.var_w[iplot], self.red_z[iplot]]]
         weights = [self.w[iplot]/self.area_train]
 
         MODELS = self.MODELS[i] # Take the model for the category.
@@ -305,12 +306,15 @@ class parent_model:
 
 
 
-    def gen_covar(self, var_list, var_err_list, ND=5):
+    def gen_covar(self, ifit, ND=5):
         """
         Covariance matrix in the original grz-oii-redz space is diagonal.
         """
         Nsample = var_list[0].size
         Covar = np.zeros((Nsample, ND, ND))
+
+        var_list = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
+        var_err_list = self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))
 
         for i in range(Nsample):
             tmp = []
@@ -471,13 +475,13 @@ class parent_model:
                 plt.close()
 
 
-        print "Corr plot - var_xyz, red_z, oii - ELG only"
+        print "Corr plot - var_xyz, var_w, red_z - ELG only"
         num_cat = 1
         num_vars = 5
-        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_oii, self.lim_redz]
-        binws = [self.dx, self.dy, self.dz, self.doii, self.dred_z]
-        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.oii_name, self.red_z_name]
-        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.oii_lines, self.redz_lines]
+        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_w, self.lim_redz]
+        binws = [self.dx, self.dy, self.dz, self.dw, self.dred_z]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.var_w_name, self.red_z_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.var_w_lines, self.redz_lines]
 
         if plot_rex:
             for e in [(self.ipsf, "PSF"), (self.iext, "EXT")]:
@@ -487,7 +491,7 @@ class parent_model:
                 weights = []    
                 iplot = np.copy(self.iELG) & iselect & self.iTrain
                 i = 2 # For category
-                variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.oii[iplot], self.red_z[iplot]]]
+                variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.var_w[iplot], self.red_z[iplot]]]
                 weights = [self.w[iplot]/self.area_train]
 
                 fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
@@ -499,7 +503,7 @@ class parent_model:
         else:
             iplot = np.copy(self.iELG) & self.iTrain
             i = 2 # For category
-            variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.oii[iplot], self.red_z[iplot]]]
+            variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.var_w[iplot], self.red_z[iplot]]]
             weights = [self.w[iplot]/self.area_train]
 
             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
@@ -550,39 +554,97 @@ class model1(parent_model):
         parent_model.__init__(self, sub_sample_num)
 
         # Re-parametrizing variables
-        self.var_y, self.var_x, self.var_z, self.oii = self.var_reparam() 
+        self.var_y, self.var_x, self.var_z, self.var_w = self.var_reparam() 
 
         # Plot variables
         # var limits
-        self.lim_y = [-.25, 7.5]# rf/gf
         self.lim_x = [-1, 14.] # zf/gf
-        self.lim_oii =[0, 100] # oii/gflux
+        self.lim_y = [-.25, 7.5]# rf/gf        
+        self.lim_w =[0, 100] # oii/gflux
         # self.lim_z = [-.25, mag2flux(self.mag_min)] # gf
 
         # bin widths
-        self.dy = 0.1
         self.dx = 0.1 # zf/gf
-        self.doii = 1
+        self.dy = 0.1        
+        self.dw = 1
         # self.dz # from the parent
 
         # var names
         self.var_y_name = r"$f_r/f_g$"
         self.var_x_name = r"$f_z/f_g$"
         self.var_z_name = r"$f_g$"
-        self.oii_name =  r"$OII/f_g$"
+        self.var_w_name =  r"$OII/f_g$"
         self.red_z_name = r"$\eta$"
         # self.r_exp_name = r"$r_{exp}$"
 
         # var lines
         self.var_y_lines = [1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
         self.var_x_lines = [1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
+        self.var_w_lines = []        
         # self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 24.25]]
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
-        self.oii_lines = []
         # self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
 
     def var_reparam(self):
         return self.rflux/self.gflux, self.zflux/self.gflux, self.gflux, self.oii/self.gflux
+
+    def gen_covar(self, ifit, ND=5):
+        """
+        Covariance matrix corresponding to the new parametrization.
+        - var_list: Contains a list of variables in the original space: zf, rf, zf, oii, redz
+        - var_err_list: List of errors of the variables in the other list.
+        """
+        Nsample = var_list[0].size
+        Covar = np.zeros((Nsample, ND, ND))
+
+
+        zflux, rflux, gfluz, oii, red_z = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
+        var_err_list = self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))
+
+
+        if ND == 3:
+            for i in range(Nsample):
+                # Construct the original space covariance matrix in 4 x 4 subspace.
+                tmp = []
+                for j in range(ND):
+                    tmp.append(var_err_list[j][i]**2) # var = err^2
+                Cx = np.diag(tmp)
+
+                g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
+                M00, M01, M02 = 1/g, 0, -z/g**2
+                M10, M11, M12 = 0, 1/g, -r/g**2
+                M20, M21, M22 = 0, 0, 1
+                
+                M = np.array([[M00, M01, M02],
+                            [M10, M11, M12],
+                            [M20, M21, M22]])
+                
+                Covar[i] = np.dot(np.dot(M, Cx), M.T)
+        elif ND == 5:
+            for i in range(Nsample):
+                # Construct the original space covariance matrix in 4 x 4 subspace.
+                tmp = []
+                for j in range(ND):
+                    tmp.append(var_err_list[j][i]**2) # var = err^2
+                Cx = np.diag(tmp)
+
+                g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
+                M00, M01, M02, M03 = 1/g, 0, -z/g**2, 0
+                M10, M11, M12, M13 = 0, 1/g, -r/g**2, 0
+                M20, M21, M22, M23 = 0, 0, 1, 0
+                M30, M31, M32, M33 = 0, 0, -o/g**2, 1/g
+                
+                M = np.array([[M00, M01, M02, M03],
+                                    [M10, M11, M12, M13],
+                                    [M20, M21, M22, M23],
+                                    [M30, M31, M32, M33]])
+                
+                Covar[i][:4,:4] = np.dot(np.dot(M, Cx), M.T)
+        else: 
+            print "The input number of variables need to be either 3 or 5."
+            assert False
+
+        return Covar        
 
 
 
@@ -594,34 +656,34 @@ class model2(parent_model):
     def __init__(self, sub_sample_num):
         parent_model.__init__(self, sub_sample_num)
         # Re-parametrizing variables
-        self.var_y, self.var_x, self.var_z, self.oii = self.var_reparam() 
+        self.var_y, self.var_x, self.var_z, self.var_w = self.var_reparam() 
 
         # Plot variables
         # var limits
-        self.lim_y = [-.1, 2.2] # rf/gf
         self.lim_x = [-.75, 4.5] # zf/gf
-        self.lim_oii = [0, 5] # oii/gf
+        self.lim_y = [-.1, 2.2] # rf/gf        
+        self.lim_w = [0, 5] # oii/gf
         # self.lim_z = [-.25, mag2flux(self.mag_min)] # gf
 
         # bin widths
+        self.dx = 0.05         
         self.dy = 0.025
-        self.dx = 0.05 
-        self.doii = 0.05
+        self.dw = 0.05
         # self.dz = 2.5e-2
 
         # var names
+        self.var_x_name = r"$sinh^{-1} (f_z/f_g/2)$"        
         self.var_y_name = r"$sinh^{-1} (f_r/f_g/2)$"  
-        self.var_x_name = r"$sinh^{-1} (f_z/f_g/2)$"
         self.var_z_name = r"$f_g$"
-        self.oii_name =  r"$sinh^{-1} (OII/f_g/2)$"
+        self.var_w_name =  r"$sinh^{-1} (OII/f_g/2)$"
         self.red_z_name = r"$\eta$"
         # self.r_exp_name = r"$r_{exp}$"
 
         # var lines
+        self.var_x_lines = []#[1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]        
         self.var_y_lines = []# np.asarray([1/2.5**2, 1/2.5, 1., 2.5, 2.5**2])
-        self.var_x_lines = []#[1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
+        self.var_w_lines = []
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
-        self.oii_lines = []
         # self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
         # self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
 
@@ -629,43 +691,62 @@ class model2(parent_model):
         return np.arcsinh(self.rflux/self.gflux/2.), np.arcsinh(self.zflux/self.gflux/2.), self.gflux, np.arcsinh(self.oii/self.gflux/2.)
 
 
-    # def gen_covar(self, var_list, var_err_list, ND=5):
-    #     """
-    #     Covariance matrix corresponding to the new parametrization.
-    #     - var_list: Contains a list of variables in the original space: zf, rf, zf, oii, redz
-    #     - var_err_list: List of errors of the variables in the other list.
-    #     """
-    #     Nsample = var_list[0].size
-    #     Covar = np.zeros((Nsample, ND, ND))
+    def gen_covar(self, ifit, ND=5):
+        """
+        Covariance matrix corresponding to the new parametrization.
+        - var_list: Contains a list of variables in the original space: zf, rf, zf, oii, redz
+        - var_err_list: List of errors of the variables in the other list.
+        """
+        Nsample = var_list[0].size
+        Covar = np.zeros((Nsample, ND, ND))
 
-    #     if ND == 3:
-    #         pass
-    #     elif ND == 5:
-    #         zflux, rflux, zflux, oii, red_z = var_list # Unpack the var_list
-    #         for i in range(Nsample):
-    #             # Construct the original space covariance matrix in 4 x 4 subspace.
-    #             tmp = []
-    #             for j in range(ND):
-    #                 tmp.append(var_err_list[j][i]**2) # var = err^2
-    #             Cx = np.diag(tmp)
 
-    #             g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
-    #             M00, M01, M02, M03 = 1/np.sqrt(g**2+z**2), 0, -z/(g*np.sqrt(g**2+z**2)), 0
-    #             M10, M11, M12, M13 = 0, 1/np.sqrt(g**2+r**2), -r/(g*np.sqrt(g**2+r**2)), 0
-    #             M20, M21, M22, M23 = 0, 0, 1, 0
-    #             M30, M31, M32, M33 = 0, 0, -o/(g*np.sqrt(g**2+o**2)), 1/np.sqrt(g**2+o**2)
+        zflux, rflux, gfluz, oii, red_z = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
+        var_err_list = self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))
+
+
+        if ND == 3:
+            for i in range(Nsample):
+                # Construct the original space covariance matrix in 4 x 4 subspace.
+                tmp = []
+                for j in range(ND):
+                    tmp.append(var_err_list[j][i]**2) # var = err^2
+                Cx = np.diag(tmp)
+
+                g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
+                M00, M01, M02 = 1/np.sqrt(g**2+z**2), 0, -z/(g*np.sqrt(g**2+z**2))
+                M10, M11, M12 = 0, 1/np.sqrt(g**2+r**2), -r/(g*np.sqrt(g**2+r**2))
+                M20, M21, M22 = 0, 0, 1
                 
-    #             M = np.array([[M00, M01, M02, M03],
-    #                                 [M10, M11, M12, M13],
-    #                                 [M20, M21, M22, M23],
-    #                                 [M30, M31, M32, M33]])
+                M = np.array([[M00, M01, M02],
+                            [M10, M11, M12],
+                            [M20, M21, M22]])
                 
-    #             Covar[i][:4,:4] = np.dot(np.dot(M, Cx), M.T)
+                Covar[i] = np.dot(np.dot(M, Cx), M.T)
+        elif ND == 5:
+            for i in range(Nsample):
+                # Construct the original space covariance matrix in 4 x 4 subspace.
+                tmp = []
+                for j in range(ND):
+                    tmp.append(var_err_list[j][i]**2) # var = err^2
+                Cx = np.diag(tmp)
 
-    #     else: 
-    #         print "The input number of variables need to be either 3 or 5."
-    #         assert False
+                g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
+                M00, M01, M02, M03 = 1/np.sqrt(g**2+z**2), 0, -z/(g*np.sqrt(g**2+z**2)), 0
+                M10, M11, M12, M13 = 0, 1/np.sqrt(g**2+r**2), -r/(g*np.sqrt(g**2+r**2)), 0
+                M20, M21, M22, M23 = 0, 0, 1, 0
+                M30, M31, M32, M33 = 0, 0, -o/(g*np.sqrt(g**2+o**2)), 1/np.sqrt(g**2+o**2)
+                
+                M = np.array([[M00, M01, M02, M03],
+                                    [M10, M11, M12, M13],
+                                    [M20, M21, M22, M23],
+                                    [M30, M31, M32, M33]])
+                
+                Covar[i][:4,:4] = np.dot(np.dot(M, Cx), M.T)
+        else: 
+            print "The input number of variables need to be either 3 or 5."
+            assert False
 
-    #     return Covar
+        return Covar
 
 
