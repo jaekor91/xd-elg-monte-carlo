@@ -211,7 +211,13 @@ class parent_model:
 
 
 
-    def visualize_fit(self, model_tag="", cv_tag=""):
+    def visualize_fit(self, model_tag="", cv_tag="", cum_contour=False):
+        """
+        Make corr plots of the various classes with fits overlayed.
+        If cum_contour is True, then instead of plotting individual component gaussians,
+        plt the cumulative gaussian fit.
+        """
+
         print "Corr plot - var_xyz - Separately"
         num_cat = 1
         num_vars = 3
@@ -253,7 +259,7 @@ class parent_model:
                                                   var_names, weights, lines=lines, category_names=[self.category[i]],\
                                                   pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
                                                   plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
-                                                  means_general=means_fit, covs_general=covs_fit, color_general="red")
+                                                  means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour)
                         plt.tight_layout()
                         plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
                         # plt.show()
@@ -296,7 +302,7 @@ class parent_model:
                                               var_names, weights, lines=lines, category_names=[self.category[i]],\
                                               pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
                                               plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
-                                              means_general=means_fit, covs_general=covs_fit, color_general="red")
+                                              means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour)
                     plt.tight_layout()
                     plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
                     # plt.show()
