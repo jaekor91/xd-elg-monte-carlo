@@ -3,7 +3,7 @@ from astropy.io import ascii, fits
 from astropy.wcs import WCS
 from xd_elg_utils import *
 import sys
-import corner 
+import os.path
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -124,7 +124,7 @@ class parent_model:
         self.iTrain, self.area_train = self.gen_train_set_idx()
 
         # MODELS: GMM fit to the data
-        self.MODELS = None
+        self.MODELS = [None, None, None]
 
 
     def gen_train_set_idx(self):
@@ -165,33 +165,139 @@ class parent_model:
 
 
 
-    def fit_MoG(self, NK_list, model_tag="", cv_tag=""):
+    def fit_MoG(self, NK_list, model_tag="", cv_tag="", cache=False):
         """
         Fit MoGs to data. Note that here we only consider fitting to 3 or 5 dimensions.
-        """
-        # Dimension of model
-        ND = 3
-        # Number of variables up to which MoG is being proposed
-        ND_fit = 3
-        for i, ibool in enumerate([self.iNonELG, self.iNoZ]):
-            print "Fitting MoGs to %s" % self.category[i]
-            ifit = ibool & self.iTrain
-            Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]).T
-            Ycovar = self.gen_covar([self.zf_err, self.rf_err, self.gf_err], ND=3)
-            weight = self.w[ifit]
-            self.MODELS = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
-        i = 2
-        # Dimension of model
-        ND = 5
-        # Number of variables up to which MoG is being proposed
-        ND_fit = 5
-        print "Fitting MoGs to %s" % self.category[i]        
-        ifit = self.iELG & self.iTrain
-        Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.oii[ifit], self.red_z[ifit]]).T
-        Ycovar = self.gen_covar([self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))], ND=3)
-        weight = self.w[ifit]
-        self.MODELS = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+        If cache = True, then search to see if there are models already fit and if available use them.
+        """
+        cache_success = False
+        if cache:
+            for i in range(3):
+                model_fname = "./MODELS-%s-%s-%s.npy" % (self.category[i], model_tag, cv_tag)
+                if os.path.isfile(model_fname):
+                    self.MODELS[i] = np.load(model_fname).item()
+                    cache_success = True
+                    print "Cached result will be used."
+
+        if not cache_success: # If cached result was not requested or was searched for but not found.
+            # Dimension of model
+            ND = 3
+            # Number of variables up to which MoG is being proposed
+            ND_fit = 3
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ]):
+                print "Fitting MoGs to %s" % self.category[i]
+                ifit = ibool & self.iTrain
+                Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]).T
+                Ycovar = self.gen_covar([self.zf_err, self.rf_err, self.gf_err], ND=3)
+                weight = self.w[ifit]
+                self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+
+            i = 2
+            # Dimension of model
+            ND = 5
+            # Number of variables up to which MoG is being proposed
+            ND_fit = 5
+            print "Fitting MoGs to %s" % self.category[i]        
+            ifit = self.iELG & self.iTrain
+            Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.oii[ifit], self.red_z[ifit]]).T
+            Ycovar = self.gen_covar([self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))], ND=5)
+            weight = self.w[ifit]
+            self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+
+        return
+
+
+
+
+    def visualize_fit(self, model_tag="", cv_tag=""):
+        print "Corr plot - var_xyz - Separately"
+        num_cat = 1
+        num_vars = 3
+
+        lims = [self.lim_x, self.lim_y, self.lim_z]
+        binws = [self.dx, self.dy, self.dz]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines]
+
+        for i, ibool in enumerate([self.iNonELG, self.iNoZ]):
+            print "Plotting %s" % self.category[i]
+
+            # Take the real data points.
+            variables = []
+            weights = []                
+            iplot = np.copy(ibool) & self.iTrain
+            variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot]])
+            weights.append(self.w[iplot]/self.area_train)
+
+            MODELS = self.MODELS[i] # Take the model for the category.
+            # Plotting the fits
+            for j, var_num_tuple in enumerate(MODELS.keys()): # For each selection of variables
+                if len(var_num_tuple) < 3: # Only plot the last models.
+                    pass
+                else:
+                    # Models corresponding to the tuples
+                    ms = MODELS[var_num_tuple]
+                    for K in ms.keys(): # For each component number tried                        
+                        # Fits
+                        m = ms[K]
+                        amps_fit  = m["amps"]
+                        means_fit  = m["means"]
+                        covs_fit = m["covs"]        
+            
+                        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(25, 25))
+                        # Corr plots without annotation
+                        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
+                                                  var_names, weights, lines=lines, category_names=[self.category[i]],\
+                                                  pt_sizes=[3.5], colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
+                                                  plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
+                                                  means_general=means_fit, covs_general=covs_fit, color_general="red")
+                        plt.tight_layout()
+                        plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+                        # plt.show()
+                        plt.close()
+
+
+
+        print "Corr plot - var_xyz, red_z, oii - ELG only"
+        num_cat = 1
+        num_vars = 5
+        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_oii, self.lim_redz]
+        binws = [self.dx, self.dy, self.dz, self.doii, self.dred_z]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.oii_name, self.red_z_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.oii_lines, self.redz_lines]
+
+        iplot = np.copy(self.iELG) & self.iTrain
+        i = 2 # For category
+        variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.oii[iplot], self.red_z[iplot]]]
+        weights = [self.w[iplot]/self.area_train]
+
+        MODELS = self.MODELS[i] # Take the model for the category.
+        # Plotting the fits
+        for j, var_num_tuple in enumerate(MODELS.keys()): # For each selection of variables
+            if len(var_num_tuple) < 5: # Only plot the last models.
+                pass
+            else:
+                # Models corresponding to the tuples
+                ms = MODELS[var_num_tuple]
+                for K in ms.keys(): # For each component number tried                        
+                    # Fits
+                    m = ms[K]
+                    amps_fit  = m["amps"]
+                    means_fit  = m["means"]
+                    covs_fit = m["covs"]        
+        
+                    fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+                    # Corr plots without annotation
+                    ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
+                                              var_names, weights, lines=lines, category_names=[self.category[i]],\
+                                              pt_sizes=[3.5], colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
+                                              plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
+                                              means_general=means_fit, covs_general=covs_fit, color_general="red")
+                    plt.tight_layout()
+                    plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+                    # plt.show()
+                    plt.close()
 
         return
 
