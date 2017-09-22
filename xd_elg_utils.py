@@ -16,9 +16,9 @@ import extreme_deconvolution as XD
 
 from matplotlib.patches import Ellipse
 
-
-# import confidence_contours as cc
-# from confidence_level_height_estimation import confidence_level_height_estimator, summed_gm, inverse_cdf_gm
+# For plotting overall fit
+import confidence_contours as cc
+from confidence_level_height_estimation import summed_gm, inverse_cdf_2D
 
 # Matplot ticks
 import matplotlib as mpl
@@ -677,406 +677,6 @@ def FDR_cut(grz):
     ibool = (r<23.4) & (yrz>.3) & (yrz<1.6) & (xgr < (1.15*yrz)-0.15) & (xgr < (1.6-1.2*yrz))
     return ibool
 
-
-def plot_grz_class(grz, cn, weight, area, mask=None, pick=None,fname=None,pt_size=0.5):
-    """
-    Given [g,r,z] list, cn, weight of objects in a catalog and a particular class number and area, 
-    plot the selected one in its color.
-    
-    fname convention:
-    
-    cc-(grz or grzperp)-(mag)(lim)-(cn)(cname)-(mask1)-(mask2)-...
-    """
-    global colors
-    global cnames
-    bnd_lw =2
-    
-    # Unpack the colors.
-    g,r,z=grz; xrz = (r-z); ygr = (g-r)
-    if mask is not None:
-        xrz = xrz[mask]
-        ygr = ygr[mask]
-        cn = cn[mask]
-        weight = weight[mask]
-    
-    fig = plt.figure(figsize=(5,5))
-
-    if pick is None:
-        plt.scatter(xrz, ygr,c="black",s=pt_size, edgecolors="none")
-    else:
-        plt.scatter(xrz[cn==pick],ygr[cn==pick], c=colors[pick],s=pt_size*6, edgecolors="none", marker="s")
-        raw = np.sum(cn==pick)
-        if pick <6:
-            density = np.sum(weight[cn==pick])/area
-        else:
-            density = np.sum(cn==pick)/area
-        title_str = "%s: Raw=%d, Density=%d" %(cnames[pick],raw, density)
-        plt.title(title_str,fontsize=20)
-
-    # FDR boundary practice:
-    plt.plot( [0.3, 0.30], [-4, 0.195],'k-', lw=bnd_lw, c="blue")
-    plt.plot([0.3, 0.745], [0.195, 0.706], 'k-', lw=bnd_lw, c="blue")
-    plt.plot( [0.745, 1.6], [0.706, -0.32],'k-', lw=bnd_lw, c="blue")
-    plt.plot([1.6, 1.6], [-0.32, -4],'k-', lw=bnd_lw, c="blue")
-    # Broad
-#     plt.plot(xbroad,ybroad, linewidth=bnd_lw, c='blue')
-    # Decoration
-    plt.xlabel("$r-z$",fontsize=20)
-    plt.ylabel("$g-r$",fontsize=20)
-    plt.axis("equal")
-    plt.axis([-.5, 2.0, -.5, 2.0])
-    if fname is not None:
-#         plt.savefig(fname+".pdf", bbox_inches="tight",dpi=200)
-        plt.savefig(fname+".png", bbox_inches="tight",dpi=200)    
-    # plt.show()
-    plt.close()
-
-def plot_grzflux_class(grzflux, cn, weight, area, mask=None, pick=None,fname=None,pt_size=0.5, show_plot=False, \
-    xmin=0, xmax=100, ymin=0, ymax=100):
-    """
-    Given [gflux, rflux, zflux] list, cn, weight of objects in a catalog and a particular class number and area, 
-    plot the selected one in its color.
-    
-    fname convention:
-    
-    cc-(grz or grzperp)-(mag)(lim)-(cn)(cname)-(mask1)-(mask2)-...
-    """
-    global colors
-    global cnames
-    bnd_lw =2
-    
-    # Unpack the colors.
-    gflux,rflux,zflux=grzflux; xrz = zflux/rflux; ygr = rflux/gflux
-    if mask is not None:
-        xrz = xrz[mask]
-        ygr = ygr[mask]
-        cn = cn[mask]
-        weight = weight[mask]
-    
-    fig = plt.figure(figsize=(5,5))
-
-    if pick is None:
-        plt.scatter(xrz, ygr,c="black",s=pt_size, edgecolors="none")
-    else:
-        plt.scatter(xrz[cn==pick],ygr[cn==pick], c=colors[pick],s=pt_size*6, edgecolors="none", marker="s")
-        raw = np.sum(cn==pick)
-        if pick <6:
-            density = np.sum(weight[cn==pick])/area
-        else:
-            density = np.sum(cn==pick)/area
-        title_str = "%s: Raw=%d, Density=%d" %(cnames[pick],raw, density)
-        plt.title(title_str,fontsize=20)
-
-    # # FDR boundary practice:
-    # plt.plot( [0.3, 0.30], [-4, 0.195],'k-', lw=bnd_lw, c="blue")
-    # plt.plot([0.3, 0.745], [0.195, 0.706], 'k-', lw=bnd_lw, c="blue")
-    # plt.plot( [0.745, 1.6], [0.706, -0.32],'k-', lw=bnd_lw, c="blue")
-    # plt.plot([1.6, 1.6], [-0.32, -4],'k-', lw=bnd_lw, c="blue")
-    # Broad
-#     plt.plot(xbroad,ybroad, linewidth=bnd_lw, c='blue')
-    # Decoration
-    plt.xlabel("$r-z$ flux ratio",fontsize=20)
-    plt.ylabel("$g-r$ flux ratio",fontsize=20)
-    plt.axis("equal")
-    plt.axis([xmin, xmax, ymin, ymax])
-    if fname is not None:
-#         plt.savefig(fname+".pdf", bbox_inches="tight",dpi=200)
-        plt.savefig(fname+".png", bbox_inches="tight",dpi=200)
-    if show_plot:
-        plt.show()
-    plt.close()
-
-
-def plot_fluxratio_class(ratio1, ratio2, cn, weight, area, mask=None, pick=None,fname=None,pt_size=0.5, show_plot=False, \
-    xmin=0, xmax=100, ymin=0, ymax=100, xlabel="z-w1 flux", ylabel="g-r flux"):
-    """
-    Given [gflux, rflux, zflux] list, cn, weight of objects in a catalog and a particular class number and area, 
-    plot the selected one in its color.
-    
-    fname convention:
-    
-    cc-(grz or grzperp)-(mag)(lim)-(cn)(cname)-(mask1)-(mask2)-...
-    """
-    global colors
-    global cnames
-    bnd_lw =2
-    
-    # Unpack the colors.
-    if mask is not None:
-        ratio1 = ratio1[mask]
-        ratio2 = ratio2[mask]
-        cn = cn[mask]
-        weight = weight[mask]
-    
-    fig = plt.figure(figsize=(5,5))
-
-    if pick is None:
-        plt.scatter(ratio1, ratio2,c="black",s=pt_size, edgecolors="none")
-    else:
-        plt.scatter(ratio1[cn==pick],ratio2[cn==pick], c=colors[pick],s=pt_size*6, edgecolors="none", marker="s")
-        raw = np.sum(cn==pick)
-        if pick <6:
-            density = np.sum(weight[cn==pick])/area
-        else:
-            density = np.sum(cn==pick)/area
-        title_str = "%s: Raw=%d, Density=%d" %(cnames[pick],raw, density)
-        plt.title(title_str,fontsize=20)
-
-    # # FDR boundary practice:
-    # plt.plot( [0.3, 0.30], [-4, 0.195],'k-', lw=bnd_lw, c="blue")
-    # plt.plot([0.3, 0.745], [0.195, 0.706], 'k-', lw=bnd_lw, c="blue")
-    # plt.plot( [0.745, 1.6], [0.706, -0.32],'k-', lw=bnd_lw, c="blue")
-    # plt.plot([1.6, 1.6], [-0.32, -4],'k-', lw=bnd_lw, c="blue")
-    # Broad
-#     plt.plot(xbroad,ybroad, linewidth=bnd_lw, c='blue')
-    # Decoration
-    plt.xlabel(xlabel,fontsize=20)
-    plt.ylabel(ylabel,fontsize=20)
-    plt.axis("equal")
-    plt.axis([xmin, xmax, ymin, ymax])
-    if fname is not None:
-#         plt.savefig(fname+".pdf", bbox_inches="tight",dpi=200)
-        plt.savefig(fname+".png", bbox_inches="tight",dpi=200)
-    if show_plot:
-        plt.show()
-    plt.close()
-
-
-def plot_grz_class_all(grz, cn, weight, area, mask=None, fname=None, pt_size1=0.5, pt_size2=0.3):
-    """
-    Given [g,r,z] list, cn, weight of objects in a catalog and a particular class number and area, 
-    plot all the objects in their respective colors. 
-    
-    fname convention:
-    
-    cc-(grz or grzperp)-(mag)(lim)-cnAll-(mask1)-(mask2)-...
-    """
-    global colors
-    global cnames
-    bnd_lw =2
-    
-    # Unpack the colors.
-    g,r,z=grz; xrz = (r-z); ygr = (g-r)
-    if mask is not None:
-        xrz = xrz[mask]
-        ygr = ygr[mask]
-        cn = cn[mask]
-        weight = weight[mask]
-    
-    fig = plt.figure(figsize=(5,5))
-
-    for i,e in enumerate(cnames):
-        if i < 6:
-            plt.scatter(xrz[cn==i], ygr[cn==i], c=colors[i],s=pt_size1, edgecolors="none", marker="s")
-        elif i ==6:
-            plt.scatter(xrz[cn==i], ygr[cn==i], c=colors[i],s=pt_size2, edgecolors="none", marker="s")
-            
-
-    # FDR boundary practice:
-    plt.plot( [0.3, 0.30], [-4, 0.195],'k-', lw=bnd_lw, c="blue")
-    plt.plot([0.3, 0.745], [0.195, 0.706], 'k-', lw=bnd_lw, c="blue")
-    plt.plot( [0.745, 1.6], [0.706, -0.32],'k-', lw=bnd_lw, c="blue")
-    plt.plot([1.6, 1.6], [-0.32, -4],'k-', lw=bnd_lw, c="blue")
-    # Broad
-#     plt.plot(xbroad,ybroad, linewidth=bnd_lw, c='blue')
-    # Decoration
-    plt.xlabel("$r-z$",fontsize=20)
-    plt.ylabel("$g-r$",fontsize=20)
-    plt.axis("equal")
-    plt.axis([-.5, 2.0, -.5, 2.0])
-    if fname is not None:
-#         plt.savefig(fname+".pdf", bbox_inches="tight",dpi=200)
-        plt.savefig(fname+".png", bbox_inches="tight",dpi=200)    
-    # plt.show()
-    plt.close()
-
-
-
-def load_params_XD_fit(i,K,tag=""):
-    fname = ("%d-params-fit-amps-glim24-K%d"+tag+".npy") %(i, K)
-    amp = np.load(fname)
-    fname = ("%d-params-fit-means-glim24-K%d"+tag+".npy") %(i, K)
-    mean= np.load(fname)
-    fname = ("%d-params-fit-covars-glim24-K%d"+tag+".npy") %(i, K)
-    covar  = np.load(fname)
-    return amp, mean, covar
-
-def load_params_XD_init(i,K,tag=""):
-    fname = ("%d-params-init-amps-glim24-K%d"+tag+".npy") %(i, K)
-    amp = np.load(fname)
-    fname = ("%d-params-init-means-glim24-K%d"+tag+".npy") %(i, K)
-    mean= np.load(fname)
-    fname = ("%d-params-init-covars-glim24-K%d"+tag+".npy") %(i, K)
-    covar  = np.load(fname)
-    return amp, mean, covar
-
-def plot_XD_fit(ydata, weight, Sxamp_init, Sxmean_init, Sxcovar_init, Sxamp, Sxmean, Sxcovar, mask=None, fname=None, pt_size=5, show=False):
-    """
-    See the output.
-    """
-    bnd_lw =1.5
-    
-    # Unpack the colors.
-    xrz = ydata[:,0]; ygr = ydata[:,1]
-    if mask is not None:
-        ygr = ygr[mask]
-        xrz = xrz[mask]
-    
-    # Broad boundary
-    # xbroad, ybroad = generate_broad()
-    
-    # Figure ranges
-    grmin = -.5
-    rzmin = -.5
-    grmax = 2.5
-    rzmax = 2.5
-    # histogram binwidth
-    bw = 0.05
-    # Number of components/linewidth
-    K = Sxamp_init.size
-    elw = 1.5 # ellipse linewidth
-    ea = 0.75 # ellipse transparency
-    
-    
-    # Create figure 
-    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(14,14))
-
-    # 1: Plot the dots and the initial and final component gaussians.
-    ax1.scatter(xrz,ygr, c="black",s=pt_size, edgecolors="none")
-    # Initial
-    for i in range(K):
-        cc.plot_cov_ellipse(Sxcovar_init[i], Sxmean_init[i], volume=.6827, ax=ax1, ec="red", a=ea, lw=elw/2.) #1-sig 
-        cc.plot_cov_ellipse(Sxcovar_init[i], Sxmean_init[i], volume=.9545, ax=ax1, ec="red", a=ea, lw=elw/2.) #2-sig
-        cc.plot_cov_ellipse(Sxcovar[i], Sxmean[i], volume=.6827, ax=ax1, ec="blue", a=ea, lw=elw)#1-sig 
-        cc.plot_cov_ellipse(Sxcovar[i], Sxmean[i], volume=.9545, ax=ax1, ec="blue", a=ea, lw=elw)#2-sig
-    
-    # FDR boundary:
-    ax1.plot( [0.3, 0.30], [-4, 0.195],'k-', lw=bnd_lw, c="red")
-    ax1.plot([0.3, 0.745], [0.195, 0.706], 'k-', lw=bnd_lw, c="red")
-    ax1.plot( [0.745, 1.6], [0.706, -0.32],'k-', lw=bnd_lw, c="red")
-    ax1.plot([1.6, 1.6], [-0.32, -4],'k-', lw=bnd_lw, c="red")    
-    # Decoration
-    ax1.set_xlabel("$r-z$",fontsize=18)
-    ax1.set_ylabel("$g-r$",fontsize=18)
-    ax1.axis("equal")
-    ax1.axis([rzmin, rzmax, grmin, grmax])
-
-    # 2: Histogram in r-z
-    ax2.hist(ygr, bins = np.arange(grmin, grmax+0.9*bw, bw), weights=weight, normed=True, color="black", histtype="step", orientation="horizontal")
-    # Gaussian components
-    xvec = np.arange(-3,3,0.01) # vector range
-    sum_init = np.zeros_like(xvec) # place holder for gaussians.
-    sum_fit = np.zeros_like(xvec)
-    for i in range(K):
-        yvec = Sxamp_init[i]*stats.multivariate_normal.pdf(xvec, mean=Sxmean_init[i][1], cov=Sxcovar_init[i][1,1])        
-        sum_init += yvec
-        ax2.plot(yvec, xvec,lw=elw, color ="red", alpha=0.5)
-        yvec = Sxamp[i]*stats.multivariate_normal.pdf(xvec, mean=Sxmean[i][1], cov=Sxcovar[i][1,1])        
-        sum_fit += yvec
-        ax2.plot(yvec, xvec,lw=elw, color ="blue", alpha=0.5)
-    ax2.plot(sum_init, xvec,lw=elw*1.5, color ="red", alpha=1.)
-    ax2.plot(sum_fit, xvec,lw=elw*1.5, color ="blue", alpha=1.)
-    # Deocration     
-    ax2.set_ylabel("$g-r$",fontsize=18)
-    ax2.set_xlabel("Normalized density", fontsize=20)
-    ax2.set_ylim([grmin, grmax])
-    
-    
-    # 3: Histogram in g-r
-    ax3.hist(xrz, bins = np.arange(grmin, grmax+0.9*bw, bw), weights=weight, normed=True, color="black", histtype="step")
-    # Gaussian components
-    xvec = np.arange(-3,3,0.01) # vector range
-    sum_init = np.zeros_like(xvec) # place holder for gaussians.
-    sum_fit = np.zeros_like(xvec)
-    for i in range(K):
-        yvec = Sxamp_init[i]*stats.multivariate_normal.pdf(xvec, mean=Sxmean_init[i][0], cov=Sxcovar_init[i][0,0])        
-        sum_init += yvec
-        ax3.plot(xvec,yvec,lw=elw, color ="red", alpha=0.5)
-        yvec = Sxamp[i]*stats.multivariate_normal.pdf(xvec, mean=Sxmean[i][0], cov=Sxcovar[i][0,0])        
-        sum_fit += yvec
-        ax3.plot(xvec, yvec,lw=elw, color ="blue", alpha=0.5)
-    ax3.plot(xvec,sum_init, lw=elw*1.5, color ="red", alpha=1.)
-    ax3.plot(xvec,sum_fit,lw=elw*1.5, color ="blue", alpha=1.)    
-    # Decoration
-    ax3.set_xlabel("$r-z$",fontsize=18)
-    ax3.set_ylabel("Normalized density", fontsize=20)
-    ax3.set_xlim([rzmin, rzmax])
-    
-    
-    # 4: Plot the dots and the isocontours of GMM at 2, 10, 50, 90, 98
-    ax4.scatter(xrz,ygr, c="black",s=pt_size, edgecolors="none")
-    # Plot isocontours
-    magmin = min(grmin, rzmin)
-    magmax = max(grmax, rzmax)
-    vec = np.linspace(magmin,magmax, num=1e3,endpoint=True)
-    X,Y = np.meshgrid(vec, vec) # grid of point
-    Z = summed_gm(np.transpose(np.array([Y,X])), Sxmean, Sxcovar, Sxamp) # evaluation of the function on the grid
-    Xrange = Yrange = [magmin,magmax]; # Estimating density levels.
-    cvs = [0.98, 0.90, 0.50, 0.10, 0.02] # contour levels
-    cvsP =inverse_cdf_gm(cvs,Xrange, Yrange, Sxamp, Sxcovar,  Sxmean, gridspacing=0.5e-2,gridnumber = 1e3)
-    ax4.contour(X,Y,Z,cvsP,linewidths=1.5, colors=["black", "blue", "red", "orange", "yellow"])     
-    # FDR boundary:
-    ax4.plot( [0.3, 0.30], [-4, 0.195],'k-', lw=bnd_lw, c="red")
-    ax4.plot([0.3, 0.745], [0.195, 0.706], 'k-', lw=bnd_lw, c="red")
-    ax4.plot( [0.745, 1.6], [0.706, -0.32],'k-', lw=bnd_lw, c="red")
-    ax4.plot([1.6, 1.6], [-0.32, -4],'k-', lw=bnd_lw, c="red")    
-    # Decoration
-    ax4.set_xlabel("$r-z$",fontsize=18)
-    ax4.set_ylabel("$g-r$",fontsize=18)
-    ax4.axis("equal")
-    ax4.axis([rzmin, rzmax, grmin, grmax])
-    
-    
-    if fname is not None:
-#         plt.savefig(fname+".pdf", bbox_inches="tight",dpi=200)
-        plt.savefig(fname+".png", bbox_inches="tight",dpi=200)    
-    if show:
-        plt.show()
-    plt.close()
-    
-def XD_gr_rz_fit(ydata, ycovar, weight, niter, K, maxsnm=True, subsample = False, fixamp = None, snm=0, init_var=0.5**2, w_reg = 0.05**2):
-    """
-    Given the appropriately formmated data, make fits and return the best
-    fit parameters (and the corresponding initial values).
-    
-    K: Number of components
-    """
-    # If subsmaple is true and the number of data points is greater than M ~ 2,000 than subsample before proceeding.
-    M = 3000
-    if (ydata.shape[0] > M) & subsample:
-        a = np.arange(0,M,1, dtype=int)
-        ibool = np.random.choice(a, size=M, replace=False, p=None)
-        ydata = ydata[ibool]
-        ycovar = ycovar[ibool]
-        weight = weight[ibool]
-
-    # Place holder for the log-likelihood
-    loglike = large_random_constant
-    best_loglike = large_random_constant
-
-    # Make niter number of fits
-    for i in range(niter):
-        if (i%2==0) & (niter<=25):
-            print(i)
-        if (i%10==0) & (niter>25):
-            print(i)            
-            
-        # Get initial condition
-        xamp_init, xmean_init, xcovar_init = XD_init(K, ydata, init_var)
-
-        # Copy the initial condition.
-        xamp = np.copy(xamp_init); xmean = np.copy(xmean_init); xcovar = np.copy(xcovar_init)
-
-        # XD fit
-        loglike = XD.extreme_deconvolution(ydata, ycovar, xamp, xmean, xcovar, weight=weight, tol=1e-06, w=w_reg, maxsnm=maxsnm, fixamp=fixamp, splitnmerge=snm)
-
-        if loglike > best_loglike:
-            best_loglike = loglike
-            Sxamp_init, Sxmean_init, Sxcovar_init = xamp_init, xmean_init, xcovar_init
-            Sxamp, Sxmean, Sxcovar = xamp, xmean, xcovar
-
-    
-    return Sxamp_init, Sxmean_init, Sxcovar_init, Sxamp, Sxmean, Sxcovar    
 
 
 
@@ -1890,12 +1490,69 @@ def category_vector_generator(z_quality, z_err, oii, oii_err, BRI_cut, cn):
         
     return iELG, iNoZ, iNonELG
 
+
+
+def plot_2D_contour_GMM(ax, Xrange, Yrange, dX, dY, amps, means, covs, var_num1, var_num2, levels=[0.98, 0.9, 0.5, 0.10, 0.02], colors=["black", "blue", "red", "orange", "yellow"]):
+    """
+    Given GMM parameters amps, means, covs of ND, plot on ax the cumulative contou at chosen levels.
+    var_num1, var_num2 represents x and y variables for 2D plotting.
+
+    Levels must be given from high to low. 
+    Wrong: [0.02, 0.10, 0.50, 0.9, 0.98]
+    Correct: [0.98, 0.9, 0.5, 0.10, 0.02]
+    """
+    # If the dimension of MoG is higher than 2,
+    # find the 2D projections. 
+    ND = means.shape[1] 
+    if ND > 2:
+        means_tmp = []
+        covs_tmp = []
+        for i in range(amps.size):
+            # For each gaussian, find 2D projection
+            mu = means[i]
+            cov = covs[i]
+            mu = [mu[var_num1], mu[var_num2]]
+            cov = [[cov[var_num1, var_num1], cov[var_num1, var_num2]], [cov[var_num2, var_num1], cov[var_num2, var_num2]]]
+            means_tmp.append(mu)
+            covs_tmp.append(cov)
+        means = np.asarray(means_tmp)
+        covs = np.asarray(covs_tmp)
+
+    # Plot isocontours
+    xmin, xmax = Xrange
+    ymin, ymax = Yrange
+    Xvec = np.linspace(xmin, xmax, num=1e3, endpoint=True)
+    Yvec = np.linspace(ymin, ymax, num=1e3, endpoint=True)
+    X,Y = np.meshgrid(Xvec, Yvec) # grid of point
+    Z = summed_gm(np.transpose(np.array([Y,X])), means, covs, amps) # evaluation of the function on the grid
+    cvs = levels # contour levels
+    cvsP = inverse_cdf_gm(cvs, Xrange, Yrange, amps, covs, means, xspacing=dX, yspacing=dY, gridnumber = 1e3)
+    ax.contour(X, Y, Z, cvsP, linewidths=1.5, colors=colors)
+
+    return
+
+def contour_plot_range(Xrange):
+    # Unpack variables
+    xmin, xmax = Xrange
+
+    if xmin < 0:
+        xmin *= 2
+    elif (xmin>0) and (xmin<5):
+        xmin *= -1
+    else:
+        xmin = xmin/2
+
+    xmax *=2
+
+    return xmin, xmax
+
 def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=None,\
                     lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None,\
                     colors=None, ft_size_legend=15, hist_normed=False,\
                     plot_MoG1=False, amps1=None, means1=None, covs1=None, ND1=0, color_MoG1="blue",\
                     plot_MoG2=False, amps2=None, means2=None, covs2=None, ND2=0, color_MoG2="red",\
-                   plot_MoG_general=False, var_num_tuple=None, amps_general=None, means_general=None, covs_general=None, color_general="red"):
+                   plot_MoG_general=False, var_num_tuple=None, amps_general=None, means_general=None, covs_general=None, color_general="red",\
+                   cum_contour=False):
     """
     Add correlation plots for each variable pair to a given axis list. 
     Also, make marginalized plots in histogram.
@@ -1909,6 +1566,8 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
     weights: weights to assign when constructing histogram. A list of num_cat vectors. 
     lines: For each variable, draw dotted lines as specified.
     hist_normed: If True, all histograms are normalized.
+    cum_contour: If true AND Plot_MoG_general=True, then 
+        plot the cum_contour of the "general MoG" instead of the individual components.
     
     Plot_MoG1,2:
     The function can also plot MoG specified by the user. amps, means, and covs are required.
@@ -1990,7 +1649,14 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         if plot_MoG2 and (var_num1<ND2) and (var_num2<ND2):
                             plot_cov_ellipse(ax_list[i, j], means2, covs2, var_num1, var_num2, MoG_color=color_MoG2)
                         if plot_MoG_general and (var_num1 in var_num_tuple) and (var_num2 in var_num_tuple):
-                            plot_cov_ellipse(ax_list[i, j], means_general, covs_general, var_num_tuple.index(var_num1), var_num_tuple.index(var_num2), MoG_color=color_general)
+                            if cum_contour:
+                                Xrange = contour_plot_range(lims[var_num1])
+                                Yrange = contour_plot_range(lims[var_num2])
+                                dX = binws[var_num1]/10.
+                                dY = binws[var_num2]/10.
+                                plot_2D_contour_GMM(ax_list[i, j], Xrange, Yrange, dX, dY, amps_general, means_general, covs_general, var_num_tuple.index(var_num1), var_num_tuple.index(var_num2))
+                            else:
+                                plot_cov_ellipse(ax_list[i, j], means_general, covs_general, var_num_tuple.index(var_num1), var_num_tuple.index(var_num2), MoG_color=color_general)
                     elif plot_type == "hist":
                         var_min, var_max = lims[var_num1]
                         bin_width = binws[var_num1]
