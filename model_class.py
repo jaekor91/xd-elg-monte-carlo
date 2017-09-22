@@ -177,7 +177,7 @@ class parent_model:
             print "Fitting MoGs to %s" % self.category[i]
             ifit = ibool & self.iTrain
             Ydata = [self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]
-            Ycovar = gen_covar(self, [self.zf_err, self.rf_err, self.gf_err], ND=3)
+            Ycovar = self.gen_covar([self.zf_err, self.rf_err, self.gf_err], ND=3)
             weight = self.w[ifit]
             self.MODELS = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
@@ -189,7 +189,7 @@ class parent_model:
         print "Fitting MoGs to %s" % self.category[i]        
         ifit = self.iELG & self.iTrain
         Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.oii[ifit], self.red_z[ifit]]).T
-        Ycovar = gen_covar(self, [self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))], ND=3)
+        Ycovar = self.gen_covar([self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))], ND=3)
         weight = self.w[ifit]
         self.MODELS = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
