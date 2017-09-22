@@ -178,7 +178,7 @@ class parent_model:
                 if os.path.isfile(model_fname):
                     self.MODELS[i] = np.load(model_fname).item()
                     cache_success = True
-                    print "Cached result will be used."
+                    print "Cached result will be used for MODELS-%s-%s-%s." % (self.category[i], model_tag, cv_tag)
 
         if not cache_success: # If cached result was not requested or was searched for but not found.
             # Dimension of model
@@ -189,7 +189,7 @@ class parent_model:
                 print "Fitting MoGs to %s" % self.category[i]
                 ifit = ibool & self.iTrain
                 Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]).T
-                Ycovar = self.gen_covar([self.zf_err, self.rf_err, self.gf_err], ND=3)
+                Ycovar = self.gen_covar([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]], [self.zf_err, self.rf_err, self.gf_err], ND=3)
                 weight = self.w[ifit]
                 self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
@@ -201,7 +201,7 @@ class parent_model:
             print "Fitting MoGs to %s" % self.category[i]        
             ifit = self.iELG & self.iTrain
             Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.oii[ifit], self.red_z[ifit]]).T
-            Ycovar = self.gen_covar([self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))], ND=5)
+            Ycovar = self.gen_covar([self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]], [self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))], ND=5)
             weight = self.w[ifit]
             self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
@@ -250,7 +250,7 @@ class parent_model:
                         # Corr plots without annotation
                         ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
                                                   var_names, weights, lines=lines, category_names=[self.category[i]],\
-                                                  pt_sizes=[3.5], colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
+                                                  pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
                                                   plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
                                                   means_general=means_fit, covs_general=covs_fit, color_general="red")
                         plt.tight_layout()
@@ -282,6 +282,7 @@ class parent_model:
                 # Models corresponding to the tuples
                 ms = MODELS[var_num_tuple]
                 for K in ms.keys(): # For each component number tried                        
+                    print "K: %d" % K                
                     # Fits
                     m = ms[K]
                     amps_fit  = m["amps"]
@@ -292,7 +293,7 @@ class parent_model:
                     # Corr plots without annotation
                     ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
                                               var_names, weights, lines=lines, category_names=[self.category[i]],\
-                                              pt_sizes=[3.5], colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
+                                              pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
                                               plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
                                               means_general=means_fit, covs_general=covs_fit, color_general="red")
                     plt.tight_layout()
@@ -304,7 +305,7 @@ class parent_model:
 
 
 
-    def gen_covar(self, var_list, ND=5):
+    def gen_covar(self, var_list, var_err_list, ND=5):
         """
         Covariance matrix in the original grz-oii-redz space is diagonal.
         """
@@ -314,7 +315,7 @@ class parent_model:
         for i in range(Nsample):
             tmp = []
             for j in range(ND):
-                tmp.append(var_list[j][i]**2) # var = err^2
+                tmp.append(var_err_list[j][i]**2) # var = err^2
             Covar[i] = np.diag(tmp)
         
         return Covar
@@ -585,6 +586,7 @@ class model1(parent_model):
 
 
 
+
 class model2(parent_model):
     """
     parametrization: arcsinh zflux/gflux, arcsinh rflux/gflux, gflux, oii/gflux, redz
@@ -625,3 +627,45 @@ class model2(parent_model):
 
     def var_reparam(self):
         return np.arcsinh(self.rflux/self.gflux/2.), np.arcsinh(self.zflux/self.gflux/2.), self.gflux, np.arcsinh(self.oii/self.gflux/2.)
+
+
+    # def gen_covar(self, var_list, var_err_list, ND=5):
+    #     """
+    #     Covariance matrix corresponding to the new parametrization.
+    #     - var_list: Contains a list of variables in the original space: zf, rf, zf, oii, redz
+    #     - var_err_list: List of errors of the variables in the other list.
+    #     """
+    #     Nsample = var_list[0].size
+    #     Covar = np.zeros((Nsample, ND, ND))
+
+    #     if ND == 3:
+    #         pass
+    #     elif ND == 5:
+    #         zflux, rflux, zflux, oii, red_z = var_list # Unpack the var_list
+    #         for i in range(Nsample):
+    #             # Construct the original space covariance matrix in 4 x 4 subspace.
+    #             tmp = []
+    #             for j in range(ND):
+    #                 tmp.append(var_err_list[j][i]**2) # var = err^2
+    #             Cx = np.diag(tmp)
+
+    #             g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
+    #             M00, M01, M02, M03 = 1/np.sqrt(g**2+z**2), 0, -z/(g*np.sqrt(g**2+z**2)), 0
+    #             M10, M11, M12, M13 = 0, 1/np.sqrt(g**2+r**2), -r/(g*np.sqrt(g**2+r**2)), 0
+    #             M20, M21, M22, M23 = 0, 0, 1, 0
+    #             M30, M31, M32, M33 = 0, 0, -o/(g*np.sqrt(g**2+o**2)), 1/np.sqrt(g**2+o**2)
+                
+    #             M = np.array([[M00, M01, M02, M03],
+    #                                 [M10, M11, M12, M13],
+    #                                 [M20, M21, M22, M23],
+    #                                 [M30, M31, M32, M33]])
+                
+    #             Covar[i][:4,:4] = np.dot(np.dot(M, Cx), M.T)
+
+    #     else: 
+    #         print "The input number of variables need to be either 3 or 5."
+    #         assert False
+
+    #     return Covar
+
+
