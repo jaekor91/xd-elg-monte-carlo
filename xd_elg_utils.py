@@ -12,7 +12,7 @@ from os.path import isfile, join
 import scipy.stats as stats
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
-# import extreme_deconvolution as XD
+import extreme_deconvolution as XD
 
 from matplotlib.patches import Ellipse
 
@@ -2119,7 +2119,7 @@ def gen_init_covar_from_data(Ndim, ydata, K):
     return np.asarray([np.cov(ydata).reshape((Ndim, Ndim))] * K)
 
 
-def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test"):
+def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test", MaxDIM=False):
     """
     Given the data matrix Ydata [Nsample, ND], the error covariance matrix Ycovar [Nsample, [ND, ND]],
     fit 1D, 2D, 3D, ..., ND multivariate gaussian for each pair of variables.
@@ -2129,7 +2129,8 @@ def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test"
     - ND_fit: Only consider variables up to ND_fit (var0, var1, ... varND-1) in making the fits.
     - NK_list: Number of component gaussians to use for fitting.
     - Niter: Number of trials for the XD fit.
-    
+    - MaxDIM: Fit only max dimensional model allowed by ND_fit.
+
     Output:
     - MODELS: A dictionary that contains all models. Each model is labeled with a tuple of (ordered)
     variables used. In each model contains a dictionary that contains entries 1, ..., NK. One level below
@@ -2137,11 +2138,14 @@ def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test"
     """
     # List of all models, labeled by a list of variables to be used.
     model_list = None
-    for nd in range(1, ND_fit+1):
-        if model_list is None:
-            model_list =  gen_comb(ND, nd)
-        else:
-            model_list += gen_comb(ND, nd)
+    if MaxDIM:
+        model_list = gen_comb(ND, ND_fit)
+    else:
+        for nd in range(1, ND_fit+1):
+            if model_list is None:
+                model_list =  gen_comb(ND, nd)
+            else:
+                model_list += gen_comb(ND, nd)
     # Turn model labels from lists into tuples to use them as keys.
     model_list = [tuple(e) for e in model_list]
     
