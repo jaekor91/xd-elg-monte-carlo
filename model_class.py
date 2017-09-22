@@ -261,7 +261,10 @@ class parent_model:
                                                   plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
                                                   means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour)
                         plt.tight_layout()
-                        plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+                        if cum_contour:
+                            plt.savefig("%s-%s-data-%s-fit-K%d-cum-contour.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+                        else:
+                            plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
                         # plt.show()
                         plt.close()
 
@@ -304,7 +307,10 @@ class parent_model:
                                               plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
                                               means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour)
                     plt.tight_layout()
-                    plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+                    if cum_contour:
+                        plt.savefig("%s-%s-data-%s-fit-K%d-cum_contour.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+                    else:
+                        plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
                     # plt.show()
                     plt.close()
 
