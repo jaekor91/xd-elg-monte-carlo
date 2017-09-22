@@ -2112,7 +2112,7 @@ def gen_init_covar_from_data(Ndim, ydata, K):
     return np.asarray([np.cov(ydata).reshape((Ndim, Ndim))] * K)
 
 
-def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test", MaxDIM=False):
+def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test", MaxDIM=False, weight=None):
     """
     Given the data matrix Ydata [Nsample, ND], the error covariance matrix Ycovar [Nsample, [ND, ND]],
     fit 1D, 2D, 3D, ..., ND multivariate gaussian for each pair of variables.
@@ -2123,6 +2123,7 @@ def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test"
     - NK_list: Number of component gaussians to use for fitting.
     - Niter: Number of trials for the XD fit.
     - MaxDIM: Fit only max dimensional model allowed by ND_fit.
+    - weight: Weight of data points.
 
     Output:
     - MODELS: A dictionary that contains all models. Each model is labeled with a tuple of (ordered)
@@ -2198,7 +2199,7 @@ def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test"
                 # ?XD.extreme_deconvolution
 
                 # XD fitting. Minimal regularization for the power law is used here. w=1e-4.
-                lnL = XD.extreme_deconvolution(ydata, ycovar, fit_amp_tmp, fit_mean_tmp, fit_covar_tmp, w=1e-4)
+                lnL = XD.extreme_deconvolution(ydata, ycovar, fit_amp_tmp, fit_mean_tmp, fit_covar_tmp, w=1e-4, weight=weight)
 
                 # Take the best result so far
                 if lnL > lnL_best:
