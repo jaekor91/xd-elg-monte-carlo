@@ -3022,7 +3022,7 @@ def plot_cov_ellipse(ax, mus, covs, var_num1, var_num2, MoG_color="Blue"):
         mu = [mu[var_num1], mu[var_num2]]
         for j in [1, 2]:
             width, height, theta = cov_ellipse(cov, q=None, nsig=j)
-            e = Ellipse(xy=mu, width=width, height=height, angle=theta, lw=2)
+            e = Ellipse(xy=mu, width=width, height=height, angle=theta, lw=1.25)
             ax.add_artist(e)
             e.set_clip_box(ax.bbox)
             e.set_alpha(1)
