@@ -69,8 +69,8 @@ class parent_model:
     def __init__(self, sub_sample_num):
         # Basic class variables
         self.areas = np.load("spec-area.npy")
-        self.mag_max = 24.25 # We model moderately deeper than 24. But only model down to 21.
-        self.mag_min = 21.5
+        self.mag_max = 24 # We model moderately deeper than 24. But only model down to 21.
+        self.mag_min = 22
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
 
@@ -322,10 +322,9 @@ class parent_model:
         """
         Covariance matrix in the original grz-oii-redz space is diagonal.
         """
-        Nsample = var_list[0].size
-        Covar = np.zeros((Nsample, ND, ND))
+        Nsample = np.sum(ifit)
+        Covar = np.zeros((Nsample, ND, ND))        
 
-        var_list = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
         var_err_list = self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))
 
         for i in range(Nsample):
@@ -606,13 +605,11 @@ class model1(parent_model):
         - var_list: Contains a list of variables in the original space: zf, rf, zf, oii, redz
         - var_err_list: List of errors of the variables in the other list.
         """
-        Nsample = var_list[0].size
+        Nsample = np.sum(ifit)
         Covar = np.zeros((Nsample, ND, ND))
 
-
-        zflux, rflux, gfluz, oii, red_z = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
-        var_err_list = self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))
-
+        zflux, rflux, gflux, oii, red_z = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
+        var_err_list = self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(Nsample))
 
         if ND == 3:
             for i in range(Nsample):
@@ -636,7 +633,7 @@ class model1(parent_model):
             for i in range(Nsample):
                 # Construct the original space covariance matrix in 4 x 4 subspace.
                 tmp = []
-                for j in range(ND):
+                for j in range(4):
                     tmp.append(var_err_list[j][i]**2) # var = err^2
                 Cx = np.diag(tmp)
 
@@ -663,44 +660,159 @@ class model1(parent_model):
 
 class model2(parent_model):
     """
-    parametrization: arcsinh zflux/gflux, arcsinh rflux/gflux, gflux, oii/gflux, redz
+    parametrization: arcsinh zflux/gflux (x), arcsinh rflux/gflux (y), arcsinh oii/gflux (z), redz, gmag
     """
     def __init__(self, sub_sample_num):
         parent_model.__init__(self, sub_sample_num)
+
         # Re-parametrizing variables
-        self.var_y, self.var_x, self.var_z, self.var_w = self.var_reparam() 
+        self.var_x, self.var_y, self.var_z, self.gmag = self.var_reparam() 
 
         # Plot variables
         # var limits
         self.lim_x = [-.75, 4.5] # zf/gf
         self.lim_y = [-.1, 2.2] # rf/gf        
-        self.lim_w = [0, 5] # oii/gf
-        # self.lim_z = [-.25, mag2flux(self.mag_min)] # gf
+        self.lim_z = [0, 5] # oii/gf
+        self.lim_gmag = [22., 24.0]
 
         # bin widths
         self.dx = 0.05         
         self.dy = 0.025
-        self.dw = 0.05
-        # self.dz = 2.5e-2
+        self.dz = 0.05
+        self.dgmag = 0.025
 
         # var names
         self.var_x_name = r"$sinh^{-1} (f_z/f_g/2)$"        
         self.var_y_name = r"$sinh^{-1} (f_r/f_g/2)$"  
-        self.var_z_name = r"$f_g$"
-        self.var_w_name =  r"$sinh^{-1} (OII/f_g/2)$"
+        self.var_z_name = r"$sinh^{-1} (OII/f_g/2)$"
         self.red_z_name = r"$\eta$"
-        # self.r_exp_name = r"$r_{exp}$"
+        self.gmag_name  = r"$g$"
 
         # var lines
-        self.var_x_lines = []#[1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]        
-        self.var_y_lines = []# np.asarray([1/2.5**2, 1/2.5, 1., 2.5, 2.5**2])
-        self.var_w_lines = []
+        self.var_x_lines = [1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
+        self.var_y_lines = [1/2.5**2, 1/2.5, 1., 2.5, 2.5**2]
+        self.var_z_lines = []
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
-        # self.var_z_lines = [mag2flux(f) for f in [21, 22, 23, 24, 25]]
-        # self.exp_r_lines = [0.25, 0.5, 0.75, 1.0]
+        self.gmag_lines = [21, 22, 23, 24, 24.25]
 
     def var_reparam(self):
-        return np.arcsinh(self.rflux/self.gflux/2.), np.arcsinh(self.zflux/self.gflux/2.), self.gflux, np.arcsinh(self.oii/self.gflux/2.)
+        return np.arcsinh(self.zflux/self.gflux/2.), np.arcsinh(self.rflux/self.gflux/2.), np.arcsinh(self.oii/self.gflux/2.), flux2mag(self.gflux)
+
+
+    def plot_data(self, model_tag="", cv_tag=""):
+        """
+        Use self model/plot variables to plot the data given an external figure ax_list.
+        Save the resulting image using title_str (does not include extension)
+        """
+
+        print "Corr plot - var_xyz - all classes together"
+        lims = [self.lim_x, self.lim_y, self.lim_gmag]
+        binws = [self.dx, self.dy, self.dgmag]
+        var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+        num_cat = 3
+        num_vars = 3
+
+        variables = []
+        weights = []            
+        for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
+            iplot = np.copy(ibool) & self.iTrain
+            variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
+            weights.append(self.w[iplot]/self.area_train)
+        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=None, colors=self.colors, ft_size_legend = 15, lw_dot=2)
+        plt.savefig("%s-%s-data-all.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
+        plt.close()        
+
+
+
+        print "Corr plot - var_xyz - separately"
+        lims = [self.lim_x, self.lim_y, self.lim_gmag]
+        binws = [self.dx, self.dy, self.dgmag]
+        var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+        num_cat = 1
+        num_vars = 3
+
+
+        for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+            print "Plotting %s" % self.category[i]                
+            variables = []
+            weights = []                
+            iplot = np.copy(ibool) & self.iTrain
+            variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
+            weights.append(self.w[iplot]/self.area_train)
+
+            fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
+
+            plt.savefig("%s-%s-data-%s.png" % (model_tag, cv_tag, self.category[i]), dpi=200, bbox_inches="tight")
+            plt.close()
+
+
+        print "Corr plot - var_xyz, red_z, gmag - ELG only"
+        num_cat = 1
+        num_vars = 5
+        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_redz, self.lim_gmag]
+        binws = [self.dx, self.dy, self.dz, self.dred_z, self.dgmag]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.red_z_name, self.gmag_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.redz_lines, self.gmag_lines]
+
+        iplot = np.copy(self.iELG) & self.iTrain
+        i = 2 # For category
+        variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.red_z[iplot], self.gmag[iplot]]]
+        weights = [self.w[iplot]/self.area_train]
+
+        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
+        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
+
+        plt.savefig("%s-%s-data-ELG-redz-oii.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
+        plt.close()
+
+
+    def fit_MoG(self, NK_list, model_tag="", cv_tag="", cache=False):
+        """
+        Fit MoGs to data. Note that here we only consider fitting to 3 or 5 dimensions.
+
+        If cache = True, then search to see if there are models already fit and if available use them.
+        """
+        cache_success = False
+        if cache:
+            for i in range(3):
+                model_fname = "./MODELS-%s-%s-%s.npy" % (self.category[i], model_tag, cv_tag)
+                if os.path.isfile(model_fname):
+                    self.MODELS[i] = np.load(model_fname).item()
+                    cache_success = True
+                    print "Cached result will be used for MODELS-%s-%s-%s." % (self.category[i], model_tag, cv_tag)
+
+        if not cache_success: # If cached result was not requested or was searched for but not found.
+            # Dimension of model
+            ND = 3
+            # Number of variables up to which MoG is being proposed
+            ND_fit = 3
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ]):
+                print "Fitting MoGs to %s" % self.category[i]
+                ifit = ibool & self.iTrain
+                Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]).T
+                Ycovar = self.gen_covar(ifit, ND=3)
+                weight = self.w[ifit]
+                self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+
+            i = 2
+            # Dimension of model
+            ND = 5
+            # Number of variables up to which MoG is being proposed
+            ND_fit = 5
+            print "Fitting MoGs to %s" % self.category[i]        
+            ifit = self.iELG & self.iTrain
+            Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.var_w[ifit], self.red_z[ifit]]).T
+            Ycovar = self.gen_covar(ifit, ND=5)
+            weight = self.w[ifit]
+            self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+
+        return
+
+
 
 
     def gen_covar(self, ifit, ND=5):
@@ -709,12 +821,11 @@ class model2(parent_model):
         - var_list: Contains a list of variables in the original space: zf, rf, zf, oii, redz
         - var_err_list: List of errors of the variables in the other list.
         """
-        Nsample = var_list[0].size
+        Nsample = np.sum(ifit)
         Covar = np.zeros((Nsample, ND, ND))
 
-
-        zflux, rflux, gfluz, oii, red_z = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
-        var_err_list = self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(ifit))
+        zflux, rflux, gflux, oii, red_z = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
+        var_err_list = self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(Nsample))
 
 
         if ND == 3:
@@ -728,7 +839,7 @@ class model2(parent_model):
                 g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
                 M00, M01, M02 = 1/np.sqrt(g**2+z**2), 0, -z/(g*np.sqrt(g**2+z**2))
                 M10, M11, M12 = 0, 1/np.sqrt(g**2+r**2), -r/(g*np.sqrt(g**2+r**2))
-                M20, M21, M22 = 0, 0, 1
+                M20, M21, M22 = 0, 0, -1.08574/g
                 
                 M = np.array([[M00, M01, M02],
                             [M10, M11, M12],
@@ -739,14 +850,14 @@ class model2(parent_model):
             for i in range(Nsample):
                 # Construct the original space covariance matrix in 4 x 4 subspace.
                 tmp = []
-                for j in range(ND):
+                for j in range(4):
                     tmp.append(var_err_list[j][i]**2) # var = err^2
                 Cx = np.diag(tmp)
 
                 g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
                 M00, M01, M02, M03 = 1/np.sqrt(g**2+z**2), 0, -z/(g*np.sqrt(g**2+z**2)), 0
                 M10, M11, M12, M13 = 0, 1/np.sqrt(g**2+r**2), -r/(g*np.sqrt(g**2+r**2)), 0
-                M20, M21, M22, M23 = 0, 0, 1, 0
+                M20, M21, M22, M23 = 0, 0, -1.08574/g, 0
                 M30, M31, M32, M33 = 0, 0, -o/(g*np.sqrt(g**2+o**2)), 1/np.sqrt(g**2+o**2)
                 
                 M = np.array([[M00, M01, M02, M03],
