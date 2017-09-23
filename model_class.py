@@ -604,6 +604,8 @@ class model1(parent_model):
         Covariance matrix corresponding to the new parametrization.
         - var_list: Contains a list of variables in the original space: zf, rf, zf, oii, redz
         - var_err_list: List of errors of the variables in the other list.
+
+        Note: This function is incorret. Do not use.
         """
         Nsample = np.sum(ifit)
         Covar = np.zeros((Nsample, ND, ND))
@@ -772,7 +774,7 @@ class model2(parent_model):
 
     def fit_MoG(self, NK_list, model_tag="", cv_tag="", cache=False):
         """
-        Fit MoGs to data. Note that here we only consider fitting to 3 or 5 dimensions.
+        Fit MoGs to data. Note that here we only consider fitting to 2 or 4 dimensions.
 
         If cache = True, then search to see if there are models already fit and if available use them.
         """
@@ -786,27 +788,24 @@ class model2(parent_model):
                     print "Cached result will be used for MODELS-%s-%s-%s." % (self.category[i], model_tag, cv_tag)
 
         if not cache_success: # If cached result was not requested or was searched for but not found.
-            # Dimension of model
-            ND = 3
-            # Number of variables up to which MoG is being proposed
-            ND_fit = 3
+            # For NonELG and NoZ
+            ND = 2 # Dimension of model
+            ND_fit = 2 # Number of variables up to which MoG is being proposed
             for i, ibool in enumerate([self.iNonELG, self.iNoZ]):
                 print "Fitting MoGs to %s" % self.category[i]
                 ifit = ibool & self.iTrain
-                Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit]]).T
-                Ycovar = self.gen_covar(ifit, ND=3)
+                Ydata = np.array([self.var_x[ifit], self.var_y[ifit]]).T
+                Ycovar = self.gen_covar(ifit, ND=2)
                 weight = self.w[ifit]
                 self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
-            i = 2
-            # Dimension of model
-            ND = 5
-            # Number of variables up to which MoG is being proposed
-            ND_fit = 5
-            print "Fitting MoGs to %s" % self.category[i]        
+            # For ELG
+            ND = 4 # Dimension of model
+            ND_fit = 4 # Number of variables up to which MoG is being proposed
+            print "Fitting MoGs to %s" % self.category[i]
             ifit = self.iELG & self.iTrain
-            Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.var_w[ifit], self.red_z[ifit]]).T
-            Ycovar = self.gen_covar(ifit, ND=5)
+            Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.red_z[ifit]]).T
+            Ycovar = self.gen_covar(ifit, ND=4)
             weight = self.w[ifit]
             self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
@@ -815,59 +814,49 @@ class model2(parent_model):
 
 
 
-    def gen_covar(self, ifit, ND=5):
+    def gen_covar(self, ifit, ND=4):
         """
         Covariance matrix corresponding to the new parametrization.
-        - var_list: Contains a list of variables in the original space: zf, rf, zf, oii, redz
-        - var_err_list: List of errors of the variables in the other list.
+        Original parameterization: zf, rf, oii, redz, gf
+        New parameterization is given by the model2.
         """
         Nsample = np.sum(ifit)
         Covar = np.zeros((Nsample, ND, ND))
 
         zflux, rflux, gflux, oii, red_z = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
-        var_err_list = self.zf_err[ifit], self.rf_err[ifit], self.gf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(Nsample))
+        var_err_list = [self.zf_err[ifit], self.rf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(Nsample)), self.gf_err[ifit]]
 
 
-        if ND == 3:
-            for i in range(Nsample):
-                # Construct the original space covariance matrix in 4 x 4 subspace.
-                tmp = []
-                for j in range(ND):
-                    tmp.append(var_err_list[j][i]**2) # var = err^2
-                Cx = np.diag(tmp)
+        for i in range(Nsample):
+            # Construct the original space covariance matrix in 5 x 5 subspace.
+            tmp = []
+            for j in range(5):
+                tmp.append(var_err_list[j][i]**2) # var = err^2
+            Cx = np.diag(tmp)
 
+            if ND == 2:
                 g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
-                M00, M01, M02 = 1/np.sqrt(g**2+z**2), 0, -z/(g*np.sqrt(g**2+z**2))
-                M10, M11, M12 = 0, 1/np.sqrt(g**2+r**2), -r/(g*np.sqrt(g**2+r**2))
-                M20, M21, M22 = 0, 0, -1.08574/g
-                
-                M = np.array([[M00, M01, M02],
-                            [M10, M11, M12],
-                            [M20, M21, M22]])
+                M00, M01, M02, M03, M04 = 1/np.sqrt(g**2+z**2), 0, 0, 0, -z/(g*np.sqrt(g**2+z**2))
+                M10, M11, M12, M13, M14 = 0, 1/np.sqrt(g**2+r**2), 0, 0, -r/(g*np.sqrt(g**2+r**2))
+                M = np.array([[M00, M01, M02, M03, M04],
+                            [M10, M11, M12, M13, M14]])
                 
                 Covar[i] = np.dot(np.dot(M, Cx), M.T)
-        elif ND == 5:
-            for i in range(Nsample):
-                # Construct the original space covariance matrix in 4 x 4 subspace.
-                tmp = []
-                for j in range(4):
-                    tmp.append(var_err_list[j][i]**2) # var = err^2
-                Cx = np.diag(tmp)
-
+            elif ND == 4:
+                # Construct the affine transformation matrix.
                 g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
-                M00, M01, M02, M03 = 1/np.sqrt(g**2+z**2), 0, -z/(g*np.sqrt(g**2+z**2)), 0
-                M10, M11, M12, M13 = 0, 1/np.sqrt(g**2+r**2), -r/(g*np.sqrt(g**2+r**2)), 0
-                M20, M21, M22, M23 = 0, 0, -1.08574/g, 0
-                M30, M31, M32, M33 = 0, 0, -o/(g*np.sqrt(g**2+o**2)), 1/np.sqrt(g**2+o**2)
+                M00, M01, M02, M03, M04 = 1/np.sqrt(g**2+z**2), 0, 0, 0, -z/(g*np.sqrt(g**2+z**2))
+                M10, M11, M12, M13, M14 = 0, 1/np.sqrt(g**2+r**2), 0, 0, -r/(g*np.sqrt(g**2+r**2))
+                M20, M21, M22, M23, M24 = 0, 0, 1/np.sqrt(g**2+o**2), 0, -o/(g*np.sqrt(g**2+o**2))
+                M30, M31, M32, M33, M34 = 0, 0, 0, 1, 0
                 
-                M = np.array([[M00, M01, M02, M03],
-                                    [M10, M11, M12, M13],
-                                    [M20, M21, M22, M23],
-                                    [M30, M31, M32, M33]])
-                
-                Covar[i][:4,:4] = np.dot(np.dot(M, Cx), M.T)
+                M = np.array([[M00, M01, M02, M03, M04],
+                                    [M10, M11, M12, M13, M14],
+                                    [M20, M21, M22, M23, M24],
+                                    [M30, M31, M32, M33, M34]])
+                Covar[i] = np.dot(np.dot(M, Cx), M.T)
         else: 
-            print "The input number of variables need to be either 3 or 5."
+            print "The input number of variables need to be either 2 or 4."
             assert False
 
         return Covar
