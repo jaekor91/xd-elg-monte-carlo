@@ -16,9 +16,6 @@ import extreme_deconvolution as XD
 
 from matplotlib.patches import Ellipse
 
-# For plotting overall fit
-import confidence_contours as cc
-from confidence_level_height_estimation import summed_gm, inverse_cdf_2D
 
 # Matplot ticks
 import matplotlib as mpl
@@ -1492,7 +1489,58 @@ def category_vector_generator(z_quality, z_err, oii, oii_err, BRI_cut, cn):
 
 
 
-def plot_2D_contour_GMM(ax, Xrange, Yrange, dX, dY, amps, means, covs, var_num1, var_num2, levels=[0.98, 0.9, 0.5, 0.10, 0.02], colors=["black", "blue", "red", "orange", "yellow"]):
+def inverse_cdf_2D(cvs, dV, PDF):
+    """
+    Given grid PDF, return the PDF values that correspond to probability mass values cvs.
+    cv of 0.98 means there are 98% probability mass within the contour.
+
+    This obviously assumes that PDF integrate to 1.
+
+    Volume is provided by the user as dV.
+    """
+    
+    pdf_sorted = np.sort(PDF.flatten())
+
+    # Prob grid 
+    prob_grid = np.arange(0, pdf_sorted[-1], pdf_sorted[-1]/float(1e3))
+    
+    # Calculating cumulative function (that is probability volume within the boundary)
+    cdf = np.zeros(prob_grid.size)
+    for i in range(cdf.size):
+        cdf[i] = np.sum(pdf_sorted[pdf_sorted>prob_grid[i]]) * dV
+
+    pReturn = []
+    for i in range(len(cvs)):
+        cv = cvs[i]
+        pReturn.append(prob_grid[find_nearest_idx(cdf,cv)])
+
+    return pReturn
+
+
+        
+def find_nearest_idx(array,value):
+    idx = (np.abs(array-value)).argmin()
+    return idx    
+
+
+def summed_gm_pdf(pts, mus, covs, amps):
+    """
+    pts: [Nsample, ND]
+
+    Return PDF fo GMM specified by the parameters. 
+    """
+
+    func_val = None
+    for i in range(amps.size):
+        if func_val is None:
+            func_val = amps[i]*stats.multivariate_normal.pdf(pts, mean=mus[i], cov=covs[i])    
+        else:
+            func_val += amps[i]*stats.multivariate_normal.pdf(pts, mean=mus[i], cov=covs[i])    
+
+    return func_val
+
+
+def plot_2D_contour_GMM(ax, Xrange, Yrange, amps, means, covs, var_num1, var_num2, levels=[0.95, 0.68], colors=["red", "red"]):
     """
     Given GMM parameters amps, means, covs of ND, plot on ax the cumulative contou at chosen levels.
     var_num1, var_num2 represents x and y variables for 2D plotting.
@@ -1511,8 +1559,8 @@ def plot_2D_contour_GMM(ax, Xrange, Yrange, dX, dY, amps, means, covs, var_num1,
             # For each gaussian, find 2D projection
             mu = means[i]
             cov = covs[i]
-            mu = [mu[var_num1], mu[var_num2]]
-            cov = [[cov[var_num1, var_num1], cov[var_num1, var_num2]], [cov[var_num2, var_num1], cov[var_num2, var_num2]]]
+            mu = np.array([mu[var_num1], mu[var_num2]])
+            cov = np.array([[cov[var_num1, var_num1], cov[var_num1, var_num2]], [cov[var_num2, var_num1], cov[var_num2, var_num2]]])
             means_tmp.append(mu)
             covs_tmp.append(cov)
         means = np.asarray(means_tmp)
@@ -1521,13 +1569,18 @@ def plot_2D_contour_GMM(ax, Xrange, Yrange, dX, dY, amps, means, covs, var_num1,
     # Plot isocontours
     xmin, xmax = Xrange
     ymin, ymax = Yrange
-    Xvec = np.arange(xmin, xmax, dX)
-    Yvec = np.arange(ymin, ymax, dY)
+    dx = (xmax-xmin)/float(1e3)
+    dy = (ymax-ymin)/float(1e3)
+    Xvec = np.arange(xmin, xmax, dx)
+    Yvec = np.arange(ymin, ymax, dy)
     X,Y = np.meshgrid(Xvec, Yvec) # grid of point
-    PDF = summed_gm(np.transpose(np.array([Y,X])), means, covs, amps) # * dX * dY # evaluation of the function on the grid
+    X_flat, Y_flat = X.ravel(), Y.ravel()
+    PDF = summed_gm_pdf(np.array([X_flat, Y_flat]).T, means, covs, amps) # * dX * dY # evaluation of the function on the grid
     cvs = levels # contour levels
-    cvsP = inverse_cdf_2D(cvs, X, Y, PDF)
-    ax.contour(X, Y, PDF, cvsP, linewidths=1.5, colors=colors)
+    cvsP = inverse_cdf_2D(cvs, dx*dy, PDF)
+    PDF = PDF.reshape(X.shape) # The same shape as X
+    # assert False
+    ax.contour(X, Y, PDF, cvsP, linewidths=2., colors=colors)
 
     return
 
@@ -1535,16 +1588,9 @@ def contour_plot_range(Xrange):
     # Unpack variables
     xmin, xmax = Xrange
 
-    if xmin < 0:
-        xmin *= 2
-    elif (xmin>0) and (xmin<5):
-        xmin *= -1
-    else:
-        xmin = xmin/2
+    Delta_X = xmax - xmin
 
-    xmax *=2
-
-    return xmin, xmax
+    return xmin-2*Delta_X, xmax+2*Delta_X
 
 def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=None,\
                     lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None,\
@@ -1652,9 +1698,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                             if cum_contour:
                                 Xrange = contour_plot_range(lims[var_num1])
                                 Yrange = contour_plot_range(lims[var_num2])
-                                dX = binws[var_num1]/10.
-                                dY = binws[var_num2]/10.
-                                plot_2D_contour_GMM(ax_list[i, j], Xrange, Yrange, dX, dY, amps_general, means_general, covs_general, var_num_tuple.index(var_num1), var_num_tuple.index(var_num2))
+                                plot_2D_contour_GMM(ax_list[i, j], Xrange, Yrange, amps_general, means_general, covs_general, var_num_tuple.index(var_num1), var_num_tuple.index(var_num2))
                             else:
                                 plot_cov_ellipse(ax_list[i, j], means_general, covs_general, var_num_tuple.index(var_num1), var_num_tuple.index(var_num2), MoG_color=color_general)
                     elif plot_type == "hist":
