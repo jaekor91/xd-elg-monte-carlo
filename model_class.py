@@ -772,7 +772,7 @@ class model2(parent_model):
         plt.close()
 
 
-    def fit_MoG(self, NK_list, model_tag="", cv_tag="", cache=False):
+    def fit_MoG(self, NK_list, model_tag="", cv_tag="", cache=False, Niter=5):
         """
         Fit MoGs to data. Note that here we only consider fitting to 2 or 4 dimensions.
 
@@ -797,7 +797,7 @@ class model2(parent_model):
                 Ydata = np.array([self.var_x[ifit], self.var_y[ifit]]).T
                 Ycovar = self.gen_covar(ifit, ND=ND)
                 weight = self.w[ifit]
-                self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+                self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=Niter, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
             # For ELG
             i = 2
@@ -808,7 +808,7 @@ class model2(parent_model):
             Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.red_z[ifit]]).T
             Ycovar = self.gen_covar(ifit, ND=ND)
             weight = self.w[ifit]
-            self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=5, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+            self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=Niter, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
         return
 
