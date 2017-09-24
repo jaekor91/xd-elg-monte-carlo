@@ -1519,7 +1519,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                     plot_MoG1=False, amps1=None, means1=None, covs1=None, ND1=0, color_MoG1="blue",\
                     plot_MoG2=False, amps2=None, means2=None, covs2=None, ND2=0, color_MoG2="red",\
                    plot_MoG_general=False, var_num_tuple=None, amps_general=None, means_general=None, covs_general=None, color_general="red",\
-                   cum_contour=False):
+                   cum_contour=False, plot_pow=False, pow_model=None, pow_var_num=None):
     """
     Add correlation plots for each variable pair to a given axis list. 
     Also, make marginalized plots in histogram.
@@ -1544,6 +1544,9 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
     Plot_MoG_general: 
     Allows the user to input MoG fit in select variables specified by var_num_tuple. For example,
     var_num_tuple = (0, 1, 4), means a Gaussian mixture was fit in var1, var2, and var5.
+
+    Plot_pow: 
+    If True and if a power law model is supplied than a power law is overlayed on top of the histogram magnitude.
     
     Plot order: 
     - The last row (num_vars-1) is reserved for histogram for variables 1 ... num_vars-1.
@@ -1626,24 +1629,41 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         var_min, var_max = lims[var_num1]
                         bin_width = binws[var_num1]
                         hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
-                        ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, normed=hist_normed)
+                        if plot_pow and (var_num1 == pow_var_num):
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname)  
+                        else:
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, normed=hist_normed)                          
                         if plot_MoG1 and (var_num1<ND1):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps2, means2, covs2, var_num2, MoG_color=color_MoG2)                        
                         if plot_MoG_general and (var_num1 in var_num_tuple):
-                            plot_1D_gauss(ax_list[i, j], lims[var_num1], amps_general, means_general, covs_general, var_num_tuple.index(var_num1), MoG_color=color_MoG2)                                                    
+                            plot_1D_gauss(ax_list[i, j], lims[var_num1], amps_general, means_general, covs_general, var_num_tuple.index(var_num1), MoG_color=color_MoG2)
+                        if plot_pow and (var_num1 == pow_var_num):
+                            xvec = np.arange(var_min, var_max, 1e-3)
+                            yvec = pow_law(pow_model, mag2flux(xvec))*bin_width
+                            ax_list[i, j].plot(xvec,yvec, c = "red", lw=2.)
+                            
                     elif plot_type == "v-hist":
                         var_min, var_max = lims[var_num1]
                         bin_width = binws[var_num1]
                         hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
-                        ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal", normed=hist_normed)  
+                        if plot_pow and (var_num1 == pow_var_num):
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal")  
+                        else:
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal", normed=hist_normed)  
                         if plot_MoG1 and (var_num1<ND1):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, vertical=False, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps2, means2, covs2, var_num2, vertical=False, MoG_color=color_MoG2)                        
                         if plot_MoG_general and (var_num1 in var_num_tuple):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps_general, means_general, covs_general, var_num_tuple.index(var_num1), MoG_color=color_MoG2, vertical=False) 
+                        if plot_pow and (var_num1 == pow_var_num):
+                            xvec = np.arange(var_min, var_max, 1e-3)
+                            yvec = pow_law(pow_model, mag2flux(xvec))*bin_width
+                            ax_list[i, j].plot(yvec, xvec, c = "red", lw=2.)
+                            
+
                     
             
      
@@ -1849,7 +1869,7 @@ def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test"
             # Format example 
             MODELS[m][(K)] = {"means": fit_mean, "amps": fit_amp, "covs": fit_covar}
             np.save("MODELS-"+fname_suffix+".npy", MODELS)
-            print "\n"
+            # print "\n"
         
     return MODELS
 
