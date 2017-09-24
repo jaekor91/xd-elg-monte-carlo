@@ -825,7 +825,7 @@ class model2(parent_model):
             for i in range(3):
                 model_fname = "./MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag)
                 if os.path.isfile(model_fname):
-                    self.MODELS[i] = np.load(model_fname)
+                    self.MODELS_pow[i] = np.load(model_fname)
                     cache_success = True
                     print "Cached result will be used for MODELS-%s-%s-%s-pow." % (self.category[i], model_tag, cv_tag)
         if not cache_success:
@@ -834,7 +834,7 @@ class model2(parent_model):
                 ifit = self.iTrain & ibool
                 mag = self.gmag[ifit]
                 weight = self.w[ifit]
-                self.MODELS_pow[i] = dNdm_fit(mag, weight, bw, self.mag_min, self.mag_max, self.area_train, niter = 10, pow_tol =1e-5)
+                self.MODELS_pow[i] = dNdm_fit(mag, weight, bw, self.mag_min, self.mag_max, self.area_train, niter = Niter)
                 np.save("MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
 
         return 
@@ -897,7 +897,8 @@ class model2(parent_model):
         """
         Make corr plots of the various classes with fits overlayed.
         If cum_contour is True, then instead of plotting individual component gaussians,
-        plt the cumulative gaussian fit.
+        plot the cumulative gaussian fit. Also, plot the power law function corresponding
+        to the magnitude dimension.
         """
 
         print "Corr plot - var_xyz - Separately"
@@ -920,6 +921,7 @@ class model2(parent_model):
             weights.append(self.w[iplot]/self.area_train)
 
             MODELS = self.MODELS[i] # Take the model for the category.
+            MODELS_pow = self.MODELS_pow[i] # Power law for magnitude.
 
             # Plotting the fits
             for j, var_num_tuple in enumerate(MODELS.keys()): # For each selection of variables
@@ -942,7 +944,8 @@ class model2(parent_model):
                                                   var_names, weights, lines=lines, category_names=[self.category[i]],\
                                                   pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
                                                   plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
-                                                  means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour)
+                                                  means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour,\
+                                                  plot_pow=True, pow_model=MODELS_pow, pow_var_num=2)
                         plt.tight_layout()
                         if cum_contour:
                             plt.savefig("%s-%s-data-%s-fit-K%d-cum-contour.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
@@ -967,6 +970,8 @@ class model2(parent_model):
         weights = [self.w[iplot]/self.area_train]
 
         MODELS = self.MODELS[i] # Take the model for the category.
+        MODELS_pow = self.MODELS_pow[i]
+
         # Plotting the fits
         for j, var_num_tuple in enumerate(MODELS.keys()): # For each selection of variables
             if len(var_num_tuple) < 4: # Only plot the last models.
@@ -988,7 +993,8 @@ class model2(parent_model):
                                               var_names, weights, lines=lines, category_names=[self.category[i]],\
                                               pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
                                               plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
-                                              means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour)
+                                              means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour,\
+                                              plot_pow=True, pow_model=MODELS_pow, pow_var_num=4)
                     plt.tight_layout()
                     if cum_contour:
                         plt.savefig("%s-%s-data-%s-fit-K%d-cum_contour.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
