@@ -930,24 +930,17 @@ def pow_param_init(left_hist, left_f, right_hist, right_f, bw):
     ans[1] = A_init
     return ans
 
-def mag2flux(mag):
-    return 10**(0.4*(22.5-mag))
-        
 
-
-def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, cn2fit=0, pow_tol =1e-5, broken_tol=1e-2, fname=None, lw=1.5):
+def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
     """
     Given the magnitudes and the corresponding weight, and the parameters for the histogram, 
-    return the best fit parameters for a power law and a broken power law.
+    return the best fit parameters for a power law.
     
     Note: This function could be much more modular. But for now I keep it as it is.
     """
     # Computing the histogram.
-    bins = np.arange(magmin, magmax+bw*0.9, bw) # I am not sure what this is necessary but this works.
-    if cn2fit<6:
-        hist, bin_edges = np.histogram(mag, weights=weight/np.float(area), bins=bins)
-    else: # If D2reject, then do not weight except for the area.
-        hist, bin_edges = np.histogram(mag,weights=np.ones(mag.size)/np.float(area), bins=bins)        
+    bins = np.arange(magmin, magmax+bw/2., bw)
+    hist, bin_edges = np.histogram(mag, weights=weight/np.float(area), bins=bins)
 
     # Compute the median magnitude
     magmed = np.median(mag)
@@ -963,13 +956,12 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, cn2fit=0, pow_tol
     right_f = mag2flux(bin_centers[~ileft])
     flux_centers = mag2flux(bin_centers)
 
-
     # Place holder for the best parameters
     best_params_pow = np.zeros(2,dtype=np.float) 
 
     # Empty list for the negative log-likelihood
     list_nloglike = []
-    best_nloglike = -100.
+    best_nloglike = -np.inf # -100
 
     # Define negative total loglikelihood function given the histogram.
     def ntotal_loglike_pow(params):
@@ -984,12 +976,10 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, cn2fit=0, pow_tol
         return -total_loglike
 
     # fit for niter times 
-    print("Fitting power law")
     counter = 0
     while counter < niter:
         # Generate initial parameters
         init_params = pow_param_init(left_hist, left_f, right_hist, right_f, bw)
-    #     print(init_param)
 
         # Optimize the parameters.
         res = opt.minimize(ntotal_loglike_pow, init_params,tol=pow_tol,method="Nelder-Mead" )
@@ -997,8 +987,6 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, cn2fit=0, pow_tol
             counter+=1
             if counter % 2 == 0:
                 print(counter)
-#             print(counter)
-    #         print(res["x"])
             fitted_params = res["x"]
 
             # Calculate the negative total likelihood
@@ -1012,81 +1000,14 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, cn2fit=0, pow_tol
 
 #     print(best_params_pow)
 
+    return best_params_pow
 
+    
 
-    # Place holder for the best parameters
-    best_params_broken = np.zeros(4,dtype=np.float) 
+def mag2flux(mag):
+    return 10**(0.4*(22.5-mag))
+        
 
-    # Empty list for the negative log-likelihood
-    list_nloglike = []
-    best_nloglike = -100.
-
-    # Define negative total loglikelihood function given the histogram.
-    def ntotal_loglike_broken(params):
-        """
-        Total log likelihood for broken power law.
-        """
-        total_loglike = 0
-
-        for i in range(flux_centers.size):
-            total_loglike += stats.poisson.logpmf(hist[i].astype(int), broken_pow_law(params, flux_centers[i])*bw)
-
-        return -total_loglike
-
-
-    # fit for niter times 
-    print("Fitting broken power law")
-    counter = 0
-    while counter < niter:
-        # Generate initial parameters
-        phi = broken_pow_phi_init(flux_centers, best_params_pow, hist, bw, mag2flux(magmed))
-        alpha = -best_params_pow[0]
-        beta = best_params_pow[0]
-        init_params = [alpha, beta,mag2flux(magmed), phi]
-    #     print(init_params)
-
-        # Optimize the parameters.
-        res = opt.minimize(ntotal_loglike_broken, init_params,tol=broken_tol,method="Nelder-Mead" )
-        if res["success"]:
-            counter+=1
-            if counter % 2 == 0:
-                print(counter)            
-    #         print(res["x"])
-            fitted_params = res["x"]
-
-            # Calculate the negative total likelihood
-            nloglike = ntotal_loglike_broken(fitted_params)
-            list_nloglike.append(nloglike)
-
-            # If loglike is the highest among seen, then update the parameters.
-            if nloglike > best_nloglike:
-                best_nloglike = nloglike
-                best_params_broken = fitted_params
-
-#     print(best_params_broken)
-
-    # power law fit
-    xvec = np.arange(magmin, magmax, 1e-3)
-    yvec = pow_law(best_params_pow, mag2flux(xvec))*np.float(bw)
-    pow_str = pow_legend(best_params_pow)
-    plt.plot(xvec,yvec, c = "red", label = pow_str, lw=lw)
-    # broken  power law fit
-    yvec = broken_pow_law(best_params_broken, mag2flux(xvec))*np.float(bw)
-    broken_str = broken_legend(best_params_broken)
-    plt.plot(xvec,yvec, c = "blue", label=broken_str, lw=lw)
-    # hist
-    plt.bar(bin_edges[:-1], hist, width=bw, alpha=0.5, color="g")
-    # deocration
-    plt.legend(loc="upper left")
-    plt.xlim([magmin,magmax])
-    plt.xlabel(r"Mag")
-    plt.ylabel(r"Number per %.2f mag bin"%bw)
-    if fname is not None:
-        plt.savefig(fname+".png", bbox_inches="tight", dpi=400)
-    # plt.show()
-    plt.close()
-
-    return best_params_pow, best_params_broken
 
 
 
@@ -1837,7 +1758,7 @@ def fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=[1], Niter=1, fname_suffix="test"
     
     Input: 
     - ND: Number of dimensions of the data points. 
-    - ND_fit: Only consider variables up to ND_fit (var0, var1, ... varND-1) in making the fits.
+    - ND_fit: Only consider variables up to ND_fit (var0, var1, ... varND_fit-1) in making the fits.
     - NK_list: Number of component gaussians to use for fitting.
     - Niter: Number of trials for the XD fit.
     - MaxDIM: Fit only max dimensional model allowed by ND_fit.
