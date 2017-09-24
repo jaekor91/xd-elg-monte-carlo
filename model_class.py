@@ -697,6 +697,9 @@ class model2(parent_model):
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
         self.gmag_lines = [21, 22, 23, 24, 24.25]
 
+        # Fit parameters for pow law
+        self.MODELS_pow = [None, None, None]
+
     def var_reparam(self):
         return np.arcsinh(self.zflux/self.gflux/2.), np.arcsinh(self.rflux/self.gflux/2.), np.arcsinh(self.oii/self.gflux/2.), flux2mag(self.gflux)
 
@@ -811,6 +814,32 @@ class model2(parent_model):
             self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=Niter, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
 
         return
+
+
+    def fit_dNdm(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.025):
+        """
+        Fit mag pow laws
+        """
+        cache_success = False
+        if cache:
+            for i in range(3):
+                model_fname = "./MODELS-%s-%s-%s.npy" % (self.category[i], model_tag, cv_tag)
+                if os.path.isfile(model_fname):
+                    self.MODELS[i] = np.load(model_fname).item()
+                    cache_success = True
+                    print "Cached result will be used for MODELS-%s-%s-%s-pow." % (self.category[i], model_tag, cv_tag)
+        if not cache_success:
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+                print "Fitting power law for %s" % self.category[i]
+                ifit = self.iTrain & ibool
+                mag = self.gmag[ifit]
+                weight = self.w[ifit]
+                self.MODELS_pow[i] = dNdm_fit(mag, weight, bw, self.mag_min, self.mag_max, self.area_train, niter = 10, pow_tol =1e-5)
+                np.save("MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
+
+        return 
+
+
 
 
 
