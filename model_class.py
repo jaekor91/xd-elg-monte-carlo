@@ -823,9 +823,9 @@ class model2(parent_model):
         cache_success = False
         if cache:
             for i in range(3):
-                model_fname = "./MODELS-%s-%s-%s.npy" % (self.category[i], model_tag, cv_tag)
+                model_fname = "./MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag)
                 if os.path.isfile(model_fname):
-                    self.MODELS[i] = np.load(model_fname).item()
+                    self.MODELS[i] = np.load(model_fname)
                     cache_success = True
                     print "Cached result will be used for MODELS-%s-%s-%s-pow." % (self.category[i], model_tag, cv_tag)
         if not cache_success:
