@@ -907,7 +907,14 @@ def broken_pow_law(params, flux):
     phi = params[3]
     return phi/((flux/fs)**alpha+(flux/fs)**beta + 1e-12)
 
-def pow_param_init(left_hist, left_f, right_hist, right_f, bw):
+
+def dNdm2dNdf(m):
+    """
+    dNdm/dNdf_m (m) factor
+    """
+    return (2*np.log(10)/5.)*mag2flux(m)
+
+def pow_param_init(left_hist, left_f, right_hist, right_f, bw, area):
     """
     Return initial guess for the exponent and normalization.
     """
@@ -922,8 +929,8 @@ def pow_param_init(left_hist, left_f, right_hist, right_f, bw):
         c_R = right_hist[R]
 #     print(L,R)
     # exponent
-    alpha_init = np.log(c_L/np.float(c_R))/np.log(f_L/np.float(f_R))
-    A_init = c_L/(f_L**alpha_init * bw)
+    alpha_init = -1 + (np.log(c_L/np.float(c_R))/np.log(f_L/np.float(f_R)))
+    A_init = c_R/(f_R**(alpha_init+1) * bw * (0.4 * np.log(10)) * area)
     
     ans = np.zeros(2, dtype=np.float)
     ans[0] = alpha_init
@@ -940,7 +947,7 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
     """
     # Computing the histogram.
     bins = np.arange(magmin, magmax+bw/2., bw)
-    hist, bin_edges = np.histogram(mag, weights=weight/np.float(area), bins=bins)
+    hist, bin_edges = np.histogram(mag, weights=weight, bins=bins)
 
     # Compute the median magnitude
     magmed = np.median(mag)
@@ -971,7 +978,7 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
         total_loglike = 0
 
         for i in range(flux_centers.size):
-            total_loglike += stats.poisson.logpmf(hist[i].astype(int), pow_law(params, flux_centers[i])*bw)
+            total_loglike += stats.poisson.logpmf(hist[i].astype(int), pow_law(params, flux_centers[i]) * bw * (0.4 * np.log(10) * flux_centers[i]) * area)
 
         return -total_loglike
 
@@ -979,14 +986,14 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
     counter = 0
     while counter < niter:
         # Generate initial parameters
-        init_params = pow_param_init(left_hist, left_f, right_hist, right_f, bw)
+        init_params = pow_param_init(left_hist, left_f, right_hist, right_f, bw, area)
 
         # Optimize the parameters.
         res = opt.minimize(ntotal_loglike_pow, init_params,tol=pow_tol,method="Nelder-Mead" )
+        counter+=1
+        if counter % 2 == 0:
+            print(counter)
         if res["success"]:
-            counter+=1
-            if counter % 2 == 0:
-                print(counter)
             fitted_params = res["x"]
 
             # Calculate the negative total likelihood
@@ -997,6 +1004,8 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
             if nloglike > best_nloglike:
                 best_nloglike = nloglike
                 best_params_pow = fitted_params
+        else:
+            print "Optimization failed."
 
 #     print(best_params_pow)
 
@@ -1641,7 +1650,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps_general, means_general, covs_general, var_num_tuple.index(var_num1), MoG_color=color_MoG2)
                         if plot_pow and (var_num1 == pow_var_num):
                             xvec = np.arange(var_min, var_max, 1e-3)
-                            yvec = pow_law(pow_model, mag2flux(xvec))*bin_width
+                            yvec = pow_law(pow_model, mag2flux(xvec)) * bin_width * dNdm2dNdf(xvec)
                             ax_list[i, j].plot(xvec,yvec, c = "red", lw=2.)
                             
                     elif plot_type == "v-hist":
@@ -1660,7 +1669,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps_general, means_general, covs_general, var_num_tuple.index(var_num1), MoG_color=color_MoG2, vertical=False) 
                         if plot_pow and (var_num1 == pow_var_num):
                             xvec = np.arange(var_min, var_max, 1e-3)
-                            yvec = pow_law(pow_model, mag2flux(xvec))*bin_width
+                            yvec = pow_law(pow_model, mag2flux(xvec)) * bin_width * dNdm2dNdf(xvec)
                             ax_list[i, j].plot(yvec, xvec, c = "red", lw=2.)
                             
 
