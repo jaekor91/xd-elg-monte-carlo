@@ -1078,20 +1078,24 @@ class model2(parent_model):
 
             # Data variable
             variables = []
-            weights = []                
-            iplot = np.copy(ibool) & self.iTrain
-            variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
-            weights.append(self.w[iplot]/self.area_train)
-            labels = [self.category[cat]]
-            colors = ["black"]
-            alphas = [1]
+            weights = []
+            labels = []
+            colors = []
+            alphas = []
             # MC variable. Note that var_x and var_x_obs have different data structure.
             if MC:
                 variables.append([self.var_x_obs[cat], self.var_y_obs[cat], self.gmag_obs[cat]])
                 weights.append(np.ones(self.NSAMPLE[cat])/self.area_MC)
                 labels.append("MC")
                 colors.append("red")
-                alphas.append(0.5)
+                alphas.append(0.4)
+
+            iplot = np.copy(ibool) & self.iTrain
+            variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
+            weights.append(self.w[iplot]/self.area_train)
+            labels.append(self.category[cat])
+            colors.append("black")
+            alphas.append(1)
 
             # Take the model for the category.
             MODELS = self.MODELS[cat] 
@@ -1100,7 +1104,6 @@ class model2(parent_model):
             amps_fit  = m["amps"]
             means_fit  = m["means"]
             covs_fit = m["covs"]
-
             MODELS_pow = self.MODELS_pow[cat] # Power law for magnitude.
 
             # Plotting the fits
@@ -1133,12 +1136,12 @@ class model2(parent_model):
             var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.red_z_name, self.gmag_name]
             lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.redz_lines, self.gmag_lines]
 
-            iplot = np.copy(ibool) & self.iTrain
-            variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.red_z[iplot], self.gmag[iplot]]]
-            weights = [self.w[iplot]/self.area_train]
-            labels = [self.category[cat]]
-            colors = ["black"]
-            alphas = [1]
+
+            variables = []
+            weights = []
+            labels = []
+            colors = []
+            alphas = []
 
             # MC variable. Note that var_x and var_x_obs have different data structure.
             if MC:
@@ -1146,7 +1149,15 @@ class model2(parent_model):
                 weights.append(np.ones(self.NSAMPLE[cat])/self.area_MC)
                 labels.append("MC")
                 colors.append("red")
-                alphas.append(0.5)
+                alphas.append(0.4)
+
+            iplot = np.copy(ibool) & self.iTrain
+            variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.red_z[iplot], self.gmag[iplot]])
+            weights.append(self.w[iplot]/self.area_train)
+            labels.append(self.category[cat])
+            colors.append("black")
+            alphas.append(1)
+
 
             # Take the model for the category.
             MODELS = self.MODELS[cat] 
