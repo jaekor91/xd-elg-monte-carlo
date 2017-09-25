@@ -700,6 +700,48 @@ class model2(parent_model):
         # Fit parameters for pow law
         self.MODELS_pow = [None, None, None]
 
+        # ----- MCMC Sample Variables ----- # 
+        self.area_MCMC = 200 # 200 sq. deg.
+        # Original sample.
+        # 0: NonELG, 1: NoZ, 2: ELG
+        self.gflux0 = [None, None, None] # 0 for original
+        self.rflux0 = [None, None, None] # 0 for original
+        self.zflux0 = [None, None, None] # 0 for original
+        self.oii0 = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
+        self.redz0 = [None, None, None]
+        # Default noise levels
+        self.glim = 23.8
+        self.rlim = 23.4
+        self.zlim = 22.4
+        self.oii = 8 # 6 sigma
+        # Noise seed. err_seed ~ N(0, 1). This can be transformed by scaling appropriately.
+        self.g_err_seed = [None, None, None] # Error seed.
+        self.r_err_seed = [None, None, None] # Error seed.
+        self.z_err_seed = [None, None, None] # Error seed.
+        self.oii_err_seed = [None, None, None] # Error seed.
+        # Noise convolved values
+        self.gflux_obs = [None, None, None] # obs for observed
+        self.rflux_obs = [None, None, None] # obs for observed
+        self.zflux_obs = [None, None, None] # obs for observed
+        self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
+        self.redz_obs = [None, None, None]
+        # Incompleteness vector
+        self.iELG_detect = None
+        self.iNonELG_detect = None
+        self.iNoZ_detect = None
+        # Observed final distributions
+        self.var_x_obs = [None, None, None] # z/g
+        self.var_y_obs = [None, None, None] # r/g
+        self.var_z_obs = [None, None, None] # oii/g
+        self.redz_obs = [None, None, None]
+        self.gmag = [None, None, None]
+
+
+
+    def set_area_MCMC(self, val):
+        self.area_MCMC = val
+        return
+
     def var_reparam(self):
         return np.arcsinh(self.zflux/self.gflux/2.), np.arcsinh(self.rflux/self.gflux/2.), np.arcsinh(self.oii/self.gflux/2.), flux2mag(self.gflux)
 
@@ -1004,4 +1046,6 @@ class model2(parent_model):
                     plt.close()
 
         return
+
+
 
