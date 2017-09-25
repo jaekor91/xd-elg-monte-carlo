@@ -1011,6 +1011,103 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
 
     return best_params_pow
 
+
+
+def pow_param_init_dNdf(left_hist, left_f, right_hist, right_f, bw, area):
+    """
+    Return initial guess for the exponent and normalization.
+    """
+    # selecting non-zero bin one from left and one from right. 
+    c_L = 0; c_R = 0
+    while c_L==0 or c_R == 0 or c_L <= c_R:
+        L = np.random.randint(low=0,high=left_hist.size,size=1)
+        f_L = left_f[L]
+        c_L = left_hist[L]
+        R = np.random.randint(low=0,high=right_hist.size,size=1)
+        f_R = right_f[R]
+        c_R = right_hist[R]
+#     print(L,R)
+    # exponent
+    alpha_init = np.log(c_L/np.float(c_R))/np.log(f_L/np.float(f_R))
+    A_init = c_R/(f_R**alpha_init * bw * area)
+    
+    ans = np.zeros(2, dtype=np.float)
+    ans[0] = alpha_init
+    ans[1] = A_init
+    return ans
+
+def dNdf_fit(flux, weight, bw, fmin, fmax, area, niter = 5, pow_tol =1e-5):
+    """
+    Given the fluxes and the corresponding weight, and the parameters for the histogram, 
+    return the best fit parameters for a power law.
+    
+    Note: This function could be much more modular. But for now I keep it as it is.
+    """
+    # Computing the histogram.
+    bins = np.arange(fmin, fmax+bw/2., bw)
+    hist, bin_edges = np.histogram(flux, weights=weight, bins=bins)
+
+    # Compute the median magnitude
+    fmed = np.median(flux)
+
+    # Compute bin centers. Left set and right set.
+    bin_centers = (bin_edges[:-1]+bin_edges[1:])/2.
+    ileft = bin_centers < fmed
+    # left and right counts
+    left_hist = hist[ileft]
+    right_hist = hist[~ileft]
+    # left and right flux
+    left_f = bin_centers[ileft]
+    right_f = bin_centers[~ileft]
+
+    # Place holder for the best parameters
+    best_params_pow = np.zeros(2,dtype=np.float) 
+
+    # Empty list for the negative log-likelihood
+    list_nloglike = []
+    best_nloglike = -np.inf # -100
+
+    # Define negative total loglikelihood function given the histogram.
+    def ntotal_loglike_pow(params):
+        """
+        Total log likelihood.
+        """
+        total_loglike = 0
+
+        for i in range(bin_centers.size):
+            total_loglike += stats.poisson.logpmf(hist[i].astype(int), pow_law(params, bin_centers[i]) * bw * area)
+
+        return -total_loglike
+
+    # fit for niter times 
+    counter = 0
+    while counter < niter:
+        # Generate initial parameters
+        init_params = pow_param_init_dNdf(left_hist, left_f, right_hist, right_f, bw, area)
+
+        # Optimize the parameters.
+        res = opt.minimize(ntotal_loglike_pow, init_params,tol=pow_tol,method="Nelder-Mead" )
+        counter+=1
+        if counter % 2 == 0:
+            print(counter)
+        if res["success"]:
+            fitted_params = res["x"]
+
+            # Calculate the negative total likelihood
+            nloglike = ntotal_loglike_pow(fitted_params)
+            list_nloglike.append(nloglike)
+
+            # If loglike is the highest among seen, then update the parameters.
+            if nloglike > best_nloglike:
+                best_nloglike = nloglike
+                best_params_pow = fitted_params
+        else:
+            print "Optimization failed."
+
+#     print(best_params_pow)
+
+    return best_params_pow
+
     
 
 def mag2flux(mag):

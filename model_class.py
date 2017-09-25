@@ -816,7 +816,7 @@ class model2(parent_model):
         return
 
 
-    def fit_dNdm(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.025):
+    def fit_dNdf(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.025):
         """
         Fit mag pow laws
         """
@@ -832,9 +832,9 @@ class model2(parent_model):
             for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
                 print "Fitting power law for %s" % self.category[i]
                 ifit = self.iTrain & ibool
-                mag = self.gmag[ifit]
+                flux = self.gflux[ifit]
                 weight = self.w[ifit]
-                self.MODELS_pow[i] = dNdm_fit(mag, weight, bw, self.mag_min, self.mag_max, self.area_train, niter = Niter)
+                self.MODELS_pow[i] = dNdf_fit(flux, weight, bw, mag2flux(self.mag_max), mag2flux(self.mag_min), self.area_train, niter = Niter)
                 np.save("MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
 
         return 
