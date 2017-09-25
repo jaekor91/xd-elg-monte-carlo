@@ -1668,7 +1668,7 @@ def contour_plot_range(Xrange):
 
 def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=None,\
                     lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None,\
-                    colors=None, ft_size_legend=15, hist_normed=False,\
+                    colors=None, ft_size_legend=15, hist_normed=False, alphas=None,\
                     plot_MoG1=False, amps1=None, means1=None, covs1=None, ND1=0, color_MoG1="blue",\
                     plot_MoG2=False, amps2=None, means2=None, covs2=None, ND2=0, color_MoG2="red",\
                    plot_MoG_general=False, var_num_tuple=None, amps_general=None, means_general=None, covs_general=None, color_general="red",\
@@ -1751,6 +1751,10 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
             color = colors[i]
         else:
             color = "black"
+        if alphas is not None: 
+            alpha = alphas[i]
+        else:
+            alpha = 1
         if category_names is not None:
             cname = category_names[i]
         else:
@@ -1766,7 +1770,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                 plot_type, var_num1, var_num2 = ax_dict[(i, j)]
                 if plot_type is not None:
                     if plot_type == "corr":
-                        ax_list[i, j].scatter(vars_tmp[var_num1], vars_tmp[var_num2], s=pt_size, c=color, label=cname, edgecolor="none")
+                        ax_list[i, j].scatter(vars_tmp[var_num1], vars_tmp[var_num2], s=pt_size, c=color, label=cname, edgecolor="none", alpha=alpha)
                         if plot_MoG1 and (var_num1<ND1) and (var_num2<ND1):
                             plot_cov_ellipse(ax_list[i, j], means1, covs1, var_num1, var_num2, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2) and (var_num2<ND2):
