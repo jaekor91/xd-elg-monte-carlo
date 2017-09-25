@@ -702,8 +702,13 @@ class model2(parent_model):
 
         # ----- MCMC Sample Variables ----- # 
         self.area_MCMC = self.area_train # 
+        # Flux range to draw the sample from. Slightly larger than the range we are interested.
+        self.fmin_MCMC = mag2flux(24.25)
+        self.fmax_MCMC = mag2flux(21.75)
+        self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
         # 0: NonELG, 1: NoZ, 2: ELG
+        self.NSAMPLE = [None, None, None]
         self.gflux0 = [None, None, None] # 0 for original
         self.rflux0 = [None, None, None] # 0 for original
         self.zflux0 = [None, None, None] # 0 for original
@@ -725,16 +730,69 @@ class model2(parent_model):
         self.zflux_obs = [None, None, None] # obs for observed
         self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
         self.redz_obs = [None, None, None]
-        # Incompleteness vector
-        self.iELG_detect = None
-        self.iNonELG_detect = None
-        self.iNoZ_detect = None
+        # Completeness weight for each sample. If 1, the object is certain to be observed. If 0, the opposite.
+        self.iELG_cw = None
+        self.iNonELG_cw = None
+        self.iNoZ_cw = None
         # Observed final distributions
         self.var_x_obs = [None, None, None] # z/g
         self.var_y_obs = [None, None, None] # r/g
         self.var_z_obs = [None, None, None] # oii/g
         self.redz_obs = [None, None, None]
         self.gmag = [None, None, None]
+
+
+
+    def gen_sample_intrinsic(self, K_selected):
+        """
+        Given MoG x power law parameters specified by [amps, means, covs] corresponding to K_selected[i] components
+        and MODELS_pow, return a sample proportional to area.
+        """
+        # NonELG, NoZ and ELG
+        for i in range(3):
+            # MoG model
+            MODELS = self.MODELS[i]
+            MODELS = MODELS[MODELS.keys()[0]][K_selected[i]] # We only want the model with K components
+            amps, means, covs = MODELS["amps"], MODELS["means"], MODELS["covs"]
+
+            # Pow law model
+            alpha, A = self.MODELS_pow[i]
+
+            # Compute the number of sample to draw.
+            NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MCMC, self.fmax_MCMC) * self.area_MCMC))#
+            print "%s sample number: %d" % (self.category[i], NSAMPLE)
+            
+            # Generate Nsample flux.
+            gflux = gen_pow_law_sample(self.fmin_MCMC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MCMC)
+            
+            # Generate Nsample from MoG.
+            MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)
+
+            if i<2:# NonELG and NoZ 
+                arcsinh_zg, arcsinh_rg = MoG_sample[:,0], MoG_sample[:,1]
+                zflux = np.sinh(arcsinh_zg)*gflux 
+                rflux =np.sinh(arcsinh_rg)*gflux 
+
+                # Saving
+                self.gflux0[i] = gflux
+                self.rflux0[i] = rflux
+                self.zflux0[i] = zflux
+                self.NSAMPLE[i] = NSAMPLE
+            else:
+                arcsinh_zg, arcsinh_rg, arcsinch_oiig, redz = MoG_sample[:,0], MoG_sample[:,1], MoG_sample[:,2], MoG_sample[:,3]
+                zflux = np.sinh(arcsinh_zg)*gflux 
+                rflux =np.sinh(arcsinh_rg)*gflux 
+                oii = np.sinh(arcsinch_oiig)*gflux
+
+                # Saving
+                self.gflux0[i] = gflux
+                self.rflux0[i] = rflux
+                self.zflux0[i] = zflux
+                self.redz0[i] = redz
+                self.oii0[i] = oii
+                self.NSAMPLE[i] = NSAMPLE
+
+        return 
 
 
 
