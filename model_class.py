@@ -838,7 +838,7 @@ class model2(parent_model):
             else: #ELG 
                 # oii parameerization
                 self.oii_obs[i] = self.oii0[i] + self.oii_err_seed[i] * (self.oii_lim_err/6.) # 
-                self.var_z_obs = np.arcsinh(self.oii_obs[i]/self.gflux_obs[i])
+                self.var_z_obs[i] = np.arcsinh(self.oii_obs[i]/self.gflux_obs[i])
 
                 # Redshift has no uncertainty
                 self.redz_obs[i] = self.redz0[i]
@@ -1084,12 +1084,14 @@ class model2(parent_model):
             weights.append(self.w[iplot]/self.area_train)
             labels = [self.category[cat]]
             colors = ["black"]
+            alphas = [1]
             # MC variable. Note that var_x and var_x_obs have different data structure.
             if MC:
                 variables.append([self.var_x_obs[cat], self.var_y_obs[cat], self.gmag_obs[cat]])
                 weights.append(np.ones(self.NSAMPLE[cat])/self.area_MC)
                 labels.append("MC")
                 colors.append("red")
+                alphas.append(0.5)
 
             # Take the model for the category.
             MODELS = self.MODELS[cat] 
@@ -1097,7 +1099,7 @@ class model2(parent_model):
             m = MODELS[var_num_tuple][K] # Plot only the case requested.
             amps_fit  = m["amps"]
             means_fit  = m["means"]
-            covs_fit = m["covs"]        
+            covs_fit = m["covs"]
 
             MODELS_pow = self.MODELS_pow[cat] # Power law for magnitude.
 
@@ -1107,7 +1109,7 @@ class model2(parent_model):
             ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
                                       var_names, weights, lines=lines, category_names=labels,\
                                       pt_sizes=None, colors=colors, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
-                                      plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
+                                      plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit, alphas=alphas,\
                                       means_general=means_fit, covs_general=covs_fit, color_general="blue", cum_contour=cum_contour,\
                                       plot_pow=True, pow_model=MODELS_pow, pow_var_num=2)
             plt.tight_layout()
@@ -1120,53 +1122,62 @@ class model2(parent_model):
 
 
         else:
-            pass
-            # print "Corr plot - var_xyz, var_w, red_z - ELG only"
-            # num_cat = 1
-            # num_vars = 5
-            # lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_redz, self.lim_gmag]
-            # binws = [self.dx, self.dy, self.dz, self.dred_z, self.dgmag]
-            # var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.red_z_name, self.gmag_name]
-            # lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.redz_lines, self.gmag_lines]
+            if MC:
+                num_cat = 2 # Training data + MC sample
+            else:
+                num_cat = 1
+            num_vars = 5
 
-            # iplot = np.copy(self.iELG) & self.iTrain
-            # i = 2 # For category
-            # variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.red_z[iplot], self.gmag[iplot]]]
-            # weights = [self.w[iplot]/self.area_train]
+            lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_redz, self.lim_gmag]
+            binws = [self.dx, self.dy, self.dz, self.dred_z, self.dgmag]
+            var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.red_z_name, self.gmag_name]
+            lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.redz_lines, self.gmag_lines]
 
-            # MODELS = self.MODELS[i] # Take the model for the category.
-            # MODELS_pow = self.MODELS_pow[i]
+            iplot = np.copy(ibool) & self.iTrain
+            variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.red_z[iplot], self.gmag[iplot]]]
+            weights = [self.w[iplot]/self.area_train]
+            labels = [self.category[cat]]
+            colors = ["black"]
+            alphas = [1]
 
-            # # Plotting the fits
-            # for j, var_num_tuple in enumerate(MODELS.keys()): # For each selection of variables
-            #     if len(var_num_tuple) < 4: # Only plot the last models.
-            #         pass
-            #     else:
-            #         # Models corresponding to the tuples
-            #         ms = MODELS[var_num_tuple]
-            #         for K in ms.keys(): # For each component number tried                        
-            #             print "K: %d" % K                
-            #             # Fits
-            #             m = ms[K]
-            #             amps_fit  = m["amps"]
-            #             means_fit  = m["means"]
-            #             covs_fit = m["covs"]        
-            
-            #             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-            #             # Corr plots without annotation
-            #             ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
-            #                                       var_names, weights, lines=lines, category_names=[self.category[i]],\
-            #                                       pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
-            #                                       plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
-            #                                       means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour,\
-            #                                       plot_pow=True, pow_model=MODELS_pow, pow_var_num=4)
-            #             plt.tight_layout()
-            #             if cum_contour:
-            #                 plt.savefig("%s-%s-data-%s-fit-K%d-cum_contour.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
-            #             else:
-            #                 plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
-            #             # plt.show()
-            #             plt.close()
+            # MC variable. Note that var_x and var_x_obs have different data structure.
+            if MC:
+                variables.append([self.var_x_obs[cat], self.var_y_obs[cat], self.var_z_obs[cat], self.redz_obs[cat], self.gmag_obs[cat]])
+                weights.append(np.ones(self.NSAMPLE[cat])/self.area_MC)
+                labels.append("MC")
+                colors.append("red")
+                alphas.append(0.5)
+
+            # Take the model for the category.
+            MODELS = self.MODELS[cat] 
+            var_num_tuple = MODELS.keys()[0]
+            m = MODELS[var_num_tuple][K] # Plot only the case requested.
+            amps_fit  = m["amps"]
+            means_fit  = m["means"]
+            covs_fit = m["covs"]
+
+            MODELS_pow = self.MODELS_pow[cat] # Power law for magnitude.
+
+            # Plotting the fits
+            fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+            # Corr plots without annotation
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
+                                      var_names, weights, lines=lines, category_names=labels,\
+                                      pt_sizes=None, colors=colors, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
+                                      plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit, alphas=alphas,\
+                                      means_general=means_fit, covs_general=covs_fit, color_general="blue", cum_contour=cum_contour,\
+                                      plot_pow=True, pow_model=MODELS_pow, pow_var_num=4)
+            plt.tight_layout()
+            if cum_contour:
+                plt.savefig("%s-%s-data-%s-fit-K%d-cum-contour.png" % (model_tag, cv_tag, self.category[cat], K), dpi=200, bbox_inches="tight")
+            else:
+                plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[cat], K), dpi=200, bbox_inches="tight")
+            # plt.show()
+            plt.close()
+
+
+
+
 
         return
 
