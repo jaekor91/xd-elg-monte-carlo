@@ -1921,6 +1921,11 @@ def gen_flux_noise(Nsample, flim, sn=5):
     """
     sig = flim/float(sn)
     return np.random.normal(0, sig, Nsample).T
+
+
+def gen_err_seed(nsample):
+    return np.random.normal(0, 1, nsample)
+    
     
 
 
