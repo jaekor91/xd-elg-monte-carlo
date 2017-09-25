@@ -700,11 +700,11 @@ class model2(parent_model):
         # Fit parameters for pow law
         self.MODELS_pow = [None, None, None]
 
-        # ----- MCMC Sample Variables ----- # 
-        self.area_MCMC = self.area_train # 
+        # ----- MC Sample Variables ----- # 
+        self.area_MC = self.area_train # 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
-        self.fmin_MCMC = mag2flux(24.25)
-        self.fmax_MCMC = mag2flux(21.75)
+        self.fmin_MC = mag2flux(24.25)
+        self.fmax_MC = mag2flux(21.75)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
         # 0: NonELG, 1: NoZ, 2: ELG
@@ -758,11 +758,11 @@ class model2(parent_model):
             alpha, A = self.MODELS_pow[i]
 
             # Compute the number of sample to draw.
-            NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MCMC, self.fmax_MCMC) * self.area_MCMC))#
+            NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MC, self.fmax_MC) * self.area_MC))#
             print "%s sample number: %d" % (self.category[i], NSAMPLE)
 
             # Generate Nsample flux.
-            gflux = gen_pow_law_sample(self.fmin_MCMC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MCMC)
+            gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)
             
             # Generate Nsample from MoG.
             MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)
@@ -849,8 +849,8 @@ class model2(parent_model):
 
 
 
-    def set_area_MCMC(self, val):
-        self.area_MCMC = val
+    def set_area_MC(self, val):
+        self.area_MC = val
         return
 
     def var_reparam(self):
@@ -1046,7 +1046,7 @@ class model2(parent_model):
 
 
 
-    def visualize_fit(self, model_tag="", cv_tag="", cat=0, K=1, cum_contour=False, MCMC=False):
+    def visualize_fit(self, model_tag="", cv_tag="", cat=0, K=1, cum_contour=False, MC=False):
         """
         Make corr plots of a choosen classes with fits overlayed.
         cat. 0: NonELG, 1: NoZ, 2: ELG
@@ -1057,7 +1057,7 @@ class model2(parent_model):
         plot the cumulative gaussian fit. Also, plot the power law function corresponding
         to the magnitude dimension.
 
-        If MCMC is True, then over-plot the MCMC sample as well.
+        If MC is True, then over-plot the MC sample as well.
         """
         ibool_list = [self.iNonELG, self.iNoZ, self.iELG]
 
@@ -1065,8 +1065,8 @@ class model2(parent_model):
         ibool = ibool_list[cat]
 
         if cat in [0, 1]: # NonELG or NoZ 
-            if MCMC:
-                num_cat = 2 # Training data + MCMC sample
+            if MC:
+                num_cat = 2 # Training data + MC sample
             else:
                 num_cat = 1
             num_vars = 3
@@ -1084,11 +1084,11 @@ class model2(parent_model):
             weights.append(self.w[iplot]/self.area_train)
             labels = [self.category[cat]]
             colors = ["black"]
-            # MCMC variable. Note that var_x and var_x_obs have different data structure.
-            if MCMC:
+            # MC variable. Note that var_x and var_x_obs have different data structure.
+            if MC:
                 variables.append([self.var_x_obs[cat], self.var_y_obs[cat], self.gmag_obs[cat]])
-                weights.append(np.ones(self.NSAMPLE[cat])/self.area_MCMC)
-                labels.append("MCMC")
+                weights.append(np.ones(self.NSAMPLE[cat])/self.area_MC)
+                labels.append("MC")
                 colors.append("red")
 
             # Take the model for the category.
