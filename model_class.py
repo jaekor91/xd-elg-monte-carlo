@@ -715,10 +715,10 @@ class model2(parent_model):
         self.oii0 = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
         self.redz0 = [None, None, None]
         # Default noise levels
-        self.glim = 23.8
-        self.rlim = 23.4
-        self.zlim = 22.4
-        self.oii = 8 # 6 sigma
+        self.glim_err = 23.8
+        self.rlim_err = 23.4
+        self.zlim_err = 22.4
+        self.oii_lim_err = 8 # 6 sigma
         # Noise seed. err_seed ~ N(0, 1). This can be transformed by scaling appropriately.
         self.g_err_seed = [None, None, None] # Error seed.
         self.r_err_seed = [None, None, None] # Error seed.
@@ -729,7 +729,6 @@ class model2(parent_model):
         self.rflux_obs = [None, None, None] # obs for observed
         self.zflux_obs = [None, None, None] # obs for observed
         self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
-        self.redz_obs = [None, None, None]
         # Completeness weight for each sample. If 1, the object is certain to be observed. If 0, the opposite.
         self.iELG_cw = None
         self.iNonELG_cw = None
@@ -738,8 +737,8 @@ class model2(parent_model):
         self.var_x_obs = [None, None, None] # z/g
         self.var_y_obs = [None, None, None] # r/g
         self.var_z_obs = [None, None, None] # oii/g
-        self.redz_obs = [None, None, None]
-        self.gmag = [None, None, None]
+        self.redz_obs = [None, None, None]        
+        self.gmag_obs = [None, None, None]
 
 
 
@@ -761,28 +760,36 @@ class model2(parent_model):
             # Compute the number of sample to draw.
             NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MCMC, self.fmax_MCMC) * self.area_MCMC))#
             print "%s sample number: %d" % (self.category[i], NSAMPLE)
-            
+
             # Generate Nsample flux.
             gflux = gen_pow_law_sample(self.fmin_MCMC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MCMC)
             
             # Generate Nsample from MoG.
             MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)
 
+            # Gen err seed and save
+            self.g_err_seed[i] = gen_err_seed(NSAMPLE)
+            self.r_err_seed[i] = gen_err_seed(NSAMPLE)
+            self.z_err_seed[i] = gen_err_seed(NSAMPLE)
+
             if i<2:# NonELG and NoZ 
                 arcsinh_zg, arcsinh_rg = MoG_sample[:,0], MoG_sample[:,1]
                 zflux = np.sinh(arcsinh_zg)*gflux 
                 rflux =np.sinh(arcsinh_rg)*gflux 
-
+                
                 # Saving
                 self.gflux0[i] = gflux
                 self.rflux0[i] = rflux
                 self.zflux0[i] = zflux
                 self.NSAMPLE[i] = NSAMPLE
-            else:
+            else: #ELG 
                 arcsinh_zg, arcsinh_rg, arcsinch_oiig, redz = MoG_sample[:,0], MoG_sample[:,1], MoG_sample[:,2], MoG_sample[:,3]
                 zflux = np.sinh(arcsinh_zg)*gflux 
                 rflux =np.sinh(arcsinh_rg)*gflux 
                 oii = np.sinh(arcsinch_oiig)*gflux
+
+                # oii error seed
+                self.oii_err_seed[i] = gen_err_seed(NSAMPLE)
 
                 # Saving
                 self.gflux0[i] = gflux
@@ -792,7 +799,53 @@ class model2(parent_model):
                 self.oii0[i] = oii
                 self.NSAMPLE[i] = NSAMPLE
 
-        return 
+        return
+
+
+    def set_err_lims(self, glim, rlim, zlim, oii_lim):
+        """
+        Set the error characteristics.
+        """
+        self.glim_err = glim
+        self.rlim_err = rlim 
+        self.zlim_err = zlim
+        self.oii_lim_err = oii_lim
+
+        return
+
+
+
+    def gen_err_conv_sample(self):
+        """
+        Given the error properties glim_err, rlim_err, zlim_err, oii_lim_err, add noise to the intrinsic density
+        sample and compute the parametrization.
+        """
+        print "Convolving error and re-parametrizing"        
+        # NonELG, NoZ and ELG
+        for i in range(3):
+            print "%s" % self.category[i]
+            self.gflux_obs[i] = self.gflux0[i] + self.g_err_seed[i] * mag2flux(self.glim_err)/5.
+            self.rflux_obs[i] = self.rflux0[i] + self.r_err_seed[i] * mag2flux(self.rlim_err)/5.
+            self.zflux_obs[i] = self.zflux0[i] + self.z_err_seed[i] * mag2flux(self.zlim_err)/5.
+
+            # Compute the parametrization
+            self.var_x_obs[i] = np.arcsinh(self.zflux_obs[i]/self.gflux_obs[i])
+            self.var_y_obs[i] = np.arcsinh(self.rflux_obs[i]/self.gflux_obs[i])
+            self.gmag_obs[i] = flux2mag(self.gflux_obs[i])
+
+            if i<2:# NonELG and NoZ 
+                pass
+            else: #ELG 
+                # oii parameerization
+                self.oii_obs[i] = self.oii0[i] + self.oii_err_seed[i] * (self.oii_lim_err/6.) # 
+                self.var_z_obs = np.arcsinh(self.oii_obs[i]/self.gflux_obs[i])
+
+                # Redshift has no uncertainty
+                self.redz_obs[i] = self.redz0[i]
+
+        return
+
+
 
 
 
@@ -993,117 +1046,121 @@ class model2(parent_model):
 
 
 
-    def visualize_fit(self, model_tag="", cv_tag="", cum_contour=False):
-        """
-        Make corr plots of the various classes with fits overlayed.
-        If cum_contour is True, then instead of plotting individual component gaussians,
-        plot the cumulative gaussian fit. Also, plot the power law function corresponding
-        to the magnitude dimension.
-        """
+    # def visualize_fit(self, model_tag="", cv_tag="", cat=0, K=1, cum_contour=False, MCMC=False):
+    #     """
+    #     Make corr plots of a choosen classes with fits overlayed.
+    #     cat. 0: NonELG, 1: NoZ, 2: ELG
 
-        print "Corr plot - var_xyz - Separately"
-        num_cat = 1
-        num_vars = 3
+    #     Note that number of components for MoG should be specified by the user.
 
-        lims = [self.lim_x, self.lim_y, self.lim_gmag]
-        binws = [self.dx, self.dy, self.dgmag]
-        var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
-        lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+    #     If cum_contour is True, then instead of plotting individual component gaussians,
+    #     plot the cumulative gaussian fit. Also, plot the power law function corresponding
+    #     to the magnitude dimension.
 
-        for i, ibool in enumerate([self.iNonELG, self.iNoZ]):
-            print "Plotting %s" % self.category[i]
+    #     If MCMC is True, then over-plot the MCMC sample as well.
+    #     """
+    #     ibool_list = [self.iNonELG, self.iNoZ, self.ELG]
+    #     print "Plot %s" % self.category[cat]
+    #     if cat in [0, 1]: # NonELG or ELG
+    #         num_cat = 1
+    #         num_vars = 3
 
-            # Take the real data points.
-            variables = []
-            weights = []                
-            iplot = np.copy(ibool) & self.iTrain
-            variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
-            weights.append(self.w[iplot]/self.area_train)
+    #         lims = [self.lim_x, self.lim_y, self.lim_gmag]
+    #         binws = [self.dx, self.dy, self.dgmag]
+    #         var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+    #         lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
 
-            MODELS = self.MODELS[i] # Take the model for the category.
-            MODELS_pow = self.MODELS_pow[i] # Power law for magnitude.
+    #         # Take the real data points.
+    #         ibool = ibool_list[cat]
+    #         # Data variable
+    #         variables = []
+    #         weights = []                
+    #         iplot = np.copy(ibool) & self.iTrain
+    #         variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
+    #         weights.append(self.w[iplot]/self.area_train)
 
-            # Plotting the fits
-            for j, var_num_tuple in enumerate(MODELS.keys()): # For each selection of variables
-                if len(var_num_tuple) < 2: # Only plot the last models.
-                    pass
-                else:
-                    # Models corresponding to the tuples
-                    ms = MODELS[var_num_tuple]
-                    for K in ms.keys(): # For each component number tried
-                        print "K: %d" % K
-                        # Fits
-                        m = ms[K]
-                        amps_fit  = m["amps"]
-                        means_fit  = m["means"]
-                        covs_fit = m["covs"]        
-            
-                        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(25, 25))
-                        # Corr plots without annotation
-                        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
-                                                  var_names, weights, lines=lines, category_names=[self.category[i]],\
-                                                  pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
-                                                  plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
-                                                  means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour,\
-                                                  plot_pow=True, pow_model=MODELS_pow, pow_var_num=2)
-                        plt.tight_layout()
-                        if cum_contour:
-                            plt.savefig("%s-%s-data-%s-fit-K%d-cum-contour.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
-                        else:
-                            plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
-                        # plt.show()
-                        plt.close()
+    #         # MCMC variable
+    #         variables_MCMC = []
+    #         weights_MCMC = []                
+    #         variables_MCMC.append([self.var_x, self.var_y, self.gmag])
+    #         weights_MCMC.append(np.ones(1)/self.area_MCMC)
+
+    #         MODELS = self.MODELS[cat] # Take the model for the category.
+    #         MODELS_pow = self.MODELS_pow[cat] # Power law for magnitude.
+
+    #         # Plotting the fits
+    #         m = MODELS[MODELS.keys()[0]][K]
+    #         amps_fit  = m["amps"]
+    #         means_fit  = m["means"]
+    #         covs_fit = m["covs"]        
+
+    #         fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(25, 25))
+    #         # Corr plots without annotation
+    #         ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
+    #                                   var_names, weights, lines=lines, category_names=[self.category[i]],\
+    #                                   pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
+    #                                   plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
+    #                                   means_general=means_fit, covs_general=covs_fit, color_general="blue", cum_contour=cum_contour,\
+    #                                   plot_pow=True, pow_model=MODELS_pow, pow_var_num=2,\
+    #                                   MCMC=True, )
+    #         plt.tight_layout()
+    #         if cum_contour:
+    #             plt.savefig("%s-%s-data-%s-fit-K%d-cum-contour.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+    #         else:
+    #             plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+    #         # plt.show()
+    #         plt.close()
 
 
 
-        print "Corr plot - var_xyz, var_w, red_z - ELG only"
-        num_cat = 1
-        num_vars = 5
-        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_redz, self.lim_gmag]
-        binws = [self.dx, self.dy, self.dz, self.dred_z, self.dgmag]
-        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.red_z_name, self.gmag_name]
-        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.redz_lines, self.gmag_lines]
+    #     print "Corr plot - var_xyz, var_w, red_z - ELG only"
+    #     num_cat = 1
+    #     num_vars = 5
+    #     lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_redz, self.lim_gmag]
+    #     binws = [self.dx, self.dy, self.dz, self.dred_z, self.dgmag]
+    #     var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.red_z_name, self.gmag_name]
+    #     lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.redz_lines, self.gmag_lines]
 
-        iplot = np.copy(self.iELG) & self.iTrain
-        i = 2 # For category
-        variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.red_z[iplot], self.gmag[iplot]]]
-        weights = [self.w[iplot]/self.area_train]
+    #     iplot = np.copy(self.iELG) & self.iTrain
+    #     i = 2 # For category
+    #     variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.red_z[iplot], self.gmag[iplot]]]
+    #     weights = [self.w[iplot]/self.area_train]
 
-        MODELS = self.MODELS[i] # Take the model for the category.
-        MODELS_pow = self.MODELS_pow[i]
+    #     MODELS = self.MODELS[i] # Take the model for the category.
+    #     MODELS_pow = self.MODELS_pow[i]
 
-        # Plotting the fits
-        for j, var_num_tuple in enumerate(MODELS.keys()): # For each selection of variables
-            if len(var_num_tuple) < 4: # Only plot the last models.
-                pass
-            else:
-                # Models corresponding to the tuples
-                ms = MODELS[var_num_tuple]
-                for K in ms.keys(): # For each component number tried                        
-                    print "K: %d" % K                
-                    # Fits
-                    m = ms[K]
-                    amps_fit  = m["amps"]
-                    means_fit  = m["means"]
-                    covs_fit = m["covs"]        
+    #     # Plotting the fits
+    #     for j, var_num_tuple in enumerate(MODELS.keys()): # For each selection of variables
+    #         if len(var_num_tuple) < 4: # Only plot the last models.
+    #             pass
+    #         else:
+    #             # Models corresponding to the tuples
+    #             ms = MODELS[var_num_tuple]
+    #             for K in ms.keys(): # For each component number tried                        
+    #                 print "K: %d" % K                
+    #                 # Fits
+    #                 m = ms[K]
+    #                 amps_fit  = m["amps"]
+    #                 means_fit  = m["means"]
+    #                 covs_fit = m["covs"]        
         
-                    fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-                    # Corr plots without annotation
-                    ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
-                                              var_names, weights, lines=lines, category_names=[self.category[i]],\
-                                              pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
-                                              plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
-                                              means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour,\
-                                              plot_pow=True, pow_model=MODELS_pow, pow_var_num=4)
-                    plt.tight_layout()
-                    if cum_contour:
-                        plt.savefig("%s-%s-data-%s-fit-K%d-cum_contour.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
-                    else:
-                        plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
-                    # plt.show()
-                    plt.close()
+    #                 fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+    #                 # Corr plots without annotation
+    #                 ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
+    #                                           var_names, weights, lines=lines, category_names=[self.category[i]],\
+    #                                           pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
+    #                                           plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit,\
+    #                                           means_general=means_fit, covs_general=covs_fit, color_general="red", cum_contour=cum_contour,\
+    #                                           plot_pow=True, pow_model=MODELS_pow, pow_var_num=4)
+    #                 plt.tight_layout()
+    #                 if cum_contour:
+    #                     plt.savefig("%s-%s-data-%s-fit-K%d-cum_contour.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+    #                 else:
+    #                     plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[i], K), dpi=200, bbox_inches="tight")
+    #                 # plt.show()
+    #                 plt.close()
 
-        return
+    #     return
 
 
 
