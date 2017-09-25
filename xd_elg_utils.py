@@ -1013,6 +1013,53 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
 
 
 
+def integrate_pow_law(alpha, A, fmin, fmax):
+    """
+    Given power law model [alpah, A] of A x f**alpha, 
+    return the integrated number.
+    """
+    return A * (fmax**(1 + alpha) - fmin**(1 + alpha))/(1 + alpha)
+
+
+def gen_pow_law_sample(fmin, nsample, alpha, exact=False, fmax=None):
+    """
+    Note the convention f**alpha, alpha>0.
+    
+    If exact, then return nsample number of sample exactly between fmin and fmax.
+    """
+    flux = None
+    if exact:
+        assert (fmax is not None)
+        flux = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha+1))
+        ibool = (flux>fmin) & (flux<fmax)
+        flux = flux[ibool]
+        nsample_counter = np.sum(ibool)
+        while nsample_counter < nsample:
+            flux_tmp = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha+1))
+            ibool = (flux_tmp>fmin) & (flux_tmp<fmax)
+            flux_tmp = flux_tmp[ibool]
+            nsample_counter += np.sum(ibool)
+            flux = np.concatenate((flux, flux_tmp))
+        flux = flux[:nsample]# np.random.choice(flux, nsample, replace=False)
+    else:
+        flux = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha+1))
+    
+    return flux
+
+def sample_MoG(amps, means, covs, nsample):
+    """
+    Given MoG parameters, return a sample specified by nsample.
+    """
+    nsample_per_component = np.random.multinomial(nsample, amps)
+    
+    sample = []
+    for i, ns in enumerate(nsample_per_component):
+        sample.append(np.random.multivariate_normal(means[i], covs[i], ns))
+    sample = np.vstack(sample)
+    
+    return sample    
+
+
 def pow_param_init_dNdf(left_hist, left_f, right_hist, right_f, bw, area):
     """
     Return initial guess for the exponent and normalization.
