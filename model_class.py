@@ -701,7 +701,7 @@ class model2(parent_model):
         self.MODELS_pow = [None, None, None]
 
         # ----- MCMC Sample Variables ----- # 
-        self.area_MCMC = 200 # 200 sq. deg.
+        self.area_MCMC = self.area_train # 
         # Original sample.
         # 0: NonELG, 1: NoZ, 2: ELG
         self.gflux0 = [None, None, None] # 0 for original
