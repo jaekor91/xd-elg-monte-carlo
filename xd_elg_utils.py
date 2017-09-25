@@ -1614,7 +1614,7 @@ def summed_gm_pdf(pts, mus, covs, amps):
     return func_val
 
 
-def plot_2D_contour_GMM(ax, Xrange, Yrange, amps, means, covs, var_num1, var_num2, levels=[0.95, 0.68], colors=["red", "red"]):
+def plot_2D_contour_GMM(ax, Xrange, Yrange, amps, means, covs, var_num1, var_num2, levels=[0.95, 0.68], colors=["blue", "blue"]):
     """
     Given GMM parameters amps, means, covs of ND, plot on ax the cumulative contou at chosen levels.
     var_num1, var_num2 represents x and y variables for 2D plotting.
@@ -1795,7 +1795,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         if plot_pow and (var_num1 == pow_var_num):
                             xvec = np.arange(var_min, var_max, 1e-3)
                             yvec = pow_law(pow_model, mag2flux(xvec)) * bin_width * dNdm2dNdf(xvec)
-                            ax_list[i, j].plot(xvec,yvec, c = "red", lw=2.)
+                            ax_list[i, j].plot(xvec,yvec, c = color_general, lw=2.)
                             
                     elif plot_type == "v-hist":
                         var_min, var_max = lims[var_num1]
@@ -1814,7 +1814,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         if plot_pow and (var_num1 == pow_var_num):
                             xvec = np.arange(var_min, var_max, 1e-3)
                             yvec = pow_law(pow_model, mag2flux(xvec)) * bin_width * dNdm2dNdf(xvec)
-                            ax_list[i, j].plot(yvec, xvec, c = "red", lw=2.)
+                            ax_list[i, j].plot(yvec, xvec, c = color_general, lw=2.)
                             
 
                     
