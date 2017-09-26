@@ -700,6 +700,9 @@ class model2(parent_model):
         # Fit parameters for pow law
         self.MODELS_pow = [None, None, None]
 
+        # Number of components chosen for each category based on the training sample.
+        self.K_best = self.gen_K_best()
+
         # ----- MC Sample Variables ----- # 
         self.area_MC = self.area_train # 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
@@ -730,15 +733,45 @@ class model2(parent_model):
         self.zflux_obs = [None, None, None] # obs for observed
         self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
         # Completeness weight for each sample. If 1, the object is certain to be observed. If 0, the opposite.
-        self.iELG_cw = None
-        self.iNonELG_cw = None
-        self.iNoZ_cw = None
+        self.cw_obs = [None, None, None]
         # Observed final distributions
         self.var_x_obs = [None, None, None] # z/g
         self.var_y_obs = [None, None, None] # r/g
         self.var_z_obs = [None, None, None] # oii/g
         self.redz_obs = [None, None, None]        
         self.gmag_obs = [None, None, None]
+
+    def gen_K_best(self):
+        """
+        Return best K number chosen by eye.
+
+        [K_NonELG, K_NoZ, K_ELG]
+        """
+        K_best = None
+        if self.sub_sample_num == 0: # Full
+            K_best = [7, 2, 5]
+        elif self.sub_sample_num == 1: #F3
+            K_best = [7, 3, 6]
+        elif self.sub_sample_num == 2: #F4
+            K_best = [6, 2, 4]            
+        elif self.sub_sample_num == 3: #CV1
+            K_best = [6, 2, 6]        
+        elif self.sub_sample_num == 4: #2
+            K_best = [7, 2, 5]            
+        elif self.sub_sample_num == 5: #3
+            K_best = [6, , 5]            
+        elif self.sub_sample_num == 6: #4
+            K_best = []            
+        elif self.sub_sample_num == 7: #5
+            K_best = []            
+        elif self.sub_sample_num == 8: #mag1
+            K_best = []            
+        elif self.sub_sample_num == 9: #mag2
+            K_best = []            
+        elif self.sub_sample_num == 10: #mag3
+            K_best = []            
+
+        return K_best
 
 
 
@@ -782,6 +815,7 @@ class model2(parent_model):
                 self.rflux0[i] = rflux
                 self.zflux0[i] = zflux
                 self.NSAMPLE[i] = NSAMPLE
+
             else: #ELG 
                 arcsinh_zg, arcsinh_rg, arcsinch_oiig, redz = MoG_sample[:,0], MoG_sample[:,1], MoG_sample[:,2], MoG_sample[:,3]
                 zflux = np.sinh(arcsinh_zg)*gflux 
@@ -815,10 +849,12 @@ class model2(parent_model):
 
 
 
-    def gen_err_conv_sample(self):
+    def gen_err_conv_sample(self, detection=False):
         """
         Given the error properties glim_err, rlim_err, zlim_err, oii_lim_err, add noise to the intrinsic density
         sample and compute the parametrization.
+
+        If detection, then apply incomplteness algorithm to get the completeness weight
         """
         print "Convolving error and re-parametrizing"        
         # NonELG, NoZ and ELG
@@ -828,20 +864,31 @@ class model2(parent_model):
             self.rflux_obs[i] = self.rflux0[i] + self.r_err_seed[i] * mag2flux(self.rlim_err)/5.
             self.zflux_obs[i] = self.zflux0[i] + self.z_err_seed[i] * mag2flux(self.zlim_err)/5.
 
-            # Compute the parametrization
+            # Make flux cut
+            ifcut = self.gflux_obs[i] > self.fcut
+            self.gflux_obs[i] = self.gflux_obs[i][ifcut]
+            self.rflux_obs[i] = self.rflux_obs[i][ifcut]
+            self.zflux_obs[i] = self.zflux_obs[i][ifcut]
+
+            # Compute model parametrization
             self.var_x_obs[i] = np.arcsinh(self.zflux_obs[i]/self.gflux_obs[i])
             self.var_y_obs[i] = np.arcsinh(self.rflux_obs[i]/self.gflux_obs[i])
             self.gmag_obs[i] = flux2mag(self.gflux_obs[i])
 
-            if i<2:# NonELG and NoZ 
+            if detection: # If the user asks 
                 pass
-            else: #ELG 
+            else:
+                self.cw_obs[i] = np.ones(self.gmag_obs[i].size)
+
+            # More parametrization to compute for ELGs
+            if i==2:
                 # oii parameerization
                 self.oii_obs[i] = self.oii0[i] + self.oii_err_seed[i] * (self.oii_lim_err/6.) # 
+                self.oii_obs[i] = self.oii_obs[i][ifcut]
                 self.var_z_obs[i] = np.arcsinh(self.oii_obs[i]/self.gflux_obs[i])
 
                 # Redshift has no uncertainty
-                self.redz_obs[i] = self.redz0[i]
+                self.redz_obs[i] = self.redz0[i][ifcut]
 
         return
 
@@ -1085,7 +1132,7 @@ class model2(parent_model):
             # MC variable. Note that var_x and var_x_obs have different data structure.
             if MC:
                 variables.append([self.var_x_obs[cat], self.var_y_obs[cat], self.gmag_obs[cat]])
-                weights.append(np.ones(self.NSAMPLE[cat])/self.area_MC)
+                weights.append(self.cw_obs[cat]/self.area_MC)
                 labels.append("MC")
                 colors.append("red")
                 alphas.append(0.4)
@@ -1146,7 +1193,7 @@ class model2(parent_model):
             # MC variable. Note that var_x and var_x_obs have different data structure.
             if MC:
                 variables.append([self.var_x_obs[cat], self.var_y_obs[cat], self.var_z_obs[cat], self.redz_obs[cat], self.gmag_obs[cat]])
-                weights.append(np.ones(self.NSAMPLE[cat])/self.area_MC)
+                weights.append(self.cw_obs[cat]/self.area_MC)
                 labels.append("MC")
                 colors.append("red")
                 alphas.append(0.4)
@@ -1185,9 +1232,6 @@ class model2(parent_model):
                 plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[cat], K), dpi=200, bbox_inches="tight")
             # plt.show()
             plt.close()
-
-
-
 
 
         return
