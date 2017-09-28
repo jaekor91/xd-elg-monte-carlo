@@ -759,17 +759,17 @@ class model2(parent_model):
         elif self.sub_sample_num == 4: #2
             K_best = [7, 2, 5]            
         elif self.sub_sample_num == 5: #3
-            K_best = [6, , 5]            
+            K_best = [6, 2, 5]            
         elif self.sub_sample_num == 6: #4
-            K_best = []            
+            K_best = [5, 3, 5]            
         elif self.sub_sample_num == 7: #5
-            K_best = []            
+            K_best = [10, 10, 10]            
         elif self.sub_sample_num == 8: #mag1
-            K_best = []            
+            K_best = [6, 2, 3]            
         elif self.sub_sample_num == 9: #mag2
-            K_best = []            
+            K_best = [6, 2, 6]            
         elif self.sub_sample_num == 10: #mag3
-            K_best = []            
+            K_best = [5, 2, 6]            
 
         return K_best
 
