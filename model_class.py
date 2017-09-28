@@ -1095,6 +1095,56 @@ class model2(parent_model):
         return Covar
 
 
+    def validate_on_DEEP2(self, fnum, plot_nz=False, detection=False):
+        """
+        Given the field number, apply the selection to the DEEP2 training data set.
+        The error corresponding to the field is automatically determined form the data set.
+
+        Return the selection vector whose length is equal to the number of objects considered in each field,
+        total number selected, and efficiency.
+
+        If detection, then model in the detection process.
+
+        If plot_nz is True, make a plot of n(z) of both prediction and validation.
+        """
+        # Selecting only objects in the field.
+        ifield = (self.field == fnum)
+        gflux = self.gflux[ifield] 
+        rflux = self.rflux[ifield]
+        zflux = self.zflux[ifield]
+        oii = self.oii[ifield]
+        redz = self.redz[ifield]
+        w = self.w[ifield]
+
+        # Compute the error characteristic of the field. Median.
+        glim_err = median_mag_depth(self.gf_err[ifield])
+        rlim_err = median_mag_depth(self.rf_err[ifield])
+        zlim_err = median_mag_depth(self.zf_err[ifield])
+        oii_lim_err = 8
+        self.set_err_lims(glim_err, rlim_err, zlim_err, oii_lim_err) # Training data is deep!
+
+        # Convolve error to the intrinsic sample.
+        self.gen_err_conv_sample()
+
+        # Create the selection.
+        self.gen_selection_volume()
+
+        # Apply the selection.
+        iselected = self.apply_selection(gflux, rflux, zflux)
+
+        # Compute Ntotal and eff
+        Ntotal = np.sum(iselected)
+        Ntotal_weighted = np.sum(w[iselected])
+        eff = np.sum(w[iselected & (oii>8) & (redz>0.6) & (redz<1.6)])/float(Ntotal_weighted)
+
+        if iplot_nz:
+            pass
+
+        return iselected, Ntotal, Ntotal_weighted, eff
+
+
+
+
 
     def visualize_fit(self, model_tag="", cv_tag="", cat=0, K=1, cum_contour=False, MC=False):
         """
