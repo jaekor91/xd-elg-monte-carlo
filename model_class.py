@@ -775,11 +775,14 @@ class model2(parent_model):
 
 
 
-    def gen_sample_intrinsic(self, K_selected):
+    def gen_sample_intrinsic(self, K_selected=None):
         """
         Given MoG x power law parameters specified by [amps, means, covs] corresponding to K_selected[i] components
         and MODELS_pow, return a sample proportional to area.
         """
+        if K_selected is None:
+            K_selected = self.K_best
+
         # NonELG, NoZ and ELG
         for i in range(3):
             # MoG model
