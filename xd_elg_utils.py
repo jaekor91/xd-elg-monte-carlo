@@ -2307,6 +2307,13 @@ def mag_depth_Xsigma(f_err, sigma=5):
     """
     return flux2mag(f_err*sigma)
 
+
+def median_mag_depth(f_err, sn=5):
+    """
+    Given list of flux errors compute median magnitude error.
+    """
+    return np.median(mag_depth_Xsigma(f_err, sn))    
+
 def flux2mag(flux):
     return 22.5-2.5*np.log10(flux)    
     
