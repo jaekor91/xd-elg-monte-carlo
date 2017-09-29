@@ -33,6 +33,60 @@ large_random_constant = -999119283571
 deg2arcsec=3600
 
 
+def multdim_grid_cell_number(samples, ND, limits, num_bins):
+    """
+    Given samples array, return the cell each sample belongs to, where the cell is an 
+    element of a ND-dimensional grid defined by limits and numb_bins.
+    
+    More specifically, each cell can be identified by its bin indices.
+    If there are three variables, v0, v1, v2, which have N0, N1, N2 number 
+    of bins, and the cell corresponds to (n0, n1, n2)-th bin,
+    then cell_number = (n0* N1 * N2) + (n1 * N2) + n2. 
+    
+    Note that we use zero indexing. If an object falls outside the binning range,
+    it's assigned cell number "-1".
+    
+    INPUT: All arrays must be numpy arrays. 
+        - samples, ND: Numpy array [var1, var2, var3, ...] with dim [Nsample, num_var].
+        Cell numbers calculated based on the first ND variables. 
+        - limits: List of limits for each dimension. 
+        - num_bins: Number of bins to use for each dimension
+
+    Output:
+        - cell_number
+    """
+    Nsample = samples.shape[0]
+    cell_number = np.zeros(Nsample, dtype=int)
+    ibool = np.zeros(Nsample, dtype=bool) # For global correction afterwards.
+    
+    for i in range(ND): # For each variable to be considered.
+        X = samples[:, i]
+        Xmin, Xmax = limits[i]
+        bin_edges, dX = np.linspace(Xmin, Xmax, num_bins[i]+1, endpoint=True, retstep=True)
+        X_bin_idx = gen_bin_idx(X, Xmin, dX)# bin_idx of each sample
+        if i < ND-1:
+            cell_number += X_bin_idx * np.multiply.reduce(num_bins[i+1:])
+        else:
+            cell_number += X_bin_idx
+        
+        # Correction. If obj out of bound, assign -1.
+        ibool = np.logical_or.reduce(((X_bin_idx < 0), (X_bin_idx > num_bins[i]), ibool))
+        
+    cell_number[ibool] = -1
+    
+    return cell_number
+
+def gen_bin_idx(X, Xmin, dX):
+    """
+    Given a linear array of numbers and minimum, 
+    compute bin index corresponding to each sample.
+    
+    dX is spacing between the bins.
+    """
+    
+    return np.floor((X-Xmin)/float(dX)).astype(int)
+
+
 def return_file(fname):
     with open (fname, "r") as myfile:
         data=myfile.readlines()
