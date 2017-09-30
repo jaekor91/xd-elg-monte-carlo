@@ -869,7 +869,7 @@ class model2(parent_model):
         """
         K_best = None
         if self.sub_sample_num == 0: # Full
-            K_best = [7, 2, 5]
+            K_best = [6, 2, 5]
         elif self.sub_sample_num == 1: #F3
             K_best = [7, 3, 6]
         elif self.sub_sample_num == 2: #F4
@@ -1301,6 +1301,14 @@ class model2(parent_model):
         return iselected, Ntotal, Ntotal_weighted, eff
 
 
+    def cell_select_centers(self):
+        """
+        Return selected cells centers.
+        """
+        
+
+        
+
 
     def apply_selection(self, gflux, rflux, zflux):
         """
@@ -1325,6 +1333,30 @@ class model2(parent_model):
         # The last step is necessary in order for iselect to have the same order as the input sample variables.
         idx_undo_sort = idx_sort.argsort()        
         return iselect[idx_undo_sort]
+
+
+    def plot_ext(self, gflux, rflux, zflux, w, model_tag="", cv_tag=""):
+        """
+        Plot external sample given the fluxes.
+        """
+        lims = [self.lim_x, self.lim_y, self.lim_gmag]
+        binws = [self.dx, self.dy, self.dgmag]
+        var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+        num_cat = 1
+        num_vars = 3
+
+        var_x = np.arcsinh(zflux/gflux)
+        var_y = np.arcsinh(rflux/gflux)
+        gmag = flux2mag(gflux)
+
+        variables = [[var_x, var_y, gmag]]
+        weights = [w]
+
+        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=None, colors=self.colors, ft_size_legend = 15, lw_dot=2)
+        plt.savefig("%s-%s-ext.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
+        plt.close()
 
 
 
@@ -1411,8 +1443,6 @@ class model2(parent_model):
         else:
             plt.savefig("%s-%s-MC-ELG-redz-oii.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
         plt.close()
-
-
 
         return None
 
