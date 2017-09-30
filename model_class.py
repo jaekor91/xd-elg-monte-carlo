@@ -758,6 +758,9 @@ class model2(parent_model):
         # Cell_number in selection
         self.cell_select = None
 
+        # Desired nubmer of objects
+        self.num_desired = 2400
+
 
     def gen_selection_volume(self):
         """
@@ -769,7 +772,8 @@ class model2(parent_model):
 
             Given the cell number, we can order all the samples in a category by cell number. (Do this separately)
             We then create a cell grid and compute Ntotal and FoM corresponding to each cell. 
-            Note that the total number is the sum of completeness weight of objects in the cell.
+            Note that the total number is the sum of completeness weight of objects in the cell,
+            and when computing aggregate FoM, you have to weight it.
 
             We then order the cells according to FoM and accept until we have the desired number.
             The cell number gives our desired selection.
@@ -785,24 +789,49 @@ class model2(parent_model):
             idx_sort = self.cell_number_obs[i].argsort()
             self.cell_number_obs[i] = self.cell_number_obs[i][idx_sort]
             self.cw_obs[i] = self.cw_obs[i][idx_sort] 
+            self.FoM_obs[i] = self.FoM_obs[i][idx_sort]
+
+            # Unncessary to sort these for computing the selection volume.
+            # However, would be good to self-validate by applying the selection volume generated
+            # to the derived sample to see if you get the proper number density and aggregate FoM.
             self.var_x_obs[i] = self.var_x_obs[i][idx_sort] 
             self.var_y_obs[i] = self.var_y_obs[i][idx_sort] 
             self.gmag_obs[i] = self.gmag_obs[i][idx_sort]
-            self.FoM_obs[i] = self.FoM_obs[i][idx_sort]
-
-            if i == 2: # For ELGs
+            if i == 2: # For ELGs 
                 self.var_z_obs[i] = self.var_z_obs[i][idx_sort] 
-                self.redz_obs[i] = self.redz_obs[i][idx_sort] 
+                self.redz_obs[i] = self.redz_obs[i][idx_sort]
         
         # Placeholder for cell grid linearized. Cell index corresponds to cell number. 
         N_cell = np.multiply.reduce(num_bins)
         FoM = np.zeros(N_cell, dtype = float)
-        Ntotal = np.zeros(N_cell, dtype = float)
+        Ntotal_cell = np.zeros(N_cell, dtype = float)
 
         # Iterate through each sample in all three categories and compute FoM and Ntotal.
         for i in range(3):
+            FoM_tmp, Ntotal_cell_tmp = tally_FoM_Ntotal(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+            FoM += FoM_tmp
+            Ntotal_cell += Ntotal_cell_tmp
 
+        # Order cells according to FoM
+        idx_sort = FoM.argsort() # This corresponds to cell number.
+        FoM = FoM[idx_sort]
+        Ntotal_cell = Ntotal_cell[idx_sort]
 
+        # Starting from the keep including cells until the desired number is eached.        
+        Ntotal = 0
+        FoM_total = 0
+        counter = 0
+        for n, fom in zip(Ntotal_cell, FoM):
+            Ntotal += n
+            FoM_total += fom
+            counter +=1
+            if Ntotal > self.num_desired:
+                break
+
+        # Save the selection
+        self.cell_select = idx_sort[:counter]
+
+        return Ntotal, FoM_total
 
 
 
