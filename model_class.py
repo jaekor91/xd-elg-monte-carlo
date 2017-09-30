@@ -825,7 +825,7 @@ class model2(parent_model):
 
 
         # Compute utility
-        utility = FoM/(Ntotal_cell+ self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins))) # Note the multiplication by the area.
+        utility = FoM/(Ntotal_cell+ (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
 
         # Order cells according to utility
         # This corresponds to cell number of descending order sorted array.
@@ -841,12 +841,13 @@ class model2(parent_model):
         utility_total = 0
         counter = 0
         for ntot, ngood, util in zip(Ntotal_cell, Ngood_cell, utility):
+            if Ntotal > (self.num_desired * self.area_MC): 
+                break            
             Ntotal += ntot
             Ngood += ngood
             utility_total += util
             counter +=1
-            if Ntotal > (self.num_desired * self.area_MC): 
-                break
+
 
         # Save the selection
         self.cell_select = np.sort(idx_sort[:counter])
