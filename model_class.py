@@ -1301,6 +1301,34 @@ class model2(parent_model):
 
 
 
+    def apply_selection(self, gflux, rflux, zflux):
+        """
+        Given gflux, rflux, zflux of samples, return a boolean vector that gives the selection.
+        """
+        var_x = np.arcsinh(zflux/gflux)
+        var_y = np.arcsinh(rflux/gflux)
+        gmag = flux2mag(gflux)
+
+        samples = [var_x, var_y, gmag]
+
+        # Generate cell number 
+        cell_number = multdim_grid_cell_number(samples, 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+
+        # Sort the cell number
+        idx_sort = cell_number.argsort()
+        cell_number = cell_number[idx_sort]
+
+        # Placeholder for selection vector
+        Nsample = samples[0].size
+        iselect = check_in_arr2(arr1, arr2)
+
+        # The last step is necessary in order for iselect to have the same order as the input sample variables.
+        idx_undo_sort = idx_sort.argsort()        
+        return iselect[idx_undo_sort]
+
+
+
+
 
     def visualize_fit(self, model_tag="", cv_tag="", cat=0, K=1, cum_contour=False, MC=False):
         """
