@@ -116,15 +116,15 @@ def multdim_grid_cell_number(samples, ND, limits, num_bins):
     for i in range(ND): # For each variable to be considered.
         X = samples[i]
         Xmin, Xmax = limits[i]
-        bin_edges, dX = np.linspace(Xmin, Xmax, num_bins[i]+1, endpoint=True, retstep=True)
-        X_bin_idx = gen_bin_idx(X, Xmin, dX)# bin_idx of each sample
+        _, dX = np.linspace(Xmin, Xmax, num_bins[i]+1, endpoint=True, retstep=True)
+        X_bin_idx = gen_bin_idx(X, Xmin, dX) # bin_idx of each sample
         if i < ND-1:
             cell_number += X_bin_idx * np.multiply.reduce(num_bins[i+1:])
         else:
             cell_number += X_bin_idx
         
         # Correction. If obj out of bound, assign -1.
-        ibool = np.logical_or.reduce(((X_bin_idx < 0), (X_bin_idx > num_bins[i]), ibool))
+        ibool = np.logical_or.reduce(((X_bin_idx < 0), (X_bin_idx >= num_bins[i]), ibool))
         
     cell_number[ibool] = -1
     
