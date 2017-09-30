@@ -734,8 +734,8 @@ class model2(parent_model):
         self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
         # Completeness weight for each sample. If 1, the object is certain to be observed. If 0, the opposite.
         self.cw_obs = [None, None, None]
-        # FoM per sample. FoM does not change.
-        self.FoM = [None, None, None]
+        # FoM per sample. Note that FoM depends on the observed property such as OII.
+        self.FoM_obs = [None, None, None]
 
         # Observed final distributions
         self.var_x_obs = [None, None, None] # z/g
@@ -788,7 +788,7 @@ class model2(parent_model):
             self.var_x_obs[i] = self.var_x_obs[i][idx_sort] 
             self.var_y_obs[i] = self.var_y_obs[i][idx_sort] 
             self.gmag_obs[i] = self.gmag_obs[i][idx_sort]
-            self.FoM[i] = self.FoM[i][idx_sort]
+            self.FoM_obs[i] = self.FoM_obs[i][idx_sort]
 
             if i == 2: # For ELGs
                 self.var_z_obs[i] = self.var_z_obs[i][idx_sort] 
@@ -945,12 +945,15 @@ class model2(parent_model):
             self.var_y_obs[i] = np.arcsinh(self.rflux_obs[i]/self.gflux_obs[i])
             self.gmag_obs[i] = flux2mag(self.gflux_obs[i])
 
+            # Number of samples after the cut.
+            Nsample = self.gmag_obs[i].size
+
             if detection: # If the user asks 
                 pass
             else:
-                self.cw_obs[i] = np.ones(self.gmag_obs[i].size)
+                self.cw_obs[i] = np.ones(Nsample)
 
-            # More parametrization to compute for ELGs
+            # More parametrization to compute for ELGs. Also, compute FoM.
             if i==2:
                 # oii parameerization
                 self.oii_obs[i] = self.oii0[i] + self.oii_err_seed[i] * (self.oii_lim_err/6.) # 
@@ -960,8 +963,36 @@ class model2(parent_model):
                 # Redshift has no uncertainty
                 self.redz_obs[i] = self.redz0[i][ifcut]
 
+                # Gen FoM 
+                self.FoM_obs[i] = self.gen_FoM(i, Nsample, self.oii_obs[i], self.redz_obs[i])
+            else:
+                # Gen FoM 
+                self.FoM_obs[i] = self.gen_FoM(i, Nsample)
+
         return
 
+
+    def gen_FoM(self, cat, Nsample, oii=None, redz=None):
+        """
+        Give the category number
+        0: NonELG
+        1: NoZ
+        2: ELG
+        compute the appropriate FoM corresponding to each sample.
+        """
+        if cat == 0:
+            return np.zeros(Nsample, dtype=float)
+        elif cat == 1:
+            return np.ones(Nsample, dtype=float) * 0.25 # Some arbitrary number 25% success rate.
+        elif cat == 2:
+            if (oii is None) or (redz is None):
+                "You must provide oii AND redz"
+                assert False
+            else:
+                ibool = (oii>8) & (redz < 1.6) & (redz > 0.6) # For objects that lie within this criteria
+                FoM = np.zeros(Nsample, dtype=float)
+                FoM[ibool] = 1.0*(redz-0.6) # This means redz = 1.6 has FoM of 2.
+                return FoM
 
 
 
