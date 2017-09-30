@@ -763,7 +763,7 @@ class model2(parent_model):
 
         # Regularization number when computing utility
         # In a square field, we expect about 20K objects.
-        self.N_regular = 5e3
+        self.N_regular = 1e4
 
 
     def gen_selection_volume(self):
@@ -825,7 +825,7 @@ class model2(parent_model):
 
 
         # Compute utility
-        utility = FoM/(Ntotal_cell+self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins))) # Note the multiplication by the area.
+        utility = FoM/(Ntotal_cell+ self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins))) # Note the multiplication by the area.
 
         # Order cells according to utility
         # This corresponds to cell number of descending order sorted array.
@@ -1042,9 +1042,15 @@ class model2(parent_model):
                 "You must provide oii AND redz"
                 assert False
             else:
-                ibool = (oii>8) & (redz < 1.6) & (redz > 0.6) # For objects that lie within this criteria
+                # Flat option
+                ibool = (oii>8) & (redz > 0.6) # For objects that lie within this criteria
                 FoM = np.zeros(Nsample, dtype=float)
-                FoM[ibool] = 1.0*(redz[ibool]-0.6) # This means redz = 1.6 has FoM of 2.
+                FoM[ibool] = 1.0
+
+                # # Linear option
+                # ibool = (oii>8) & (redz < 1.6) & (redz > 0.6) # For objects that lie within this criteria
+                # FoM = np.zeros(Nsample, dtype=float)
+                # FoM[ibool] = 1.0*(redz[ibool]-0.6) # This means redz = 1.6 has FoM of 2.
                 return FoM
 
 
@@ -1292,7 +1298,6 @@ class model2(parent_model):
             pass
 
         return iselected, Ntotal, Ntotal_weighted, eff
-
 
 
 
