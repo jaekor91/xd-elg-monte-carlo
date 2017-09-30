@@ -1327,6 +1327,95 @@ class model2(parent_model):
 
 
 
+    def plot_MC_sample(self, model_tag="", cv_tag="", selected=False):
+        """
+        Plot MC sample
+        """
+        print "Corr plot - var_xyz - all classes together"
+        lims = [self.lim_x, self.lim_y, self.lim_gmag]
+        binws = [self.dx, self.dy, self.dgmag]
+        var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+        num_cat = 3
+        num_vars = 3
+
+        variables = []
+        weights = []
+
+        for i in range(3):
+            if selected:
+                iselected = self.apply_selection(self.gflux_obs[i], self.rflux_obs[i], self.zflux_obs[i])
+                variables.append([self.var_x_obs[i][iselected], self.var_y_obs[i][iselected], self.gmag_obs[i][iselected]])
+                weights.append(self.cw_obs[i][iselected]/self.area_MC)
+            else:
+                variables.append([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]])
+                weights.append(self.cw_obs[i]/self.area_MC)                
+
+        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=None, colors=self.colors, ft_size_legend = 15, lw_dot=2)
+        if selected:
+            plt.savefig("%s-%s-MC-selected.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")            
+        else:
+            plt.savefig("%s-%s-MC-all.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
+        plt.close()
+
+
+        # Don't see the need for this right now.
+        # print "Corr plot - var_xyz - separately"
+        # lims = [self.lim_x, self.lim_y, self.lim_gmag]
+        # binws = [self.dx, self.dy, self.dgmag]
+        # var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+        # lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+        # num_cat = 1
+        # num_vars = 3
+
+
+        # for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+        #     print "Plotting %s" % self.category[i]                
+        #     variables = []
+        #     weights = []                
+        #     iplot = np.copy(ibool) & self.iTrain
+        #     variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
+        #     weights.append(self.w[iplot]/self.area_train)
+
+        #     fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+        #     ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
+
+        #     plt.savefig("%s-%s-data-%s.png" % (model_tag, cv_tag, self.category[i]), dpi=200, bbox_inches="tight")
+        #     plt.close()
+
+
+        print "Corr plot - var_xyz, red_z, gmag - ELG only"
+        num_cat = 1
+        num_vars = 5
+        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_redz, self.lim_gmag]
+        binws = [self.dx, self.dy, self.dz, self.dred_z, self.dgmag]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.red_z_name, self.gmag_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.redz_lines, self.gmag_lines]
+
+        i = 2 # For category
+        if selected:
+            iselected = self.apply_selection(self.gflux_obs[i], self.rflux_obs[i], self.zflux_obs[i])
+            variables = [[self.var_x_obs[i][iselected], self.var_y_obs[i][iselected], self.var_z_obs[i][iselected], self.redz_obs[i][iselected], self.gmag_obs[i][iselected]]]
+            weights = [self.cw_obs[i][iselected]/self.area_MC]            
+        else:
+            variables = [[self.var_x_obs[i], self.var_y_obs[i], self.var_z_obs[i], self.redz_obs[i], self.gmag_obs[i]]]
+            weights = [self.cw_obs[i]/self.area_MC]
+
+        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
+        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
+
+        if selected:
+            plt.savefig("%s-%s-MC-ELG-redz-oii-selected.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")            
+        else:
+            plt.savefig("%s-%s-MC-ELG-redz-oii.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
+        plt.close()
+
+
+
+        return None
+
+
 
 
     def visualize_fit(self, model_tag="", cv_tag="", cat=0, K=1, cum_contour=False, MC=False):
