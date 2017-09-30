@@ -734,12 +734,78 @@ class model2(parent_model):
         self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
         # Completeness weight for each sample. If 1, the object is certain to be observed. If 0, the opposite.
         self.cw_obs = [None, None, None]
+        # FoM per sample. FoM does not change.
+        self.FoM = [None, None, None]
+
         # Observed final distributions
         self.var_x_obs = [None, None, None] # z/g
         self.var_y_obs = [None, None, None] # r/g
         self.var_z_obs = [None, None, None] # oii/g
         self.redz_obs = [None, None, None]        
         self.gmag_obs = [None, None, None]
+
+        # Cell number
+        self.cell_number_obs = [None, None, None]
+
+        # Selection grid limits
+        self.var_x_limits = [-1., 3.]
+        self.var_y_limits = [0, 1.25]
+        self.gmag_limits = [22., 24.]
+
+        # Number of bins var_x, var_y, gmag
+        self.num_bins = [100, 100, 100]
+
+        # Cell_number in selection
+        self.cell_select = None
+
+
+    def gen_selection_volume(self):
+        """
+        Given the generated sample (intrinsic val + noise), generate a selection volume.
+        
+        Strategy:
+            Generate cell number for each sample in each category based on var_x, var_y and gmag.
+            The limits are already specified by the class.
+
+            Given the cell number, we can order all the samples in a category by cell number. (Do this separately)
+            We then create a cell grid and compute Ntotal and FoM corresponding to each cell. 
+            Note that the total number is the sum of completeness weight of objects in the cell.
+
+            We then order the cells according to FoM and accept until we have the desired number.
+            The cell number gives our desired selection.
+        """
+
+        # Compute cell number and order the samples according to the cell number
+        for i in range(3):
+            samples = [self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]
+            # Generating 
+            self.cell_number_obs[i] = multdim_grid_cell_number(samples, 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+
+            # Sorting
+            idx_sort = self.cell_number_obs[i].argsort()
+            self.cell_number_obs[i] = self.cell_number_obs[i][idx_sort]
+            self.cw_obs[i] = self.cw_obs[i][idx_sort] 
+            self.var_x_obs[i] = self.var_x_obs[i][idx_sort] 
+            self.var_y_obs[i] = self.var_y_obs[i][idx_sort] 
+            self.gmag_obs[i] = self.gmag_obs[i][idx_sort]
+            self.FoM[i] = self.FoM[i][idx_sort]
+
+            if i == 2: # For ELGs
+                self.var_z_obs[i] = self.var_z_obs[i][idx_sort] 
+                self.redz_obs[i] = self.redz_obs[i][idx_sort] 
+        
+        # Placeholder for cell grid linearized. Cell index corresponds to cell number. 
+        N_cell = np.multiply.reduce(num_bins)
+        FoM = np.zeros(N_cell, dtype = float)
+        Ntotal = np.zeros(N_cell, dtype = float)
+
+        # Iterate through each sample in all three categories and compute FoM and Ntotal.
+        for i in range(3):
+
+
+
+
+
 
     def gen_K_best(self):
         """
@@ -807,6 +873,7 @@ class model2(parent_model):
             self.g_err_seed[i] = gen_err_seed(NSAMPLE)
             self.r_err_seed[i] = gen_err_seed(NSAMPLE)
             self.z_err_seed[i] = gen_err_seed(NSAMPLE)
+
 
             if i<2:# NonELG and NoZ 
                 arcsinh_zg, arcsinh_rg = MoG_sample[:,0], MoG_sample[:,1]
@@ -1113,7 +1180,7 @@ class model2(parent_model):
         rflux = self.rflux[ifield]
         zflux = self.zflux[ifield]
         oii = self.oii[ifield]
-        redz = self.redz[ifield]
+        redz = self.red_z[ifield]
         w = self.w[ifield]
 
         # Compute the error characteristic of the field. Median.
