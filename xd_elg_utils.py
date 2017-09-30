@@ -14,6 +14,8 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 import extreme_deconvolution as XD
 
+import numbas as nb
+
 from matplotlib.patches import Ellipse
 
 
@@ -31,6 +33,24 @@ cnames = ["Gold", "Silver", "LowOII", "NoOII", "LowZ", "NoZ", "D2reject", "DR3un
 
 large_random_constant = -999119283571
 deg2arcsec=3600
+
+@nb.jit
+def tally_FoM_Ntotal(N_cell, cell_number, cw, FoM):
+    """
+    Given number of cells and cell number, completeness weight, and FoM per sample,
+    return a tally.
+
+    Note that the total number and FoM are weighted by completeness weight.
+    """
+    FoM_tally = np.zeros(N_cell, dtype = float)
+    Ntotal_tally = np.zeros(N_cell, dtype = float)
+
+    for i, cn in enumerate(cell_number): # cn is cell number, which we can use as index.
+        if (cn>0) and (cn<N_cell):
+            FoM_tally[cn] += FoM[i] * cw[i]
+            Ntotal_tally += cw[i]
+
+    return FoM_tally, Ntotal_tally
 
 
 def multdim_grid_cell_number(samples, ND, limits, num_bins):
