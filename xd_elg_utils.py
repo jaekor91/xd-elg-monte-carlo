@@ -34,6 +34,35 @@ cnames = ["Gold", "Silver", "LowOII", "NoOII", "LowZ", "NoZ", "D2reject", "DR3un
 large_random_constant = -999119283571
 deg2arcsec=3600
 
+
+@nb.jit
+def check_in_arr2(arr1, arr2):
+    """
+    Given two sorted integer arrays arr1, arr2, return a boolean vector of size arr1.size,
+    where each element i indicate whether the value of arr1[i] is in arr2.
+    """
+    N_arr1 = arr1.size
+    N_arr2 = arr2.size
+    
+    # Vector to return
+    iselect = np.zeros(N_arr1, dtype=bool)
+    
+    # First, check whether elements from arr1 is within the range of arr2
+    if (arr1[-1] < arr2[0]) or (arr1[0] > arr2[-1]):
+        return iselect
+    else: # Otherwise, for each element in arr2, incrementally search for in arr1 the same elements
+        idx = 0
+        for arr2_current_el in arr2:
+            while arr1[idx] < arr2_current_el: # Keep incrementing arr1 idx until we reach arr2_current value.
+                idx+=1
+            if arr1[idx] == arr2_current_el:
+                while arr1[idx] == arr2_current_el:
+                    iselect[idx] = True
+                    idx+=1
+                
+        return iselect
+
+
 @nb.jit
 def tally_FoM_Ntotal(N_cell, cell_number, cw, FoM):
     """
