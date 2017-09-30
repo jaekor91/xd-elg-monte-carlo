@@ -849,7 +849,7 @@ class model2(parent_model):
                 break
 
         # Save the selection
-        self.cell_select = idx_sort[:counter]
+        self.cell_select = np.sort(idx_sort[:counter])
 
         # Number array
         nums = [Ntotal/float(self.area_MC), Ngood/float(self.area_MC), utility_total/float(self.area_MC)]
@@ -1319,8 +1319,7 @@ class model2(parent_model):
         cell_number = cell_number[idx_sort]
 
         # Placeholder for selection vector
-        Nsample = samples[0].size
-        iselect = check_in_arr2(arr1, arr2)
+        iselect = check_in_arr2(cell_number, self.cell_select)
 
         # The last step is necessary in order for iselect to have the same order as the input sample variables.
         idx_undo_sort = idx_sort.argsort()        
