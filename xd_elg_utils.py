@@ -14,7 +14,7 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 import extreme_deconvolution as XD
 
-import numbas as nb
+import numba as nb
 
 from matplotlib.patches import Ellipse
 
@@ -46,12 +46,12 @@ def tally_FoM_Ntotal(N_cell, cell_number, cw, FoM):
     Ntotal_tally = np.zeros(N_cell, dtype = float)
 
     for i, cn in enumerate(cell_number): # cn is cell number, which we can use as index.
-        if (cn>0) and (cn<N_cell):
-            FoM_tally[cn] += FoM[i] * cw[i]
-            Ntotal_tally += cw[i]
+#         print (i, cn, FoM[i], cw[i])
+        if (cn>=0) and (cn<N_cell):
+            FoM_tally[cn] += float(FoM[i] * cw[i])
+            Ntotal_tally[cn] += float(cw[i])
 
     return FoM_tally, Ntotal_tally
-
 
 def multdim_grid_cell_number(samples, ND, limits, num_bins):
     """
