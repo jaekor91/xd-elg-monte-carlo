@@ -47,7 +47,7 @@ def multdim_grid_cell_number(samples, ND, limits, num_bins):
     it's assigned cell number "-1".
     
     INPUT: All arrays must be numpy arrays. 
-        - samples, ND: Numpy array [var1, var2, var3, ...] with dim [Nsample, num_var].
+        - samples, ND: List of linear numpy arrays [var1, var2, var3, ...] with size [Nsample].
         Cell numbers calculated based on the first ND variables. 
         - limits: List of limits for each dimension. 
         - num_bins: Number of bins to use for each dimension
@@ -55,12 +55,12 @@ def multdim_grid_cell_number(samples, ND, limits, num_bins):
     Output:
         - cell_number
     """
-    Nsample = samples.shape[0]
+    Nsample = samples[0].size
     cell_number = np.zeros(Nsample, dtype=int)
     ibool = np.zeros(Nsample, dtype=bool) # For global correction afterwards.
     
     for i in range(ND): # For each variable to be considered.
-        X = samples[:, i]
+        X = samples[i]
         Xmin, Xmax = limits[i]
         bin_edges, dX = np.linspace(Xmin, Xmax, num_bins[i]+1, endpoint=True, retstep=True)
         X_bin_idx = gen_bin_idx(X, Xmin, dX)# bin_idx of each sample
