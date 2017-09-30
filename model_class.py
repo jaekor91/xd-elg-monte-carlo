@@ -753,7 +753,7 @@ class model2(parent_model):
         self.gmag_limits = [22., 24.]
 
         # Number of bins var_x, var_y, gmag
-        self.num_bins = [100, 100, 100]
+        self.num_bins = [100, 100, 50]
 
         # Cell_number in selection
         self.cell_select = None
@@ -1305,8 +1305,54 @@ class model2(parent_model):
         """
         Return selected cells centers.
         """
-        
+        limits = [self.var_x_limits, self.var_y_limits, self.gmag_limits]
+        Ncell_select = self.cell_select.size # Number of cells in the selection
+        centers = [None, None, None]
 
+        for i in range(3):
+            Xmin, Xmax = limits[i]
+            bin_edges, dX = np.linspace(Xmin, Xmax, self.num_bins[i]+1, endpoint=True, retstep=True)
+            bin_centers = (bin_edges[1:]+bin_edges[:-1])/2.
+            idx = (self.cell_select % np.multiply.reduce(self.num_bins[i:])) //  np.multiply.reduce(self.num_bins[i+1:])
+            centers[i] = bin_centers[idx.astype(int)]
+
+        return np.asarray(centers).T
+
+
+    def gen_select_boundary_slices(self, slice_dir = 2, model_tag="", cv_tag=""):
+        """
+        Given slice direction, generate slices of boundary
+
+        0: var_x
+        1: var_y
+        2: gmag
+        """
+        slice_var_tag = ["arcsinh_zg", "arcsinh_rg", "gmag"]
+        var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+        centers = self.cell_select_centers()
+
+        limits = [self.var_x_limits, self.var_y_limits, self.gmag_limits]        
+        Xmin, Xmax = limits[slice_dir]
+        bin_edges, dX = np.linspace(Xmin, Xmax, self.num_bins[slice_dir]+1, endpoint=True, retstep=True)
+
+        print slice_var_tag[slice_dir]
+        for i in range(self.num_bins[slice_dir]):
+            ibool = (centers[:, slice_dir] < bin_edges[i+1]) & (centers[:, slice_dir] > bin_edges[i])
+            centers_slice = centers[ibool, :]
+            fig = plt.figure(figsize=(7, 7))
+            idx = range(3)
+            idx.remove(slice_dir)
+            plt.scatter(centers_slice[:,idx[0]], centers_slice[:,idx[1]], edgecolors="none", c="green", alpha=0.5)
+            plt.xlabel(var_names[idx[0]])
+            plt.ylabel(var_names[idx[1]])
+            plt.xlim(limits[idx[0]])
+            plt.ylim(limits[idx[1]])
+            title_str = "%s [%.3f, %.3f]" % (slice_var_tag[slice_dir], bin_edges[i], bin_edges[i+1])
+            print i, title_str
+            plt.title(title_str)
+            plt.savefig("model2-Full-boudary-%s-%d.png" % (slice_var_tag[slice_dir], i), bbox_inches="tight", dpi=200)
+        #     plt.show()
+            plt.close()        
         
 
 
