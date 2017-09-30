@@ -761,6 +761,10 @@ class model2(parent_model):
         # Desired nubmer of objects
         self.num_desired = 2400
 
+        # Regularization number when computing utility
+        # In a square field, we expect about 1e5 objects.
+        self.N_regular = (1e4/float(np.multiply.reduce(self.num_bins))) * self.area_MC
+
 
     def gen_selection_volume(self):
         """
@@ -775,8 +779,8 @@ class model2(parent_model):
             Note that the total number is the sum of completeness weight of objects in the cell,
             and when computing aggregate FoM, you have to weight it.
 
-            We then order the cells according to FoM and accept until we have the desired number.
-            The cell number gives our desired selection.
+            We then compute utility, say FoM/Ntot, and order the cells according to utility
+            and accept until we have the desired number. The cell number gives our desired selection.
         """
 
         # Compute cell number and order the samples according to the cell number
@@ -805,33 +809,54 @@ class model2(parent_model):
         N_cell = np.multiply.reduce(self.num_bins)
         FoM = np.zeros(N_cell, dtype = float)
         Ntotal_cell = np.zeros(N_cell, dtype = float)
+        Ngood_cell = np.zeros(N_cell, dtype = float) # Number of good objects.
 
         # Iterate through each sample in all three categories and compute FoM and Ntotal.
         for i in range(3):
-            FoM_tmp, Ntotal_cell_tmp = tally_FoM_Ntotal(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+            FoM_tmp, Ntotal_cell_tmp, Ngood_cell_tmp = tally_FoM_Ntotal(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
             FoM += FoM_tmp
             Ntotal_cell += Ntotal_cell_tmp
+            if i == 1: # NoZ 
+                Ngood_cell += Ngood_cell_tmp * 0.25
+            elif i == 2: # ELG
+                Ngood_cell += Ngood_cell_tmp 
+            else: # NonELG are no good.
+                pass
 
-        # Order cells according to FoM
-        idx_sort = FoM.argsort() # This corresponds to cell number.
-        FoM = FoM[idx_sort]
+
+        # Compute utility
+        utility = FoM/(Ntotal_cell+self.N_regular)
+
+        # Order cells according to utility
+        # This corresponds to cell number of descending order sorted array.
+        idx_sort = utility.argsort()
+        idx_sort = idx_sort[::-1]
+
+        utility = utility[idx_sort]
         Ntotal_cell = Ntotal_cell[idx_sort]
+        Ngood_cell = Ngood_cell[idx_sort]
 
         # Starting from the keep including cells until the desired number is eached.        
         Ntotal = 0
-        FoM_total = 0
+        Ngood = 0
+        utility_total = 0
         counter = 0
-        for n, fom in zip(Ntotal_cell, FoM):
-            Ntotal += n
-            FoM_total += fom
+        for ntot, ngood, util in zip(Ntotal_cell, Ngood_cell, utility):
+            Ntotal += ntot
+            Ngood += ngood
+            utility_total += util
             counter +=1
-            if Ntotal > self.num_desired:
+            if Ntotal > (self.num_desired * self.area_MC): 
                 break
 
         # Save the selection
         self.cell_select = idx_sort[:counter]
 
-        return Ntotal, FoM_total
+        # Number array
+        nums = [Ntotal/float(self.area_MC), Ngood/float(self.area_MC), utility_total/float(self.area_MC)]
+        eff = (Ngood/float(Ntotal))
+
+        return nums, eff, utility, Ngood_cell, Ntotal_cell
 
 
 
@@ -980,7 +1005,7 @@ class model2(parent_model):
             if detection: # If the user asks 
                 pass
             else:
-                self.cw_obs[i] = np.ones(Nsample)/float(self.area_MC) # Note the division by area.
+                self.cw_obs[i] = np.ones(Nsample) # Note we do not divide by area
 
             # More parametrization to compute for ELGs. Also, compute FoM.
             if i==2:
