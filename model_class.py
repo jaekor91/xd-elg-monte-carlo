@@ -802,7 +802,7 @@ class model2(parent_model):
                 self.redz_obs[i] = self.redz_obs[i][idx_sort]
         
         # Placeholder for cell grid linearized. Cell index corresponds to cell number. 
-        N_cell = np.multiply.reduce(num_bins)
+        N_cell = np.multiply.reduce(self.num_bins)
         FoM = np.zeros(N_cell, dtype = float)
         Ntotal_cell = np.zeros(N_cell, dtype = float)
 
@@ -980,7 +980,7 @@ class model2(parent_model):
             if detection: # If the user asks 
                 pass
             else:
-                self.cw_obs[i] = np.ones(Nsample)
+                self.cw_obs[i] = np.ones(Nsample)/float(self.area_MC) # Note the division by area.
 
             # More parametrization to compute for ELGs. Also, compute FoM.
             if i==2:
@@ -1020,7 +1020,7 @@ class model2(parent_model):
             else:
                 ibool = (oii>8) & (redz < 1.6) & (redz > 0.6) # For objects that lie within this criteria
                 FoM = np.zeros(Nsample, dtype=float)
-                FoM[ibool] = 1.0*(redz-0.6) # This means redz = 1.6 has FoM of 2.
+                FoM[ibool] = 1.0*(redz[ibool]-0.6) # This means redz = 1.6 has FoM of 2.
                 return FoM
 
 
