@@ -1009,7 +1009,7 @@ class model2(parent_model):
             # More parametrization to compute for ELGs. Also, compute FoM.
             if i==2:
                 # oii parameerization
-                self.oii_obs[i] = self.oii0[i] + self.oii_err_seed[i] * (self.oii_lim_err/6.) # 
+                self.oii_obs[i] = self.oii0[i] + self.oii_err_seed[i] * (self.oii_lim_err/7.) # 
                 self.oii_obs[i] = self.oii_obs[i][ifcut]
                 self.var_z_obs[i] = np.arcsinh(self.oii_obs[i]/self.gflux_obs[i])
 
