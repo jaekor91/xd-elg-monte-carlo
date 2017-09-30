@@ -825,12 +825,11 @@ class model2(parent_model):
 
 
         # Compute utility
-        utility = FoM/(Ntotal_cell+self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)) # Note the multiplication by the area.
+        utility = FoM/(Ntotal_cell+self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins))) # Note the multiplication by the area.
 
         # Order cells according to utility
         # This corresponds to cell number of descending order sorted array.
-        idx_sort = utility.argsort()
-        idx_sort = idx_sort[::-1]
+        idx_sort = (-utility).argsort()
 
         utility = utility[idx_sort]
         Ntotal_cell = Ntotal_cell[idx_sort]
