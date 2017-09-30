@@ -762,8 +762,8 @@ class model2(parent_model):
         self.num_desired = 2400
 
         # Regularization number when computing utility
-        # In a square field, we expect about 1e5 objects.
-        self.N_regular = (1e4/float(np.multiply.reduce(self.num_bins))) * self.area_MC
+        # In a square field, we expect about 20K objects.
+        self.N_regular = 5e3
 
 
     def gen_selection_volume(self):
@@ -825,7 +825,7 @@ class model2(parent_model):
 
 
         # Compute utility
-        utility = FoM/(Ntotal_cell+self.N_regular)
+        utility = FoM/(Ntotal_cell+self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)) # Note the multiplication by the area.
 
         # Order cells according to utility
         # This corresponds to cell number of descending order sorted array.
