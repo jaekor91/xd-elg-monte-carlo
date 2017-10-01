@@ -766,9 +766,11 @@ class model2(parent_model):
         self.N_regular = 1e4
 
 
-    def gen_selection_volume(self):
+    def gen_selection_volume(self, use_kerenl=False):
         """
         Given the generated sample (intrinsic val + noise), generate a selection volume.
+
+        If use_kernel, when use kernel approximation to the number density calculation.
         
         Strategy:
             Generate cell number for each sample in each category based on var_x, var_y and gmag.
@@ -1253,7 +1255,7 @@ class model2(parent_model):
         return Covar
 
 
-    def validate_on_DEEP2(self, fnum, plot_nz=False, detection=False):
+    def validate_on_DEEP2(self, fnum, plot_nz=False, detection=False, use_kernel=False):
         """
         Given the field number, apply the selection to the DEEP2 training data set.
         The error corresponding to the field is automatically determined form the data set.
@@ -1264,9 +1266,12 @@ class model2(parent_model):
         If detection, then model in the detection process.
 
         If plot_nz is True, make a plot of n(z) of both prediction and validation.
+
+        If use_kerenl True, then use kernal approximation method.
         """
         # Selecting only objects in the field.
         ifield = (self.field == fnum)
+        area_sample = self.areas[fnum-2]
         gflux = self.gflux[ifield] 
         rflux = self.rflux[ifield]
         zflux = self.zflux[ifield]
@@ -1285,20 +1290,59 @@ class model2(parent_model):
         self.gen_err_conv_sample()
 
         # Create the selection.
-        self.gen_selection_volume()
+        self.gen_selection_volume(use_kerenl)
 
         # Apply the selection.
         iselected = self.apply_selection(gflux, rflux, zflux)
 
+        # ----- Selection validation ----- #
         # Compute Ntotal and eff
-        Ntotal = np.sum(iselected)
-        Ntotal_weighted = np.sum(w[iselected])
-        eff = np.sum(w[iselected & (oii>8) & (redz>0.6) & (redz<1.6)])/float(Ntotal_weighted)
+        Ntotal = np.sum(iselected)/area_sample
+        Ntotal_weighted = np.sum(w[iselected])/area_sample
+
+        # Boolean vectors
+        iselected_ELG_DESI = iselected & (oii>8) & (redz>0.6) & (redz<1.6) & iELG
+        N_ELG_DESI = np.sum(iselected_ELG_DESI)/area_sample
+        N_ELG_DESI_weighted = np.sum(w[iselected_ELG_DESI])/area_sample
+
+        iselected_ELG_NonDESI = iselected & ~((oii>8) & (redz>0.6) & (redz<1.6)) & iELG
+        N_ELG_NonDESI = np.sum(iselected_ELG_NonDESI)/area_sample
+        N_ELG_NonDESI_weighted = np.sum(w[iselected_ELG_NonDESI])/area_sample
+
+        iselected_NonELG = iselected & iNonELG
+        N_NonELG = np.sum(iselected_NonELG)/area_sample
+        N_NonELG_weighted = np.sum(w[iselected_NonELG])/area_sample
+
+        iselected_NoZ = iselected & iNoZ
+        N_NoZ = np.sum(iselected_NoZ)/area_sample
+        N_NoZ_weighted = np.sum(w[iselected_NoZ])/area_sample
+
+        # Left over?
+        iselected_leftover = np.logical_and.reduce((~iselected_ELG_DESI, ~iselected_ELG_NonDESI, ~iselected_NonELG, ~iselected_NoZ, iselected))
+        N_leftover = np.sum(iselected_leftover)/area_sample
+        N_leftover_weighted = np.sum(w[iselected_leftover])/area_sample
+
+        # Efficiency
+        eff = (N_ELG_DESI_weighted+0.25*N_NoZ_weighted)/float(Ntotal_weighted)
+
+        print "Raw/Weigthed number of selected"
+        print "----------"
+        print "DESI ELGs: %.1f, %.1f" % (N_ELG_DESI, N_ELG_DESI_weighted)
+        print "NonDESI ELGs: %.1f, %.1f" % (N_ELG_NonDESI, N_ELG_NonDESI_weighted)
+        print "NoZ: %.1f, %.1f" % (N_NoZ, N_NoZ_weighted)
+        print "NonELG: %.1f, %.1f" % (N_NonELG, N_NonELG_weighted)
+        print "Poorly characterized objects (not included in density modeling): %.1f, %.1f" % (N_leftover, N_leftover_weighted)
+        print "Total based on individual parts: %.1f" % ((N_NonELG_weighted + N_NoZ_weighted+ N_ELG_DESI_weighted+ N_ELG_NonDESI_weighted+N_leftover_weighted))
+        print "----------"
+        print "Raw/Weighted total number: %.1f, %.1f" % (Ntotal, Ntotal_weighted)
+        print "----------"
+        print "Efficiency (DESI/Ntotal, weighted): %.3f" % (eff)
 
         if iplot_nz:
             pass
 
-        return iselected, Ntotal, Ntotal_weighted, eff
+        return eff, Ntotal, Ntotal_weighted, N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_NonDESI, N_ELG_NonDESI_weighted,\
+            N_NoZ, N_NoZ_weighted, N_NonELG, N_NonELG_weighted, N_leftover, N_leftover_weighted
 
 
     def cell_select_centers(self):
