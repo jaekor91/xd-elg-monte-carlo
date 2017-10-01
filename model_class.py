@@ -765,6 +765,9 @@ class model2(parent_model):
         # In a square field, we expect about 20K objects.
         self.N_regular = 1e4
 
+        # Fraction of NoZ objects that we expect to be good
+        self.f_NoZ = 0.25
+
 
     def gen_selection_volume(self, use_kerenl=False):
         """
@@ -819,7 +822,7 @@ class model2(parent_model):
             FoM += FoM_tmp
             Ntotal_cell += Ntotal_cell_tmp
             if i == 1: # NoZ 
-                Ngood_cell += Ngood_cell_tmp * 0.25
+                Ngood_cell += Ngood_cell_tmp * self.f_NoZ
             elif i == 2: # ELG
                 Ngood_cell += Ngood_cell_tmp 
             else: # NonELG are no good.
@@ -855,11 +858,10 @@ class model2(parent_model):
         self.cell_select = np.sort(idx_sort[:counter])
 
         # Number array
-        nums = [Ntotal/float(self.area_MC), Ngood/float(self.area_MC), utility_total/float(self.area_MC)]
+        num_total, num_good, total_utility = Ntotal/float(self.area_MC), Ngood/float(self.area_MC), utility_total/float(self.area_MC)
         eff = (Ngood/float(Ntotal))
 
-        return nums, eff, utility, Ngood_cell, Ntotal_cell
-
+        return eff, num_total, num_good, total_utility
 
 
 
