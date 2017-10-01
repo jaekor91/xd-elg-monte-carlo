@@ -721,7 +721,7 @@ class model2(parent_model):
         self.glim_err = 23.8
         self.rlim_err = 23.4
         self.zlim_err = 22.4
-        self.oii_lim_err = 8 # 6 sigma
+        self.oii_lim_err = 8 # 7 sigma
         # Noise seed. err_seed ~ N(0, 1). This can be transformed by scaling appropriately.
         self.g_err_seed = [None, None, None] # Error seed.
         self.r_err_seed = [None, None, None] # Error seed.
@@ -753,7 +753,7 @@ class model2(parent_model):
         self.gmag_limits = [22., 24.]
 
         # Number of bins var_x, var_y, gmag
-        self.num_bins = [100, 100, 50]
+        self.num_bins = [100, 100, 100]
 
         # Cell_number in selection
         self.cell_select = None
@@ -1319,17 +1319,36 @@ class model2(parent_model):
         return np.asarray(centers).T
 
 
-    def gen_select_boundary_slices(self, slice_dir = 2, model_tag="", cv_tag=""):
+    def gen_select_boundary_slices(self, slice_dir = 2, model_tag="", cv_tag="", centers=None, plot_ext=False,\
+        gflux_ext=None, rflux_ext=None, zflux_ext=None, ibool_ext = None):
         """
         Given slice direction, generate slices of boundary
 
         0: var_x
         1: var_y
         2: gmag
+
+        If plot_ext True, then plot user supplied external objects.
+
+        If centers is not None, then use it instead of generating one.
         """
+
         slice_var_tag = ["arcsinh_zg", "arcsinh_rg", "gmag"]
         var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
-        centers = self.cell_select_centers()
+
+        if centers is None:
+            centers = self.cell_select_centers()
+
+        if plot_ext:
+            if ibool_ext is not None:
+                gflux_ext = gflux_ext[ibool_ext]
+                rflux_ext = rflux_ext[ibool_ext]
+                zflux_ext = zflux_ext[ibool_ext]
+
+            var_x_ext = np.arcsinh(zflux_ext/gflux_ext/2.)
+            var_y_ext = np.arcsinh(rflux_ext/gflux_ext/2.)
+            gmag_ext = flux2mag(gflux_ext)
+            variables = [var_x_ext, var_y_ext, gmag_ext]
 
         limits = [self.var_x_limits, self.var_y_limits, self.gmag_limits]        
         Xmin, Xmax = limits[slice_dir]
@@ -1342,7 +1361,10 @@ class model2(parent_model):
             fig = plt.figure(figsize=(7, 7))
             idx = range(3)
             idx.remove(slice_dir)
-            plt.scatter(centers_slice[:,idx[0]], centers_slice[:,idx[1]], edgecolors="none", c="green", alpha=0.5)
+            plt.scatter(centers_slice[:,idx[0]], centers_slice[:,idx[1]], edgecolors="none", c="green", alpha=0.5, s=10)
+            if plot_ext:
+                ibool = (variables[slice_dir] < bin_edges[i+1]) & (variables[slice_dir] > bin_edges[i])
+                plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="blue", s=5)
             plt.xlabel(var_names[idx[0]], fontsize=15)
             plt.ylabel(var_names[idx[1]], fontsize=15)
             plt.xlim(limits[idx[0]])
@@ -1360,8 +1382,8 @@ class model2(parent_model):
         """
         Given gflux, rflux, zflux of samples, return a boolean vector that gives the selection.
         """
-        var_x = np.arcsinh(zflux/gflux)
-        var_y = np.arcsinh(rflux/gflux)
+        var_x = np.arcsinh(zflux/gflux/2.)
+        var_y = np.arcsinh(rflux/gflux/2.)
         gmag = flux2mag(gflux)
 
         samples = [var_x, var_y, gmag]
@@ -1392,8 +1414,8 @@ class model2(parent_model):
         num_cat = 1
         num_vars = 3
 
-        var_x = np.arcsinh(zflux/gflux)
-        var_y = np.arcsinh(rflux/gflux)
+        var_x = np.arcsinh(zflux/gflux2/2.)
+        var_y = np.arcsinh(rflux/gflux2/2.)
         gmag = flux2mag(gflux)
 
         variables = [[var_x, var_y, gmag]]
