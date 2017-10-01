@@ -1414,8 +1414,8 @@ class model2(parent_model):
         num_cat = 1
         num_vars = 3
 
-        var_x = np.arcsinh(zflux/gflux2/2.)
-        var_y = np.arcsinh(rflux/gflux2/2.)
+        var_x = np.arcsinh(zflux/gflux/2.)
+        var_y = np.arcsinh(rflux/gflux/2.)
         gmag = flux2mag(gflux)
 
         variables = [[var_x, var_y, gmag]]
