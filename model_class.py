@@ -1288,7 +1288,7 @@ class model2(parent_model):
         4: Ntotal_pred
         5: N_ELG_DESI
         6: N_ELG_DESI_weighted
-        7: N_NonELG_pred
+        7: N_ELG_pred
         8: N_ELG_NonDESI
         9: N_ELG_NonDESI_weighted
         10:N_ELG_NonDESI_pred 
@@ -1383,7 +1383,7 @@ class model2(parent_model):
         if plot_nz:
             pass
 
-        return eff, eff_pred, Ntotal, Ntotal_weighted, Ntotal_pred, N_ELG_DESI, N_ELG_DESI_weighted, N_NonELG_pred,\
+        return eff, eff_pred, Ntotal, Ntotal_weighted, Ntotal_pred, N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_DESI_pred,\
          N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred, N_NoZ, N_NoZ_weighted, N_NoZ_pred,\
          N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted
 
