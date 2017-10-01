@@ -64,15 +64,16 @@ def check_in_arr2(arr1, arr2):
 
 
 @nb.jit
-def tally_FoM_Ntotal(N_cell, cell_number, cw, FoM):
+def tally_objects(N_cell, cell_number, cw, FoM):
     """
     Given number of cells and cell number, completeness weight, and FoM per sample,
     return a tally.
 
     Note that the total number and FoM are weighted by completeness weight.
 
-    Also, return the number of good objects defined by objects with positive FoM.
+    Also, return the number of good objects defined as objects with positive FoM.
     """
+    
     FoM_tally = np.zeros(N_cell, dtype = float)
     Ntotal_tally = np.zeros(N_cell, dtype = float)
     Ngood_tally = np.zeros(N_cell, dtype = float)
