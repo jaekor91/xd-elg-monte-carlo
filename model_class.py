@@ -1274,14 +1274,32 @@ class model2(parent_model):
         Given the field number, apply the selection to the DEEP2 training data set.
         The error corresponding to the field is automatically determined form the data set.
 
-        Return the selection vector whose length is equal to the number of objects considered in each field,
-        total number selected, and efficiency.
-
         If detection, then model in the detection process.
 
         If plot_nz is True, make a plot of n(z) of both prediction and validation.
 
         If use_kerenl True, then use kernal approximation method.
+
+        Return the following set of numbers
+
+        0: eff_pred
+        1: Ntotal
+        2: Ntotal_weighted
+        3: Ntotal_pred
+        4: N_ELG_DESI
+        5: N_ELG_DESI_weighted
+        6: N_NonELG_pred
+        7: N_ELG_NonDESI
+        8: N_ELG_NonDESI_weighted
+        9: N_ELG_NonDESI_pred
+        10: N_NoZ
+        11: N_NoZ_weighted
+        12: N_NoZ_pred
+        13: N_NonELG
+        14: N_NonELG_weighted
+        15: N_NonELG_pred
+        16: N_leftover
+        17: N_leftover_weighted        
         """
         # Selecting only objects in the field.
         ifield = (self.field == fnum)
