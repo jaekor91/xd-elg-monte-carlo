@@ -830,8 +830,8 @@ class model2(parent_model):
         FoM += FoM_tmp
         # ELG (DESI and NonDESI)
         i=2
-        FoM_tmp, N_ELG_all_cell, N_ELG_NonDESI_cell = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
-        N_ELG_DESI_cell = N_ELG_all_cell - N_ELG_NonDESI_cell
+        FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        N_ELG_NonDESI_cell = N_ELG_all_cell - N_ELG_DESI_cell
         FoM += FoM_tmp
 
         # Computing the total and good number of objects.
@@ -1309,6 +1309,11 @@ class model2(parent_model):
         # Create the selection.
         eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred = self.gen_selection_volume(use_kernel)
 
+        # Used for debugging
+        # print self.cell_select.size
+        # print self.cell_select
+        # print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred
+
         # Apply the selection.
         iselected = self.apply_selection(gflux, rflux, zflux)
 
@@ -1350,12 +1355,12 @@ class model2(parent_model):
         print "NonDESI ELGs: %.1f, %.1f, %.1f" % (N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred)
         print "NoZ: %.1f, %.1f, %.1f" % (N_NoZ, N_NoZ_weighted, N_NoZ_pred)
         print "NonELG: %.1f, %.1f, %.1f" % (N_NonELG, N_NonELG_weighted, N_NonELG_pred)
-        print "Poorly characterized objects (not included in density modeling, no prediction): %.1f, %.1f" % (N_leftover, N_leftover_weighted)
-        print "Total based on individual parts: %.1f, %.1f" % ((N_NonELG_weighted + N_NoZ_weighted+ N_ELG_DESI_weighted+ N_ELG_NonDESI_weighted+N_leftover_weighted), Ntotal_pred)
+        print "Poorly characterized objects (not included in density modeling, no prediction): %.1f, %.1f, NA" % (N_leftover, N_leftover_weighted)
         print "----------"
-        print "Raw/Weighted total number: %.1f, %.1f, %.1f" % (Ntotal, Ntotal_weighted, Ntotal_pred)
+        print "Total based on individual parts: NA, %.1f, NA" % ((N_NonELG_weighted + N_NoZ_weighted+ N_ELG_DESI_weighted+ N_ELG_NonDESI_weighted+N_leftover_weighted))        
+        print "Total number: %.1f, %.1f, %.1f" % (Ntotal, Ntotal_weighted, Ntotal_pred)
         print "----------"
-        print "Efficiency, weighted vs. prediction (DESI/Ntotal): %.3f, %.1f" % (eff, eff_pred)
+        print "Efficiency, weighted vs. prediction (DESI/Ntotal): %.3f, %.3f" % (eff, eff_pred)
 
         if plot_nz:
             pass
