@@ -1281,25 +1281,25 @@ class model2(parent_model):
         If use_kerenl True, then use kernal approximation method.
 
         Return the following set of numbers
-
-        0: eff_pred
-        1: Ntotal
-        2: Ntotal_weighted
-        3: Ntotal_pred
-        4: N_ELG_DESI
-        5: N_ELG_DESI_weighted
-        6: N_NonELG_pred
-        7: N_ELG_NonDESI
-        8: N_ELG_NonDESI_weighted
-        9: N_ELG_NonDESI_pred
-        10: N_NoZ
-        11: N_NoZ_weighted
-        12: N_NoZ_pred
-        13: N_NonELG
-        14: N_NonELG_weighted
-        15: N_NonELG_pred
-        16: N_leftover
-        17: N_leftover_weighted        
+        0: eff
+        1: eff_pred
+        2: Ntotal
+        3: Ntotal_weighted
+        4: Ntotal_pred
+        5: N_ELG_DESI
+        6: N_ELG_DESI_weighted
+        7: N_NonELG_pred
+        8: N_ELG_NonDESI
+        9: N_ELG_NonDESI_weighted
+        10:N_ELG_NonDESI_pred 
+        11: N_NoZ
+        12: N_NoZ_weighted
+        13: N_NoZ_pred
+        14: N_NonELG
+        15: N_NonELG_weighted
+        16: N_NonELG_pred
+        17: N_leftover
+        18:N_leftover_weighted
         """
         # Selecting only objects in the field.
         ifield = (self.field == fnum)
