@@ -769,7 +769,7 @@ class model2(parent_model):
         self.f_NoZ = 0.25
 
 
-    def gen_selection_volume(self, use_kerenl=False):
+    def gen_selection_volume(self, use_kernel=False):
         """
         Given the generated sample (intrinsic val + noise), generate a selection volume.
 
@@ -813,21 +813,30 @@ class model2(parent_model):
         # Placeholder for cell grid linearized. Cell index corresponds to cell number. 
         N_cell = np.multiply.reduce(self.num_bins)
         FoM = np.zeros(N_cell, dtype = float)
-        Ntotal_cell = np.zeros(N_cell, dtype = float)
-        Ngood_cell = np.zeros(N_cell, dtype = float) # Number of good objects.
+        # Ntotal_cell = np.zeros(N_cell, dtype = float)
+        # N_NoZ_cell = np.zeros(N_cell, dtype = float)
+        # N_ELG_DESI_cell = np.zeros(N_cell, dtype = float)
+        # N_ELG_NonDESI_cell = np.zeros(N_cell, dtype = float)
+        # N_NonELG_cell = np.zeros(N_cell, dtype = float)
 
-        # Iterate through each sample in all three categories and compute FoM and Ntotal.
-        for i in range(3):
-            FoM_tmp, Ntotal_cell_tmp, Ngood_cell_tmp = tally_FoM_Ntotal(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
-            FoM += FoM_tmp
-            Ntotal_cell += Ntotal_cell_tmp
-            if i == 1: # NoZ 
-                Ngood_cell += Ngood_cell_tmp * self.f_NoZ
-            elif i == 2: # ELG
-                Ngood_cell += Ngood_cell_tmp 
-            else: # NonELG are no good.
-                pass
+        # Iterate through each sample in all three categories and compute N_categories, N_total and FoM.
+        # NonELG
+        i=0
+        FoM_tmp, N_NonELG_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        FoM += FoM_tmp
+        # NoZ
+        i=1
+        FoM_tmp, N_NoZ_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        FoM += FoM_tmp
+        # ELG (DESI and NonDESI)
+        i=2
+        FoM_tmp, N_ELG_all_cell, N_ELG_NonDESI_cell = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        N_ELG_DESI_cell = N_ELG_all_cell - N_ELG_NonDESI_cell
+        FoM += FoM_tmp
 
+        # Computing the total and good number of objects.
+        Ntotal_cell = N_NonELG_cell + N_NoZ_cell + N_ELG_all_cell
+        Ngood_cell = self.f_NoZ * N_NoZ_cell + N_ELG_DESI_cell
 
         # Compute utility
         utility = FoM/(Ntotal_cell+ (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
@@ -839,30 +848,33 @@ class model2(parent_model):
         utility = utility[idx_sort]
         Ntotal_cell = Ntotal_cell[idx_sort]
         Ngood_cell = Ngood_cell[idx_sort]
+        N_NonELG_cell = N_NonELG_cell[idx_sort]
+        N_NoZ_cell = N_NoZ_cell[idx_sort]
+        N_ELG_DESI_cell = N_ELG_DESI_cell[idx_sort]
+        N_ELG_NonDESI_cell = N_ELG_NonDESI_cell[idx_sort]
 
         # Starting from the keep including cells until the desired number is eached.        
         Ntotal = 0
-        Ngood = 0
-        utility_total = 0
         counter = 0
-        for ntot, ngood, util in zip(Ntotal_cell, Ngood_cell, utility):
+        for ntot in Ntotal_cell:
             if Ntotal > (self.num_desired * self.area_MC): 
                 break            
             Ntotal += ntot
-            Ngood += ngood
-            utility_total += util
             counter +=1
 
+        # Predicted numbers in the selection.
+        Ntotal = np.sum(Ntotal_cell[:counter])/float(self.area_MC)
+        Ngood = np.sum(Ngood_cell[:counter])/float(self.area_MC)
+        N_NonELG = np.sum(N_NonELG_cell[:counter])/float(self.area_MC)
+        N_NoZ = np.sum(N_NoZ_cell[:counter])/float(self.area_MC)
+        N_ELG_DESI = np.sum(N_ELG_DESI_cell[:counter])/float(self.area_MC)
+        N_ELG_NonDESI = np.sum(N_ELG_NonDESI_cell[:counter])/float(self.area_MC)
 
         # Save the selection
         self.cell_select = np.sort(idx_sort[:counter])
-
-        # Number array
-        num_total, num_good, total_utility = Ntotal/float(self.area_MC), Ngood/float(self.area_MC), utility_total/float(self.area_MC)
         eff = (Ngood/float(Ntotal))
 
-        return eff, num_total, num_good, total_utility
-
+        return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI
 
 
     def gen_K_best(self):
@@ -1041,7 +1053,7 @@ class model2(parent_model):
         if cat == 0:
             return np.zeros(Nsample, dtype=float)
         elif cat == 1:
-            return np.ones(Nsample, dtype=float) * 0.25 # Some arbitrary number 25% success rate.
+            return np.ones(Nsample, dtype=float) * self.f_NoZ # Some arbitrary number. 25% success rate.
         elif cat == 2:
             if (oii is None) or (redz is None):
                 "You must provide oii AND redz"
@@ -1280,6 +1292,9 @@ class model2(parent_model):
         oii = self.oii[ifield]
         redz = self.red_z[ifield]
         w = self.w[ifield]
+        iELG = self.iELG[ifield]
+        iNonELG = self.iNonELG[ifield]
+        iNoZ = self.iNoZ[ifield]
 
         # Compute the error characteristic of the field. Median.
         glim_err = median_mag_depth(self.gf_err[ifield])
@@ -1292,7 +1307,7 @@ class model2(parent_model):
         self.gen_err_conv_sample()
 
         # Create the selection.
-        self.gen_selection_volume(use_kerenl)
+        eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred = self.gen_selection_volume(use_kernel)
 
         # Apply the selection.
         iselected = self.apply_selection(gflux, rflux, zflux)
@@ -1301,6 +1316,8 @@ class model2(parent_model):
         # Compute Ntotal and eff
         Ntotal = np.sum(iselected)/area_sample
         Ntotal_weighted = np.sum(w[iselected])/area_sample
+
+
 
         # Boolean vectors
         iselected_ELG_DESI = iselected & (oii>8) & (redz>0.6) & (redz<1.6) & iELG
@@ -1327,24 +1344,25 @@ class model2(parent_model):
         # Efficiency
         eff = (N_ELG_DESI_weighted+0.25*N_NoZ_weighted)/float(Ntotal_weighted)
 
-        print "Raw/Weigthed number of selected"
+        print "Raw/Weigthed/Predicted number of selection"
         print "----------"
-        print "DESI ELGs: %.1f, %.1f" % (N_ELG_DESI, N_ELG_DESI_weighted)
-        print "NonDESI ELGs: %.1f, %.1f" % (N_ELG_NonDESI, N_ELG_NonDESI_weighted)
-        print "NoZ: %.1f, %.1f" % (N_NoZ, N_NoZ_weighted)
-        print "NonELG: %.1f, %.1f" % (N_NonELG, N_NonELG_weighted)
-        print "Poorly characterized objects (not included in density modeling): %.1f, %.1f" % (N_leftover, N_leftover_weighted)
-        print "Total based on individual parts: %.1f" % ((N_NonELG_weighted + N_NoZ_weighted+ N_ELG_DESI_weighted+ N_ELG_NonDESI_weighted+N_leftover_weighted))
+        print "DESI ELGs: %.1f, %.1f, %.1f" % (N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_DESI_pred)
+        print "NonDESI ELGs: %.1f, %.1f, %.1f" % (N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred)
+        print "NoZ: %.1f, %.1f, %.1f" % (N_NoZ, N_NoZ_weighted, N_NoZ_pred)
+        print "NonELG: %.1f, %.1f, %.1f" % (N_NonELG, N_NonELG_weighted, N_NonELG_pred)
+        print "Poorly characterized objects (not included in density modeling, no prediction): %.1f, %.1f" % (N_leftover, N_leftover_weighted)
+        print "Total based on individual parts: %.1f, %.1f" % ((N_NonELG_weighted + N_NoZ_weighted+ N_ELG_DESI_weighted+ N_ELG_NonDESI_weighted+N_leftover_weighted), Ntotal_pred)
         print "----------"
-        print "Raw/Weighted total number: %.1f, %.1f" % (Ntotal, Ntotal_weighted)
+        print "Raw/Weighted total number: %.1f, %.1f, %.1f" % (Ntotal, Ntotal_weighted, Ntotal_pred)
         print "----------"
-        print "Efficiency (DESI/Ntotal, weighted): %.3f" % (eff)
+        print "Efficiency, weighted vs. prediction (DESI/Ntotal): %.3f, %.1f" % (eff, eff_pred)
 
-        if iplot_nz:
+        if plot_nz:
             pass
 
-        return eff, Ntotal, Ntotal_weighted, N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_NonDESI, N_ELG_NonDESI_weighted,\
-            N_NoZ, N_NoZ_weighted, N_NonELG, N_NonELG_weighted, N_leftover, N_leftover_weighted
+        return eff, eff_pred, Ntotal, Ntotal_weighted, Ntotal_pred, N_ELG_DESI, N_ELG_DESI_weighted, N_NonELG_pred,\
+         N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred, N_NoZ, N_NoZ_weighted, N_NoZ_pred,\
+         N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted
 
 
     def cell_select_centers(self):
