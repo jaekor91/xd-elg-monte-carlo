@@ -662,7 +662,7 @@ class model1(parent_model):
 
 class model2(parent_model):
     """
-    parametrization: arcsinh zflux/gflux (x), arcsinh rflux/gflux (y), arcsinh oii/gflux (z), redz, gmag
+    parametrization: arcsinh zflux/gflux/2. (x), arcsinh rflux/gflux/2. (y), arcsinh oii/gflux/2. (z), redz, gmag
     """
     def __init__(self, sub_sample_num):
         parent_model.__init__(self, sub_sample_num)
@@ -931,8 +931,8 @@ class model2(parent_model):
 
             if i<2:# NonELG and NoZ 
                 arcsinh_zg, arcsinh_rg = MoG_sample[:,0], MoG_sample[:,1]
-                zflux = np.sinh(arcsinh_zg)*gflux 
-                rflux =np.sinh(arcsinh_rg)*gflux 
+                zflux = np.sinh(arcsinh_zg) * gflux * 2
+                rflux =np.sinh(arcsinh_rg) * gflux * 2
                 
                 # Saving
                 self.gflux0[i] = gflux
@@ -942,9 +942,9 @@ class model2(parent_model):
 
             else: #ELG 
                 arcsinh_zg, arcsinh_rg, arcsinch_oiig, redz = MoG_sample[:,0], MoG_sample[:,1], MoG_sample[:,2], MoG_sample[:,3]
-                zflux = np.sinh(arcsinh_zg)*gflux 
-                rflux =np.sinh(arcsinh_rg)*gflux 
-                oii = np.sinh(arcsinch_oiig)*gflux
+                zflux = np.sinh(arcsinh_zg)*gflux * 2
+                rflux =np.sinh(arcsinh_rg)*gflux * 2
+                oii = np.sinh(arcsinch_oiig)*gflux * 2
 
                 # oii error seed
                 self.oii_err_seed[i] = gen_err_seed(NSAMPLE)
@@ -995,8 +995,8 @@ class model2(parent_model):
             self.zflux_obs[i] = self.zflux_obs[i][ifcut]
 
             # Compute model parametrization
-            self.var_x_obs[i] = np.arcsinh(self.zflux_obs[i]/self.gflux_obs[i])
-            self.var_y_obs[i] = np.arcsinh(self.rflux_obs[i]/self.gflux_obs[i])
+            self.var_x_obs[i] = np.arcsinh(self.zflux_obs[i]/self.gflux_obs[i]/2.)
+            self.var_y_obs[i] = np.arcsinh(self.rflux_obs[i]/self.gflux_obs[i]/2.)
             self.gmag_obs[i] = flux2mag(self.gflux_obs[i])
 
             # Number of samples after the cut.
@@ -1012,7 +1012,7 @@ class model2(parent_model):
                 # oii parameerization
                 self.oii_obs[i] = self.oii0[i] + self.oii_err_seed[i] * (self.oii_lim_err/7.) # 
                 self.oii_obs[i] = self.oii_obs[i][ifcut]
-                self.var_z_obs[i] = np.arcsinh(self.oii_obs[i]/self.gflux_obs[i])
+                self.var_z_obs[i] = np.arcsinh(self.oii_obs[i]/self.gflux_obs[i]/2.)
 
                 # Redshift has no uncertainty
                 self.redz_obs[i] = self.redz0[i][ifcut]
