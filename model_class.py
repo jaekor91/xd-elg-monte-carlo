@@ -536,8 +536,10 @@ class parent_model:
         nobjs_cut = ifcut.sum()
         nobjs_matched = ibool.sum()
 
+        unmatched_frac_correction = 1+((nobjs_cut-nobjs_matched)/float(nobjs_cut)) 
+
         print "Fraction of unmatched objects with g [%.1f, %.1f]: %.2f percent" % (self.mag_min, self.mag_max, 100 * (nobjs_cut-nobjs_matched)/float(nobjs_cut))
-        print "We consider only the matched set. After fitting various densities, we scale the normalization by the amount we ignored in our fit due to unmatched set."
+        print "We multiply the correction to the weights before training."
 
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
         rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut, cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field\
@@ -550,6 +552,9 @@ class parent_model:
         gf_err = np.sqrt(1./givar)/mw_g
         rf_err = np.sqrt(1./rivar)/mw_r
         zf_err = np.sqrt(1./zivar)/mw_z
+
+        # Correct the weights.
+        w *= unmatched_frac_correction
 
         return gflux, gf_err, rflux, rf_err, zflux, zf_err, rex_expr, rex_expr_ivar,\
             red_z, z_err, oii, oii_err, w, field, iELG, iNoZ, iNonELG, objtype
