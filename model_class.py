@@ -76,8 +76,8 @@ class parent_model:
 
         # Model variables
         self.gflux, self.gf_err, self.rflux, self.rf_err, self.zflux, self.zf_err, self.rex_expr, self.rex_expr_ivar,\
-        self.red_z, self.z_err, self.oii, self.oii_err, self.w, self.field, self.iELG, self.iNoZ, self.iNonELG, self.objtype\
-        = self.import_data_DEEP2_full()
+        self.red_z, self.z_err, self.oii, self.oii_err, self.w, self.field, self.iELG, self.iNoZ, self.iNonELG, self.objtype,\
+        self.ra, self.dec = self.import_data_DEEP2_full()
 
         # Extended vs non-extended
         self.ipsf = (self.objtype=="PSF")
@@ -557,7 +557,7 @@ class parent_model:
         w *= unmatched_frac_correction
 
         return gflux, gf_err, rflux, rf_err, zflux, zf_err, rex_expr, rex_expr_ivar,\
-            red_z, z_err, oii, oii_err, w, field, iELG, iNoZ, iNonELG, objtype
+            red_z, z_err, oii, oii_err, w, field, iELG, iNoZ, iNonELG, objtype, ra, dec
 
 
 
@@ -904,7 +904,7 @@ class model2(parent_model):
         elif self.sub_sample_num == 6: #4
             K_best = [5, 3, 5]            
         elif self.sub_sample_num == 7: #5
-            K_best = [10, 10, 10]            
+            K_best = [7, 7, 7]            
         elif self.sub_sample_num == 8: #mag1
             K_best = [6, 2, 3]            
         elif self.sub_sample_num == 9: #mag2
@@ -1318,6 +1318,7 @@ class model2(parent_model):
         iELG = self.iELG[ifield]
         iNonELG = self.iNonELG[ifield]
         iNoZ = self.iNoZ[ifield]
+        ra, dec = self.ra[ifield], self.dec[ifield]
 
         # Compute the error characteristic of the field. Median.
         glim_err = median_mag_depth(self.gf_err[ifield])
@@ -1390,7 +1391,7 @@ class model2(parent_model):
 
         return eff, eff_pred, Ntotal, Ntotal_weighted, Ntotal_pred, N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_DESI_pred,\
          N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred, N_NoZ, N_NoZ_weighted, N_NoZ_pred,\
-         N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted
+         N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted, ra[iselected], dec[iselected]
 
 
     def cell_select_centers(self):
