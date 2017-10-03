@@ -125,7 +125,7 @@ for i, fnum in enumerate([2, 3, 4]):
     ax_list[1, i].set_title("Field %d"%(i+2), fontsize=20)    
     ax_list[1, i].legend(loc="upper right", fontsize=20)
 
-    areas.append(area * (imatched.sum()/float(xv.size)))
+    areas.append(area * (imatched.sum()/float(xv.size)) * np.cos(np.median(dec) * np.pi/float(180))) # Note the cosine factor.
 
 # plt.show()
 plt.savefig("estimate-area-monte-carlo.png", dpi=200, bbox_inches="tight")
