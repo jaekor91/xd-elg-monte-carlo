@@ -127,25 +127,48 @@ class parent_model:
         # MODELS: GMM fit to the data
         self.MODELS = [None, None, None]
 
+
+
     def plot_dNdredz(self):
         """
         Plot dNdredz for each field for all ELGs and DESI ELGs.
         """
-        redz_bins = np.arange(0.5, 1.7, 0.25)
+        redz_bins = np.arange(0.5, 1.7, 0.025)
+        colors = ["black", "red", "blue"]
         # All ELGs
-        fig = plt.figure(1, figsize=(10, 10))
+        fig = plt.figure(1, figsize=(15, 15))
         for fnum in [2, 3, 4]:
-            ifield = self.field == fnum
-            nobjs = 
-            wobjs = 
+            ibool = (self.field == fnum) & self.iELG
+            nobjs = np.sum(ibool)
+            wobjs = np.sum(self.w[ibool])
             A = self.areas[fnum-2]
-            plt.hist(self.red_z[ifield], bins=redz_bins, weights=self.w[ifield],\
-             label="%d: %d (%.1f) / %.1f (%.1f). A = %.2f" % (fnum, ))
-        plt.legend(loc="upper left")
-        plt.title("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.")
+            plt.hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool],\
+             label="%d: %d (%d) / %d (%d). A = %.2f" % (fnum, nobjs, nobjs/float(A), wobjs, wobjs/float(A), A),\
+             histtype="step", lw=2.5, color=colors[fnum-2])
+        plt.legend(loc="upper left", fontsize=20)
+        plt.ylim([0, 450])
+        plt.xlim([0.5, 1.7])
+        plt.title("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
         plt.savefig("dNdz-DR5-matched-All-ELGs.png", dpi=400, bbox_inches="tight")
         plt.close()
+
         # DESI ELGs only
+        fig = plt.figure(1, figsize=(15, 15))
+        for fnum in [2, 3, 4]:
+            ibool = (self.field == fnum) & (self.red_z > 0.6) & (self.red_z < 1.6) & (self.oii > 8)
+            nobjs = np.sum(ibool)
+            wobjs = np.sum(self.w[ibool])
+            A = self.areas[fnum-2]
+            plt.hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool],\
+             label="%d: %d (%d) / %d (%d). A = %.2f" % (fnum, nobjs, nobjs/float(A), wobjs, wobjs/float(A), A),\
+             histtype="step", lw=2.5, color=colors[fnum-2])
+        plt.legend(loc="upper left", fontsize=20)
+        plt.ylim([0, 450])
+        plt.xlim([0.5, 1.7])
+        plt.title("dNdz. DESI. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
+        plt.savefig("dNdz-DR5-matched-DESI-ELGs.png", dpi=400, bbox_inches="tight")
+        plt.close()
+
 
 
 
@@ -560,7 +583,7 @@ class parent_model:
 
         unmatched_frac_correction = 1+((nobjs_cut-nobjs_matched)/float(nobjs_cut)) 
 
-        print "Fraction of unmatched objects with g [%.1f, %.1f]: %.2f percent" % (self.mag_min, self.mag_max, 100 * unmatched_frac_correction)
+        print "Fraction of unmatched objects with g [%.1f, %.1f]: %.2f percent" % (self.mag_min, self.mag_max, 100 * (unmatched_frac_correction-1))
         print "We multiply the correction to the weights before training."
 
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
@@ -1393,7 +1416,7 @@ class model2(parent_model):
         N_leftover_weighted = np.sum(w[iselected_leftover])/area_sample
 
         # Efficiency
-        eff = (N_ELG_DESI_weighted+0.25*N_NoZ_weighted)/float(Ntotal_weighted)
+        eff = (N_ELG_DESI_weighted+self.f_NoZ*N_NoZ_weighted)/float(Ntotal_weighted)
 
         print "Raw/Weigthed/Predicted number of selection"
         print "----------"
