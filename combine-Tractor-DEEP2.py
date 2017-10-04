@@ -46,7 +46,7 @@ def load_DEEP2(fname, ibool=None):
 
 
 d2_dir = "../data-repository/DEEP2/photo-redz-oii/"
-glim = 25.0
+glim = 24.25
 
 
 ##############################################################################
@@ -67,7 +67,7 @@ for i, fnum in enumerate([2, 3, 4]):
     print("DECaLS catalogs.")
     print("Apply Tycho-2 stellar mask and other masks. glim < %.1f" % glim)
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
-    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0) & (gflux > mag2flux(25.0))
+    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0) & (gflux > mag2flux(glim))
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum, ibool=ibool)
     trac = load_fits_table("DR5-Tractor-D2f%d.fits"%fnum)[ibool]
     nobjs_trac_total = ra.size
@@ -111,7 +111,7 @@ for i, fnum in enumerate([2, 3, 4]):
     DEEP2_matched = np.zeros(nobjs_trac_total, dtype=int)
     DEEP2_matched[idx1] = 1
     trac_new = rec.append_fields(trac_new, "DEEP2_matched", DEEP2_matched, dtypes=DEEP2_matched.dtype, usemask=False, asrecarray=True)
-    save_fits(trac_new, "DR5-matched-to-DEEP2-f%d-glim25.fits" % fnum)
+    save_fits(trac_new, "DR5-matched-to-DEEP2-f%d-glim24p25.fits" % fnum)
     print("Completed.\n")
 
     print("\n\n\n")
