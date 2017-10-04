@@ -59,11 +59,11 @@ figure, ax_list = plt.subplots(2, 3, figsize=(25,13))
 for i, fnum in enumerate([2, 3, 4]):
     # DR5 data
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp,\
-     g_allmask, r_allmask, z_allmask, D2matched = load_tractor_DR5("DR5-matched-to-DEEP2-f%d-glim25.fits"%fnum)
+     g_allmask, r_allmask, z_allmask, D2matched = load_tractor_DR5("DR5-matched-to-DEEP2-f%d-glim24p25.fits"%fnum)
     ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0) & (gflux > mag2flux(gmag_max)) & (D2matched == 1)
 
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp,\
-     g_allmask, r_allmask, z_allmask, D2matched = load_tractor_DR5("DR5-matched-to-DEEP2-f%d-glim25.fits"%fnum)
+     g_allmask, r_allmask, z_allmask, D2matched = load_tractor_DR5("DR5-matched-to-DEEP2-f%d-glim24p25.fits"%fnum)
 
     ra = ra[ibool]
     dec = dec[ibool]
@@ -81,42 +81,43 @@ for i, fnum in enumerate([2, 3, 4]):
 #     print(dec.min(), dec.max())
     
     # Generate RA/DEC grid
-    NS_PER_DIM = 500
-    NS = NS_PER_DIM**2
     ra_range = ra.max()-ra.min()
     dec_range = -(dec.min()-dec.max())
+    dec_median = np.median(dec * np.pi / float(180.))
+    area = (ra.max()-ra.min()) * (dec.max()-dec.min()) * np.cos(dec_median * np.pi / float(180))
+    NS = area * 1e7
+
     xv = np.random.rand(NS) * ra_range + ra.min()
     yv = np.random.rand(NS) * dec_range + dec.min()
     
-    area = (ra.max()-ra.min()) * (dec.max()-dec.min())
 
     
     # Spherematch with DEEP2
     # Match randoms to the pcat catalog. Make a cut in distance. 
     idx, d2d = match_cat1_to_cat2(xv, yv, ra, dec)
-    imatched = d2d < 1/200.
+    imatched = d2d < 1/150.
     
     
     # Plot the matched and unmatched        
     # Matched
-    ax_list[0, i].scatter(xv[imatched], yv[imatched], color="black", label="Matched", s=1., edgecolor="none")
+    ax_list[0, i].scatter(xv[imatched], yv[imatched], color="black", label="Matched", s=.25, edgecolor="none")
     ax_list[0, i].axis("equal")
     ax_list[0, i].set_xlabel("ra", fontsize=20)
     ax_list[0, i].set_ylabel("dec", fontsize=20)    
     ax_list[0, i].set_title("Field %d"%(i+2), fontsize=20)
     ax_list[0, i].legend(loc="upper right", fontsize=20)
     # Unmatched
-    ax_list[1, i].scatter(xv[~imatched], yv[~imatched], color="black", label="Unmatched", s=1., edgecolor="none")
+    ax_list[1, i].scatter(xv[~imatched], yv[~imatched], color="black", label="Unmatched", s=.25, edgecolor="none")
     ax_list[1, i].axis("equal")
     ax_list[1, i].set_xlabel("ra", fontsize=20)
     ax_list[1, i].set_ylabel("dec", fontsize=20)        
     ax_list[1, i].set_title("Field %d"%(i+2), fontsize=20)    
     ax_list[1, i].legend(loc="upper right", fontsize=20)
 
-    areas.append(area * (imatched.sum()/float(xv.size)) * np.cos(np.median(dec) * np.pi/float(180))) # Note the cosine factor.
+    areas.append(area * (imatched.sum()/float(xv.size)))     # Note the cosine factor.
 
 # plt.show()
-plt.savefig("estimate-area-monte-carlo-DR5-matched.png", dpi=200, bbox_inches="tight")
+plt.savefig("estimate-area-monte-carlo-DR5-matched.png", dpi=400, bbox_inches="tight")
 plt.close()
 
 # Save area
