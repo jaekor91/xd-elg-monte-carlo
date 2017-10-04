@@ -129,6 +129,9 @@ class parent_model:
 
 
 
+    
+
+
     def plot_dNdredz(self):
         """
         Plot dNdredz for each field for all ELGs and DESI ELGs.
@@ -169,6 +172,33 @@ class parent_model:
         plt.savefig("dNdz-DR5-matched-DESI-ELGs.png", dpi=400, bbox_inches="tight")
         plt.close()
 
+        # All vs DESI ELGs
+        fig, ax_list = plt.subplots(1, 3, figsize=(25, 10))
+        for fnum in [2, 3, 4]:
+
+            # All
+            ibool = (self.field == fnum) & self.iELG
+            nobjs = np.sum(ibool)
+            wobjs = np.sum(self.w[ibool])
+            A = self.areas[fnum-2]
+            ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool],\
+             label="ALL: %d (%d) / %d (%d)" % (nobjs, nobjs/float(A), wobjs, wobjs/float(A)),\
+             histtype="step", lw=2.5, color="black")
+
+            # DESI
+            ibool = (self.field == fnum) & (self.red_z > 0.6) & (self.red_z < 1.6) & (self.oii > 8)
+            nobjs = np.sum(ibool)
+            wobjs = np.sum(self.w[ibool])
+            ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool],\
+             label="DESI: %d (%d) / %d (%d)" % (nobjs, nobjs/float(A), wobjs, wobjs/float(A)),\
+             histtype="stepfilled", lw=2.5, color="black", alpha=0.5)            
+            ax_list[fnum-2].set_title("Field %d. A = %.2f" % (fnum, A), fontsize=20)
+            ax_list[fnum-2].legend(loc="upper left", fontsize=20)
+            ax_list[fnum-2].set_ylim([0, 450])
+            ax_list[fnum-2].set_xlim([0.5, 1.7])
+        plt.suptitle("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
+        plt.savefig("dNdz-DR5-matched-All-vs-DESI-ELGs.png", dpi=400, bbox_inches="tight")
+        plt.close()
 
 
 
