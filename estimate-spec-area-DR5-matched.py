@@ -85,7 +85,7 @@ for i, fnum in enumerate([2, 3, 4]):
     dec_range = -(dec.min()-dec.max())
     dec_median = np.median(dec * np.pi / float(180.))
     area = (ra.max()-ra.min()) * (dec.max()-dec.min()) * np.cos(dec_median * np.pi / float(180))
-    NS = area * 1e7
+    NS = int(area * 2.5e6)
 
     xv = np.random.rand(NS) * ra_range + ra.min()
     yv = np.random.rand(NS) * dec_range + dec.min()
@@ -95,7 +95,7 @@ for i, fnum in enumerate([2, 3, 4]):
     # Spherematch with DEEP2
     # Match randoms to the pcat catalog. Make a cut in distance. 
     idx, d2d = match_cat1_to_cat2(xv, yv, ra, dec)
-    imatched = d2d < 1/150.
+    imatched = d2d < 1/175.
     
     
     # Plot the matched and unmatched        
