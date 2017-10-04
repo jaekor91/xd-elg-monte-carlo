@@ -19,9 +19,9 @@ def load_tractor_DR5_matched_to_DEEP2_full(ibool=None):
     """
     Load select columns. From all fields.
     """
-    tbl1 = load_fits_table("DR5-matched-to-DEEP2-f2-glim25.fits")
-    tbl2 = load_fits_table("DR5-matched-to-DEEP2-f3-glim25.fits")    
-    tbl3 = load_fits_table("DR5-matched-to-DEEP2-f4-glim25.fits")
+    tbl1 = load_fits_table("DR5-matched-to-DEEP2-f2-glim24p25.fits")
+    tbl2 = load_fits_table("DR5-matched-to-DEEP2-f3-glim24p25.fits")    
+    tbl3 = load_fits_table("DR5-matched-to-DEEP2-f4-glim24p25.fits")
 
     tbl1_size = tbl1.size
     tbl2_size = tbl2.size
