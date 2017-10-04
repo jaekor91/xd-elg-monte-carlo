@@ -129,14 +129,43 @@ class parent_model:
 
 
 
-    
+    def plot_dNdm_all(self):
+        """
+        Plot dNdm for all four classes (ALL ELG, DESI ELG, NoZ, NonELG) in 3 by 4 plot.
+
+        rows: g, r, z
+        columns: classes
+        graphs: fields
+        """
+        colors = ["black", "red", "blue"]
+        fig, ax_list = plt.subplots(3, 4, figsize = (28, 21))
+        class_names = ["All ELGs", "DESI ELGs", "NoZ", "NonELG"]
+        mag_names = [r"$g$", r"$r$", r"$z$"]
+        mag_bins = np.arange(20, 25, 0.1)
+        for j, iclass in enumerate([self.iELG, self.iELG & (self.oii>8), self.iNoZ, self.iNonELG]):
+            for i, flux in enumerate([self.gflux, self.rflux, self.zflux]):
+                for fnum in [2, 3, 4]:
+                    ibool = iclass & (self.field==fnum)
+                    A = self.areas[fnum-2]
+                    ax_list[i][j].hist(flux2mag(flux[ibool]), bins=mag_bins, weights = self.w[ibool]/float(A),\
+                        label = "F%d" % fnum, color = colors[fnum-2], histtype="step", lw = 2.5)
+                title_str = "%s. %s" % (class_names[j], mag_names[i])
+                ax_list[i][j].set_title(title_str, fontsize=20)
+                ax_list[i][j].set_xlabel(mag_names[i])
+                ax_list[i][j].set_ylabel("dNdm")
+        plt.suptitle("dNdm with g < 24. Only matched. Weighted density", fontsize=25)
+        plt.savefig("dNdm-grz-all-DR5-matched-wdensity.png", dpi = 400, bbox_inches="tight")
+        plt.close()
 
 
     def plot_dNdredz(self):
         """
         Plot dNdredz for each field for all ELGs and DESI ELGs.
         """
-        redz_bins = np.arange(0.5, 1.7, 0.025)
+        # np=1 Line
+        dz = 0.025
+        x, y = np1_line(dz=dz)        
+        redz_bins = np.arange(0.5, 1.7, dz)
         colors = ["black", "red", "blue"]
         # All ELGs
         fig = plt.figure(1, figsize=(15, 15))
@@ -145,11 +174,12 @@ class parent_model:
             nobjs = np.sum(ibool)
             wobjs = np.sum(self.w[ibool])
             A = self.areas[fnum-2]
-            plt.hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool],\
+            plt.hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
              label="%d: %d (%d) / %d (%d). A = %.2f" % (fnum, nobjs, nobjs/float(A), wobjs, wobjs/float(A), A),\
              histtype="step", lw=2.5, color=colors[fnum-2])
+        plt.plot(x, y)
         plt.legend(loc="upper left", fontsize=20)
-        plt.ylim([0, 450])
+        plt.ylim([0, 600])
         plt.xlim([0.5, 1.7])
         plt.title("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
         plt.savefig("dNdz-DR5-matched-All-ELGs.png", dpi=400, bbox_inches="tight")
@@ -162,11 +192,11 @@ class parent_model:
             nobjs = np.sum(ibool)
             wobjs = np.sum(self.w[ibool])
             A = self.areas[fnum-2]
-            plt.hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool],\
+            plt.hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
              label="%d: %d (%d) / %d (%d). A = %.2f" % (fnum, nobjs, nobjs/float(A), wobjs, wobjs/float(A), A),\
              histtype="step", lw=2.5, color=colors[fnum-2])
         plt.legend(loc="upper left", fontsize=20)
-        plt.ylim([0, 450])
+        plt.ylim([0, 600])
         plt.xlim([0.5, 1.7])
         plt.title("dNdz. DESI. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
         plt.savefig("dNdz-DR5-matched-DESI-ELGs.png", dpi=400, bbox_inches="tight")
@@ -181,7 +211,7 @@ class parent_model:
             nobjs = np.sum(ibool)
             wobjs = np.sum(self.w[ibool])
             A = self.areas[fnum-2]
-            ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool],\
+            ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
              label="ALL: %d (%d) / %d (%d)" % (nobjs, nobjs/float(A), wobjs, wobjs/float(A)),\
              histtype="step", lw=2.5, color="black")
 
@@ -189,7 +219,7 @@ class parent_model:
             ibool = (self.field == fnum) & (self.red_z > 0.6) & (self.red_z < 1.6) & (self.oii > 8)
             nobjs = np.sum(ibool)
             wobjs = np.sum(self.w[ibool])
-            ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool],\
+            ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
              label="DESI: %d (%d) / %d (%d)" % (nobjs, nobjs/float(A), wobjs, wobjs/float(A)),\
              histtype="stepfilled", lw=2.5, color="black", alpha=0.5)            
             ax_list[fnum-2].set_title("Field %d. A = %.2f" % (fnum, A), fontsize=20)
