@@ -10,7 +10,7 @@ large_random_constant = -999119283571
 deg2arcsec=3600
 
 # from_directory = "/global/cscratch1/sd/desiproc/DR5_out/tractor/"
-from_directory = "/global/projecta/projectdirs/cosmo/work/dr5/DR5_out/"
+from_directory = "/global/project/projectdirs/cosmo/work/legacysurvey/dr5/DR5_out/tractor/"
 to_directory = "/global/homes/j/jaehyeon/tmp-tractor-storage/f"
 # data_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DR5/"
 
@@ -81,8 +81,8 @@ def search_bricknames(fits_directory, ra_search_range, dec_search_range, tol=0.2
 # Getting the brick names near the ranges specified below.
 tol = .5
 f2_bricks, f3_bricks, f4_bricks = [], [], []
-f2_bricks = search_bricknames(from_directory, [251.3, 253.7], [0, 0.1], tol, dir_names=range(245, 256))
-f3_bricks = search_bricknames(from_directory, [351.25, 353.8], [-.2, .5], tol, dir_names=[351, 352, 353, 354])
+f2_bricks = search_bricknames(from_directory, [251.3, 253.7], [34.6, 35.3], tol, dir_names=range(251, 254))
+# f3_bricks = search_bricknames(from_directory, [351.25, 353.8], [-.2, .5], tol, dir_names=[351, 352, 353, 354])
 # f4_bricks = search_bricknames(from_directory, [36.4,38.],[.3, 1.0], tol, dir_names=["030", "031", "032", "033", "034", "035", "036", "037", "038", "039", "040", "041", "042", "043", "044", "045"])
 bricks = [f2_bricks, f3_bricks, f4_bricks]
 
