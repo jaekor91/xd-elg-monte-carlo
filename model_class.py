@@ -68,7 +68,7 @@ def load_tractor_DR5_matched_to_DEEP2_full(ibool=None):
 class parent_model:
     def __init__(self, sub_sample_num):
         # Basic class variables
-        self.areas = np.load("spec-area.npy")
+        self.areas = np.load("spec-area-DR5-matched.npy")
         self.mag_max = 24 # We model moderately deeper than 24. But only model down to 21.
         self.mag_min = 22
         self.category = ["NonELG", "NoZ", "ELG"]
@@ -126,6 +126,28 @@ class parent_model:
 
         # MODELS: GMM fit to the data
         self.MODELS = [None, None, None]
+
+    def plot_dNdredz(self):
+        """
+        Plot dNdredz for each field for all ELGs and DESI ELGs.
+        """
+        redz_bins = np.arange(0.5, 1.7, 0.25)
+        # All ELGs
+        fig = plt.figure(1, figsize=(10, 10))
+        for fnum in [2, 3, 4]:
+            ifield = self.field == fnum
+            nobjs = 
+            wobjs = 
+            A = self.areas[fnum-2]
+            plt.hist(self.red_z[ifield], bins=redz_bins, weights=self.w[ifield],\
+             label="%d: %d (%.1f) / %.1f (%.1f). A = %.2f" % (fnum, ))
+        plt.legend(loc="upper left")
+        plt.title("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.")
+        plt.savefig("dNdz-DR5-matched-All-ELGs.png", dpi=400, bbox_inches="tight")
+        plt.close()
+        # DESI ELGs only
+
+
 
 
     def gen_train_set_idx(self):
@@ -538,7 +560,7 @@ class parent_model:
 
         unmatched_frac_correction = 1+((nobjs_cut-nobjs_matched)/float(nobjs_cut)) 
 
-        print "Fraction of unmatched objects with g [%.1f, %.1f]: %.2f percent" % (self.mag_min, self.mag_max, 100 * (nobjs_cut-nobjs_matched)/float(nobjs_cut))
+        print "Fraction of unmatched objects with g [%.1f, %.1f]: %.2f percent" % (self.mag_min, self.mag_max, 100 * unmatched_frac_correction)
         print "We multiply the correction to the weights before training."
 
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
