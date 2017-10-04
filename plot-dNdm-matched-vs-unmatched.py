@@ -65,7 +65,7 @@ for fnum in [2, 3, 4]:
     print("Field %d" % fnum)
     bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
     rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, cn, w, red_z, z_err, oii, oii_err, D2matched\
-        = load_tractor_DR5_matched_to_DEEP2("DR5-matched-to-DEEP2-f%d-glim25.fits" % fnum)
+        = load_tractor_DR5_matched_to_DEEP2("DR5-matched-to-DEEP2-f%d-glim24p25.fits" % fnum)
     gmag, rmag, zmag = flux2mag(gflux), flux2mag(rflux), flux2mag(zflux)
     ygr = gmag - rmag
     xrz = rmag - zmag
@@ -73,21 +73,21 @@ for fnum in [2, 3, 4]:
     print "Anticipated uncertainty."
     ibroad = broad_cut(gmag, rmag, zmag) # & (gflux>0) & (rflux>0) & (zflux>0)
 
-    mag_min, mag_max= 10, 25
-    ibool = (gflux > mag2flux(mag_max)) & (gflux < mag2flux(mag_min))
-    print "Fraction unmatched [%.1f, %.1f]  before/after design-space cut: %.2f/%.2f (percent)" % (mag_min, mag_max, (np.sum(D2matched[ibool]==0)/float(D2matched[ibool].size) * 100), (np.sum(D2matched[np.logical_and(ibool, ibroad)]==0)/float(D2matched[np.logical_and(ibool, ibroad)].size) * 100))
-
-    mag_min, mag_max= 23, 25
+    mag_min, mag_max= 10, 24
     ibool = (gflux > mag2flux(mag_max)) & (gflux < mag2flux(mag_min))
     print "Fraction unmatched [%.1f, %.1f]  before/after design-space cut: %.2f/%.2f (percent)" % (mag_min, mag_max, (np.sum(D2matched[ibool]==0)/float(D2matched[ibool].size) * 100), (np.sum(D2matched[np.logical_and(ibool, ibroad)]==0)/float(D2matched[np.logical_and(ibool, ibroad)].size) * 100))
 
     mag_min, mag_max= 23, 24
     ibool = (gflux > mag2flux(mag_max)) & (gflux < mag2flux(mag_min))
     print "Fraction unmatched [%.1f, %.1f]  before/after design-space cut: %.2f/%.2f (percent)" % (mag_min, mag_max, (np.sum(D2matched[ibool]==0)/float(D2matched[ibool].size) * 100), (np.sum(D2matched[np.logical_and(ibool, ibroad)]==0)/float(D2matched[np.logical_and(ibool, ibroad)].size) * 100))
+
+    mag_min, mag_max= 23, 24.25
+    ibool = (gflux > mag2flux(mag_max)) & (gflux < mag2flux(mag_min))
+    print "Fraction unmatched [%.1f, %.1f]  before/after design-space cut: %.2f/%.2f (percent)" % (mag_min, mag_max, (np.sum(D2matched[ibool]==0)/float(D2matched[ibool].size) * 100), (np.sum(D2matched[np.logical_and(ibool, ibroad)]==0)/float(D2matched[np.logical_and(ibool, ibroad)].size) * 100))
     print "For modeling purpose, categorize unmatched objects to be part of the non-ELG set."
 
 
-    for mag_lim in [24, 25]:
+    for mag_lim in [24]:
         # Plot grz of unmatched objects
         dm = 0.1
         lw = 2
