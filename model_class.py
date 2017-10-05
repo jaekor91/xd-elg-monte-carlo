@@ -1895,9 +1895,9 @@ class model3(parent_model):
 
         # Plot variables
         # var limits
-        self.lim_x = [-1, 5.] # g-z
-        self.lim_y = [-1, 2.5] # r-z
-        self.lim_z = [-1, 7] # g-oii
+        self.lim_x = [-1.25, 5.] # g-z
+        self.lim_y = [-.75, 2.75] # r-z
+        self.lim_z = [-0, 6] # g-oii
         self.lim_gmag = [21., 24.0]
 
         # bin widths
