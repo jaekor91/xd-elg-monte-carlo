@@ -92,28 +92,57 @@ def tally_objects(N_cell, cell_number, cw, FoM):
 def tally_objects_kernel(N_cell, cell_number, cw, FoM, ND, limits, num_bins):
     """
     Given number of cells and cell number, completeness weight, and FoM per sample,
-    return a tally.
+    return a tally. Use Gaussian kernel approximation for each particle in a cell.
+
+    Strategy:
+    - For each sample with a legitimate cell number, compute the bin number. 
+    - Determine the cells in the neighborhood of the current cell, and increment
+    according to the kernel look up table.
 
     Note that the total number and FoM are weighted by completeness weight.
 
     Also, return the number of good objects defined as objects with positive FoM.
+
+    Assumes the grid is three dimensional.
     """
+    # Constants
+    N1 = np.multiply.reduce(num_bins[1:])
+    N2 = np.multiply.reduce(num_bins[2:])
+
+    N_kernel = 3
+    gauss_kernel = gen_gauss_kernel_3D(N_kernel) # Normalized to sum to one.
 
     FoM_tally = np.zeros(N_cell, dtype = float)
     Ntotal_tally = np.zeros(N_cell, dtype = float)
     Ngood_tally = np.zeros(N_cell, dtype = float)
 
     for i, cn in enumerate(cell_number): # cn is cell number, which we can use as index.
-#         print (i, cn, FoM[i], cw[i])
         if (cn>=0) and (cn<N_cell):
-            FoM_tally[cn] += FoM[i] * cw[i]
-            Ntotal_tally[cn] += cw[i]
-            if FoM[i] > 0: 
-                Ngood_tally[cn] += cw[i]
+            # Compute the bin number corresponding to the cell.
+            bin_indicies = [cn//N1, (cn%N1) // N2,  cn % N2]
 
-    return FoM_tally, Ntotal_tally, Ngood_tally    
+            # Extract common values
+            cw_tmp = cw[i]
+            FoM_tmp = FoM[i]
 
-    
+            # Iterate through the neighborhood of cells centered at the current cell cn,
+            # increment the appropriate numbers.
+            # Indicies for 0, 1, 2 directions: m, n, l
+            for m in range(-N_kernel/2, N_kernel+1): # e.g., N_kernel=3 gives -1, 0, 1
+                for n in range(-N_kernel/2, N_kernel+1): # e.g., N_kernel=3 gives -1, 0, 1
+                    for l in range(-N_kernel/2, N_kernel+1): # e.g., N_kernel=3 gives -1, 0, 1
+                        # Cell number computed 
+                        cn_iter = (bin_indicies[0]+m)*N1 + (bin_indicies[1]+n)*N2 + (bin_indicies[2]+l)
+                        gk_factor = gauss_kernel[m+N_kernel/2, n+N_kernel/2, l+N_kernel/2] # Gaussian kernel factor
+                        if (cn_iter>=0) and (cn_iter<N_cell):
+                            FoM_tally[cn_iter] += FoM_tmp * cw_tmp * gk_factor
+                            Ntotal_tally[cn_iter] += cw_tmp * gk_factor
+                            if FoM_tmp > 0: 
+                                Ngood_tally[cn_iter] += cw_tmp * gk_factor
+
+    return FoM_tally, Ntotal_tally, Ngood_tally
+
+
 
 def multdim_grid_cell_number(samples, ND, limits, num_bins):
     """
