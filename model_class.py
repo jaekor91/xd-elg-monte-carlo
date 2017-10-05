@@ -70,7 +70,7 @@ class parent_model:
         # Basic class variables
         self.areas = np.load("spec-area-DR5-matched.npy")
         self.mag_max = 24 # We model moderately deeper than 24. But only model down to 21.
-        self.mag_min = 22
+        self.mag_min = 21
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
 
@@ -138,10 +138,10 @@ class parent_model:
         graphs: fields
         """
         colors = ["black", "red", "blue"]
-        fig, ax_list = plt.subplots(3, 4, figsize = (28, 21))
+        fig, ax_list = plt.subplots(3, 4, figsize = (28, 20))
         class_names = ["All ELGs", "DESI ELGs", "NoZ", "NonELG"]
         mag_names = [r"$g$", r"$r$", r"$z$"]
-        mag_bins = np.arange(20, 25, 0.1)
+        mag_bins = np.arange(20, 25., 0.1)
         for j, iclass in enumerate([self.iELG, self.iELG & (self.oii>8), self.iNoZ, self.iNonELG]):
             for i, flux in enumerate([self.gflux, self.rflux, self.zflux]):
                 for fnum in [2, 3, 4]:
@@ -150,10 +150,10 @@ class parent_model:
                     ax_list[i][j].hist(flux2mag(flux[ibool]), bins=mag_bins, weights = self.w[ibool]/float(A),\
                         label = "F%d" % fnum, color = colors[fnum-2], histtype="step", lw = 2.5)
                 title_str = "%s. %s" % (class_names[j], mag_names[i])
-                ax_list[i][j].set_title(title_str, fontsize=20)
-                ax_list[i][j].set_xlabel(mag_names[i])
-                ax_list[i][j].set_ylabel("dNdm")
-        plt.suptitle("dNdm with g < 24. Only matched. Weighted density", fontsize=25)
+                ax_list[i][j].set_title(title_str, fontsize=25)
+                ax_list[i][j].set_xlabel(mag_names[i], fontsize=20)
+                ax_list[i][j].set_ylabel("dNdm", fontsize=20)
+        plt.suptitle("dNdm with g [%.2f, %.2f]. Only matched. Weighted density" %(self.mag_min, self.mag_max), fontsize=30)
         plt.savefig("dNdm-grz-all-DR5-matched-wdensity.png", dpi = 400, bbox_inches="tight")
         plt.close()
 
@@ -177,8 +177,8 @@ class parent_model:
             plt.hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
              label="%d: %d (%d) / %d (%d). A = %.2f" % (fnum, nobjs, nobjs/float(A), wobjs, wobjs/float(A), A),\
              histtype="step", lw=2.5, color=colors[fnum-2])
-        plt.plot(x, y)
-        plt.legend(loc="upper left", fontsize=20)
+        plt.plot(x, y, c="green", lw=3, ls="--")
+        plt.legend(loc="upper right", fontsize=20)
         plt.ylim([0, 600])
         plt.xlim([0.5, 1.7])
         plt.title("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
@@ -195,7 +195,8 @@ class parent_model:
             plt.hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
              label="%d: %d (%d) / %d (%d). A = %.2f" % (fnum, nobjs, nobjs/float(A), wobjs, wobjs/float(A), A),\
              histtype="step", lw=2.5, color=colors[fnum-2])
-        plt.legend(loc="upper left", fontsize=20)
+        plt.legend(loc="upper right", fontsize=20)
+        plt.plot(x, y, c="green", lw=3, ls="--")        
         plt.ylim([0, 600])
         plt.xlim([0.5, 1.7])
         plt.title("dNdz. DESI. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
@@ -222,9 +223,10 @@ class parent_model:
             ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
              label="DESI: %d (%d) / %d (%d)" % (nobjs, nobjs/float(A), wobjs, wobjs/float(A)),\
              histtype="stepfilled", lw=2.5, color="black", alpha=0.5)            
+            ax_list[fnum-2].plot(x, y, c="red", lw=3, ls="--")            
             ax_list[fnum-2].set_title("Field %d. A = %.2f" % (fnum, A), fontsize=20)
             ax_list[fnum-2].legend(loc="upper left", fontsize=20)
-            ax_list[fnum-2].set_ylim([0, 450])
+            ax_list[fnum-2].set_ylim([0, 600])
             ax_list[fnum-2].set_xlim([0.5, 1.7])
         plt.suptitle("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
         plt.savefig("dNdz-DR5-matched-All-vs-DESI-ELGs.png", dpi=400, bbox_inches="tight")
@@ -816,8 +818,8 @@ class model2(parent_model):
         # ----- MC Sample Variables ----- # 
         self.area_MC = self.area_train # 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
-        self.fmin_MC = mag2flux(24.25)
-        self.fmax_MC = mag2flux(21.75)
+        self.fmin_MC = mag2flux(24.05) # Note that around 23.8, the power law starts to break down.
+        self.fmax_MC = mag2flux(21)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
         # 0: NonELG, 1: NoZ, 2: ELG
