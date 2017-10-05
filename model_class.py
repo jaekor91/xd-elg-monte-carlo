@@ -1895,9 +1895,9 @@ class model3(parent_model):
 
         # Plot variables
         # var limits
-        self.lim_x = [-.75, 4.5] # zf/gf
-        self.lim_y = [-.1, 2.2] # rf/gf        
-        self.lim_z = [-1, 7] # oii/gf
+        self.lim_x = [-1, 5.] # g-z
+        self.lim_y = [-1, 2.5] # r-z
+        self.lim_z = [-1, 7] # g-oii
         self.lim_gmag = [21., 24.0]
 
         # bin widths
@@ -1907,16 +1907,16 @@ class model3(parent_model):
         self.dgmag = 0.025
 
         # var names
-        self.var_x_name = r"$\mu_g - \mu_r$"        
-        self.var_y_name = r"$\mu_g - \mu_z$"  
+        self.var_x_name = r"$\mu_g - \mu_z$"        
+        self.var_y_name = r"$\mu_g - \mu_r$"  
         self.var_z_name = r"$\mu_g - \mu_{OII}$"
         self.red_z_name = r"$\eta$"
         self.gmag_name  = r"$g$"
 
         # var lines
-        self.var_x_lines = range(-0.5, 4.5, 0.5)
-        self.var_y_lines = range(-0.0, 2.5, 0.5)
-        self.var_z_lines = range(-0.5, 7, 0.5)
+        self.var_x_lines = np.arange(-0.0, 4.5, 1.)
+        self.var_y_lines = np.arange(-0.0, 2.5, 1.)
+        self.var_z_lines = np.arange(-0.0, 6, 1.)
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
         self.gmag_lines = [21, 22, 23, 24]
 
@@ -2002,7 +2002,78 @@ class model3(parent_model):
         mu_z = flux2asinh_mag(zflux, band = "z")
         if oii is not None:
             mu_oii = flux2asinh_mag(oii, band = "oii")
-            return mu_g - mu_r, mu_g - mu_z, mu_g - mu_oii, flux2mag(gflux)
+            return mu_g - mu_z, mu_g - mu_r, mu_g - mu_oii, flux2mag(gflux)
         else:
-            return mu_g - mu_r, mu_g - mu_z, flux2mag(gflux)
+            return mu_g - mu_z, mu_g - mu_r, flux2mag(gflux)
 
+
+
+    def plot_data(self, model_tag="", cv_tag=""):
+        """
+        Use self model/plot variables to plot the data given an external figure ax_list.
+        Save the resulting image using title_str (does not include extension)
+        """
+
+        print "Corr plot - var_xyz - all classes together"
+        lims = [self.lim_x, self.lim_y, self.lim_gmag]
+        binws = [self.dx, self.dy, self.dgmag]
+        var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+        num_cat = 3
+        num_vars = 3
+
+        variables = []
+        weights = []            
+        for ibool in [self.iNonELG, self.iNoZ, self.iELG]:
+            iplot = np.copy(ibool) & self.iTrain
+            variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
+            weights.append(self.w[iplot]/self.area_train)
+        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=None, colors=self.colors, ft_size_legend = 15, lw_dot=2)
+        plt.savefig("%s-%s-data-all.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
+        plt.close()        
+
+
+
+        print "Corr plot - var_xyz - separately"
+        lims = [self.lim_x, self.lim_y, self.lim_gmag]
+        binws = [self.dx, self.dy, self.dgmag]
+        var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+        num_cat = 1
+        num_vars = 3
+
+
+        for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+            print "Plotting %s" % self.category[i]                
+            variables = []
+            weights = []                
+            iplot = np.copy(ibool) & self.iTrain
+            variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
+            weights.append(self.w[iplot]/self.area_train)
+
+            fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
+
+            plt.savefig("%s-%s-data-%s.png" % (model_tag, cv_tag, self.category[i]), dpi=200, bbox_inches="tight")
+            plt.close()
+
+
+        print "Corr plot - var_xyz, red_z, gmag - ELG only"
+        num_cat = 1
+        num_vars = 5
+        lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_redz, self.lim_gmag]
+        binws = [self.dx, self.dy, self.dz, self.dred_z, self.dgmag]
+        var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.red_z_name, self.gmag_name]
+        lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.redz_lines, self.gmag_lines]
+
+        iplot = np.copy(self.iELG) & self.iTrain
+        i = 2 # For category
+        variables = [[self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.red_z[iplot], self.gmag[iplot]]]
+        weights = [self.w[iplot]/self.area_train]
+
+        fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
+        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
+
+        plt.savefig("%s-%s-data-ELG-redz-oii.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
+        plt.close()
