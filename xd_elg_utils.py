@@ -64,7 +64,7 @@ def check_in_arr2(arr1, arr2):
 
 
 @nb.jit
-def tally_objects(N_cell, cell_number, cw, FoM, use_kernel=False):
+def tally_objects(N_cell, cell_number, cw, FoM):
     """
     Given number of cells and cell number, completeness weight, and FoM per sample,
     return a tally.
