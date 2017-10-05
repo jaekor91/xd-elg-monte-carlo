@@ -1924,72 +1924,72 @@ class model3(parent_model):
         self.MODELS_pow = [None, None, None]
 
         # Number of components chosen for each category based on the training sample.
-        # self.K_best = self.gen_K_best()
+        self.K_best = None # self.gen_K_best()
 
-        # # ----- MC Sample Variables ----- # 
-        # self.area_MC = self.area_train # 
-        # # Flux range to draw the sample from. Slightly larger than the range we are interested.
-        # self.fmin_MC = mag2flux(24.025) # Note that around 23.8, the power law starts to break down.
-        # self.fmax_MC = mag2flux(21)
-        # self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
-        # # Original sample.
-        # # 0: NonELG, 1: NoZ, 2: ELG
-        # self.NSAMPLE = [None, None, None]
-        # self.gflux0 = [None, None, None] # 0 for original
-        # self.rflux0 = [None, None, None] # 0 for original
-        # self.zflux0 = [None, None, None] # 0 for original
-        # self.oii0 = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
-        # self.redz0 = [None, None, None]
-        # # Default noise levels
-        # self.glim_err = 23.8
-        # self.rlim_err = 23.4
-        # self.zlim_err = 22.4
-        # self.oii_lim_err = 8 # 7 sigma
-        # # Noise seed. err_seed ~ N(0, 1). This can be transformed by scaling appropriately.
-        # self.g_err_seed = [None, None, None] # Error seed.
-        # self.r_err_seed = [None, None, None] # Error seed.
-        # self.z_err_seed = [None, None, None] # Error seed.
-        # self.oii_err_seed = [None, None, None] # Error seed.
-        # # Noise convolved values
-        # self.gflux_obs = [None, None, None] # obs for observed
-        # self.rflux_obs = [None, None, None] # obs for observed
-        # self.zflux_obs = [None, None, None] # obs for observed
-        # self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
-        # # Completeness weight for each sample. If 1, the object is certain to be observed. If 0, the opposite.
-        # self.cw_obs = [None, None, None]
-        # # FoM per sample. Note that FoM depends on the observed property such as OII.
-        # self.FoM_obs = [None, None, None]
+        # ----- MC Sample Variables ----- # 
+        self.area_MC = self.area_train # 
+        # Flux range to draw the sample from. Slightly larger than the range we are interested.
+        self.fmin_MC = mag2flux(24.025) # Note that around 23.8, the power law starts to break down.
+        self.fmax_MC = mag2flux(21)
+        self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
+        # Original sample.
+        # 0: NonELG, 1: NoZ, 2: ELG
+        self.NSAMPLE = [None, None, None]
+        self.gflux0 = [None, None, None] # 0 for original
+        self.rflux0 = [None, None, None] # 0 for original
+        self.zflux0 = [None, None, None] # 0 for original
+        self.oii0 = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
+        self.redz0 = [None, None, None]
+        # Default noise levels
+        self.glim_err = 23.8
+        self.rlim_err = 23.4
+        self.zlim_err = 22.4
+        self.oii_lim_err = 8 # 7 sigma
+        # Noise seed. err_seed ~ N(0, 1). This can be transformed by scaling appropriately.
+        self.g_err_seed = [None, None, None] # Error seed.
+        self.r_err_seed = [None, None, None] # Error seed.
+        self.z_err_seed = [None, None, None] # Error seed.
+        self.oii_err_seed = [None, None, None] # Error seed.
+        # Noise convolved values
+        self.gflux_obs = [None, None, None] # obs for observed
+        self.rflux_obs = [None, None, None] # obs for observed
+        self.zflux_obs = [None, None, None] # obs for observed
+        self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
+        # Completeness weight for each sample. If 1, the object is certain to be observed. If 0, the opposite.
+        self.cw_obs = [None, None, None]
+        # FoM per sample. Note that FoM depends on the observed property such as OII.
+        self.FoM_obs = [None, None, None]
 
-        # # Observed final distributions
-        # self.var_x_obs = [None, None, None] # z/g
-        # self.var_y_obs = [None, None, None] # r/g
-        # self.var_z_obs = [None, None, None] # oii/g
-        # self.redz_obs = [None, None, None]        
-        # self.gmag_obs = [None, None, None]
+        # Observed final distributions
+        self.var_x_obs = [None, None, None] # g-z
+        self.var_y_obs = [None, None, None] # g-r
+        self.var_z_obs = [None, None, None] # g-oii
+        self.redz_obs = [None, None, None]        
+        self.gmag_obs = [None, None, None]
 
-        # # Cell number
-        # self.cell_number_obs = [None, None, None]
+        # Cell number
+        self.cell_number_obs = [None, None, None]
 
-        # # Selection grid limits
-        # self.var_x_limits = [-1., 3.]
-        # self.var_y_limits = [0, 1.25]
-        # self.gmag_limits = [22., 24.]
+        # Selection grid limits
+        self.var_x_limits = [-1., 3.]
+        self.var_y_limits = [0, 1.25]
+        self.gmag_limits = [22., 24.]
 
-        # # Number of bins var_x, var_y, gmag
-        # self.num_bins = [100, 100, 100]
+        # Number of bins var_x, var_y, gmag
+        self.num_bins = [100, 100, 100]
 
-        # # Cell_number in selection
-        # self.cell_select = None
+        # Cell_number in selection
+        self.cell_select = None
 
-        # # Desired nubmer of objects
-        # self.num_desired = 2400
+        # Desired nubmer of objects
+        self.num_desired = 2400
 
-        # # Regularization number when computing utility
-        # # In a square field, we expect about 20K objects.
-        # self.N_regular = 1e4
+        # Regularization number when computing utility
+        # In a square field, we expect about 20K objects.
+        self.N_regular = 1e4
 
-        # # Fraction of NoZ objects that we expect to be good
-        # self.f_NoZ = 0.25
+        # Fraction of NoZ objects that we expect to be good
+        self.f_NoZ = 0.25
 
 
 
@@ -2143,4 +2143,315 @@ class model3(parent_model):
                 np.save("MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
 
         return 
-    
+
+
+
+    def gen_sample_intrinsic(self, K_selected=None):
+        """
+        Given MoG x power law parameters specified by [amps, means, covs] corresponding to K_selected[i] components
+        and MODELS_pow, return a sample proportional to area.
+        """
+        if K_selected is None:
+            K_selected = self.K_best
+
+        # NonELG, NoZ and ELG
+        for i in range(3):
+            # MoG model
+            MODELS = self.MODELS[i]
+            MODELS = MODELS[MODELS.keys()[0]][K_selected[i]] # We only want the model with K components
+            amps, means, covs = MODELS["amps"], MODELS["means"], MODELS["covs"]
+
+            # Pow law model
+            alpha, A = self.MODELS_pow[i]
+
+            # Compute the number of sample to draw.
+            NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MC, self.fmax_MC) * self.area_MC))#
+            print "%s sample number: %d" % (self.category[i], NSAMPLE)
+
+            # Generate Nsample flux.
+            gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)
+
+            # Compute mu_g
+            mu_g = flux2asinh_mag(gflux, band = "g")
+            
+            # Generate Nsample from MoG.
+            MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)
+
+            # Gen err seed and save
+            self.g_err_seed[i] = gen_err_seed(NSAMPLE)
+            self.r_err_seed[i] = gen_err_seed(NSAMPLE)
+            self.z_err_seed[i] = gen_err_seed(NSAMPLE)
+
+            # For all categories
+            mu_gz, mu_gr = MoG_sample[:,0], MoG_sample[:,1]
+            mu_z = mu_g - mu_gz
+            mu_r = mu_g - mu_gr
+
+            zflux = asinh_mag2flux(mu_r, band = "z")
+            rflux = asinh_mag2flux(mu_r, band = "r")
+            
+            # Saving
+            self.gflux0[i] = gflux
+            self.rflux0[i] = rflux
+            self.zflux0[i] = zflux
+            self.NSAMPLE[i] = NSAMPLE
+
+
+            if i==2: #ELG 
+                mu_goii, redz = MoG_sample[:,2], MoG_sample[:,3]
+                mu_oii = mu_g - mu_goii
+                oii = asinh_mag2flux(mu_oii, band = "oii")
+
+                # oii error seed
+                self.oii_err_seed[i] = gen_err_seed(NSAMPLE)
+
+                # Saving
+                self.redz0[i] = redz
+                self.oii0[i] = oii
+                self.NSAMPLE[i] = NSAMPLE
+
+        return
+
+
+    def set_err_lims(self, glim, rlim, zlim, oii_lim):
+        """
+        Set the error characteristics.
+        """
+        self.glim_err = glim
+        self.rlim_err = rlim 
+        self.zlim_err = zlim
+        self.oii_lim_err = oii_lim
+
+        return
+
+
+
+    def gen_err_conv_sample(self, detection=False):
+        """
+        Given the error properties glim_err, rlim_err, zlim_err, oii_lim_err, add noise to the intrinsic density
+        sample and compute the parametrization.
+
+        If detection, then apply incomplteness algorithm to get the completeness weight
+        """
+        print "Convolving error and re-parametrizing"        
+        # NonELG, NoZ and ELG
+        for i in range(3):
+            print "%s" % self.category[i]
+            self.gflux_obs[i] = self.gflux0[i] + self.g_err_seed[i] * mag2flux(self.glim_err)/5.
+            self.rflux_obs[i] = self.rflux0[i] + self.r_err_seed[i] * mag2flux(self.rlim_err)/5.
+            self.zflux_obs[i] = self.zflux0[i] + self.z_err_seed[i] * mag2flux(self.zlim_err)/5.
+
+            # Make flux cut
+            ifcut = self.gflux_obs[i] > self.fcut
+            self.gflux_obs[i] = self.gflux_obs[i][ifcut]
+            self.rflux_obs[i] = self.rflux_obs[i][ifcut]
+            self.zflux_obs[i] = self.zflux_obs[i][ifcut]
+
+            # Compute model parametrization
+            mu_g = flux2asinh_mag(self.gflux_obs[i], band="g")
+            mu_r = flux2asinh_mag(self.rflux_obs[i], band="r")
+            mu_z = flux2asinh_mag(self.zflux_obs[i], band="z")
+            self.var_x_obs[i] = mu_g - mu_z
+            self.var_y_obs[i] = mu_g - mu_r
+            self.gmag_obs[i] = flux2mag(self.gflux_obs[i])
+
+            # Number of samples after the cut.
+            Nsample = self.gmag_obs[i].size
+
+            if detection: # If the user asks 
+                pass
+            else:
+                self.cw_obs[i] = np.ones(Nsample) # Note we do not divide by area
+
+            # More parametrization to compute for ELGs. Also, compute FoM.
+            if i==2:
+                # oii parameerization
+                self.oii_obs[i] = self.oii0[i] + self.oii_err_seed[i] * (self.oii_lim_err/7.) # 
+                self.oii_obs[i] = self.oii_obs[i][ifcut]
+                mu_oii = flux2asinh_mag(self.oii_obs[i], band="oii")
+                self.var_z_obs[i] = mu_g - mu_oii
+
+                # Redshift has no uncertainty
+                self.redz_obs[i] = self.redz0[i][ifcut]
+
+                # Gen FoM 
+                self.FoM_obs[i] = self.gen_FoM(i, Nsample, self.oii_obs[i], self.redz_obs[i])
+            else:
+                # Gen FoM 
+                self.FoM_obs[i] = self.gen_FoM(i, Nsample)
+
+        return
+
+
+    def visualize_fit(self, model_tag="", cv_tag="", cat=0, K=1, cum_contour=False, MC=False):
+        """
+        Make corr plots of a choosen classes with fits overlayed.
+        cat. 0: NonELG, 1: NoZ, 2: ELG
+
+        Note that number of components for MoG should be specified by the user.
+
+        If cum_contour is True, then instead of plotting individual component gaussians,
+        plot the cumulative gaussian fit. Also, plot the power law function corresponding
+        to the magnitude dimension.
+
+        If MC is True, then over-plot the MC sample as well.
+        """
+        ibool_list = [self.iNonELG, self.iNoZ, self.iELG]
+
+        # Take the real data points.
+        ibool = ibool_list[cat]
+
+        if cat in [0, 1]: # NonELG or NoZ 
+            if MC:
+                num_cat = 2 # Training data + MC sample
+            else:
+                num_cat = 1
+            num_vars = 3
+
+            lims = [self.lim_x, self.lim_y, self.lim_gmag]
+            binws = [self.dx, self.dy, self.dgmag]
+            var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+            lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+
+            # Data variable
+            variables = []
+            weights = []
+            labels = []
+            colors = []
+            alphas = []
+            # MC variable. Note that var_x and var_x_obs have different data structure.
+            if MC:
+                variables.append([self.var_x_obs[cat], self.var_y_obs[cat], self.gmag_obs[cat]])
+                weights.append(self.cw_obs[cat]/self.area_MC)
+                labels.append("MC")
+                colors.append("red")
+                alphas.append(0.4)
+
+            iplot = np.copy(ibool) & self.iTrain
+            variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
+            weights.append(self.w[iplot]/self.area_train)
+            labels.append(self.category[cat])
+            colors.append("black")
+            alphas.append(1)
+
+            # Take the model for the category.
+            MODELS = self.MODELS[cat] 
+            var_num_tuple = MODELS.keys()[0]
+            m = MODELS[var_num_tuple][K] # Plot only the case requested.
+            amps_fit  = m["amps"]
+            means_fit  = m["means"]
+            covs_fit = m["covs"]
+            MODELS_pow = self.MODELS_pow[cat] # Power law for magnitude.
+
+            # Plotting the fits
+            fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(25, 25))
+            # Corr plots without annotation
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
+                                      var_names, weights, lines=lines, category_names=labels,\
+                                      pt_sizes=None, colors=colors, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
+                                      plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit, alphas=alphas,\
+                                      means_general=means_fit, covs_general=covs_fit, color_general="blue", cum_contour=cum_contour,\
+                                      plot_pow=True, pow_model=MODELS_pow, pow_var_num=2)
+            plt.tight_layout()
+            if cum_contour:
+                plt.savefig("%s-%s-data-%s-fit-K%d-cum-contour.png" % (model_tag, cv_tag, self.category[cat], K), dpi=200, bbox_inches="tight")
+            else:
+                plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[cat], K), dpi=200, bbox_inches="tight")
+            # plt.show()
+            plt.close()
+
+
+        else:
+            if MC:
+                num_cat = 2 # Training data + MC sample
+            else:
+                num_cat = 1
+            num_vars = 5
+
+            lims = [self.lim_x, self.lim_y, self.lim_z, self.lim_redz, self.lim_gmag]
+            binws = [self.dx, self.dy, self.dz, self.dred_z, self.dgmag]
+            var_names = [self.var_x_name, self.var_y_name, self.var_z_name, self.red_z_name, self.gmag_name]
+            lines = [self.var_x_lines, self.var_y_lines, self.var_z_lines, self.redz_lines, self.gmag_lines]
+
+
+            variables = []
+            weights = []
+            labels = []
+            colors = []
+            alphas = []
+
+            # MC variable. Note that var_x and var_x_obs have different data structure.
+            if MC:
+                variables.append([self.var_x_obs[cat], self.var_y_obs[cat], self.var_z_obs[cat], self.redz_obs[cat], self.gmag_obs[cat]])
+                weights.append(self.cw_obs[cat]/self.area_MC)
+                labels.append("MC")
+                colors.append("red")
+                alphas.append(0.4)
+
+            iplot = np.copy(ibool) & self.iTrain
+            variables.append([self.var_x[iplot], self.var_y[iplot], self.var_z[iplot], self.red_z[iplot], self.gmag[iplot]])
+            weights.append(self.w[iplot]/self.area_train)
+            labels.append(self.category[cat])
+            colors.append("black")
+            alphas.append(1)
+
+
+            # Take the model for the category.
+            MODELS = self.MODELS[cat] 
+            var_num_tuple = MODELS.keys()[0]
+            m = MODELS[var_num_tuple][K] # Plot only the case requested.
+            amps_fit  = m["amps"]
+            means_fit  = m["means"]
+            covs_fit = m["covs"]
+
+            MODELS_pow = self.MODELS_pow[cat] # Power law for magnitude.
+
+            # Plotting the fits
+            fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+            # Corr plots without annotation
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws,\
+                                      var_names, weights, lines=lines, category_names=labels,\
+                                      pt_sizes=None, colors=colors, ft_size_legend = 15, lw_dot=2, hist_normed=True,\
+                                      plot_MoG_general=True, var_num_tuple=var_num_tuple, amps_general=amps_fit, alphas=alphas,\
+                                      means_general=means_fit, covs_general=covs_fit, color_general="blue", cum_contour=cum_contour,\
+                                      plot_pow=True, pow_model=MODELS_pow, pow_var_num=4)
+            plt.tight_layout()
+            if cum_contour:
+                plt.savefig("%s-%s-data-%s-fit-K%d-cum-contour.png" % (model_tag, cv_tag, self.category[cat], K), dpi=200, bbox_inches="tight")
+            else:
+                plt.savefig("%s-%s-data-%s-fit-K%d.png" % (model_tag, cv_tag, self.category[cat], K), dpi=200, bbox_inches="tight")
+            # plt.show()
+            plt.close()
+
+
+        return
+
+
+    def gen_FoM(self, cat, Nsample, oii=None, redz=None):
+        """
+        Give the category number
+        0: NonELG
+        1: NoZ
+        2: ELG
+        compute the appropriate FoM corresponding to each sample.
+        """
+        if cat == 0:
+            return np.zeros(Nsample, dtype=float)
+        elif cat == 1:
+            return np.ones(Nsample, dtype=float) * self.f_NoZ # Some arbitrary number. 25% success rate.
+        elif cat == 2:
+            if (oii is None) or (redz is None):
+                "You must provide oii AND redz"
+                assert False
+            else:
+                # Flat option
+                ibool = (oii>8) & (redz > 0.6) # For objects that lie within this criteria
+                FoM = np.zeros(Nsample, dtype=float)
+                FoM[ibool] = 1.0
+
+                # # Linear option
+                # ibool = (oii>8) & (redz < 1.6) & (redz > 0.6) # For objects that lie within this criteria
+                # FoM = np.zeros(Nsample, dtype=float)
+                # FoM[ibool] = 1.0*(redz[ibool]-0.6) # This means redz = 1.6 has FoM of 2.
+                return FoM
+
