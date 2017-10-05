@@ -774,6 +774,22 @@ def np1_line(dz=0.5):
     return X, Y*dz/0.1
 
 
+def flux2asinh_mag(flux, band = "g"):
+    """
+    Returns asinh magnitude. The b parameter is set following discussion surrounding
+    eq (9) of the paper on luptitude. b = 1.042 sig_f. 
+    
+    Sig_f for each fitler has been obtained based on DEEP2 deep fields.
+    """
+    b = None
+    if band == "g":
+        b = 1.042 * 0.0284297
+    elif band == "r":
+        b = 1.042 * 0.0421544
+    elif band == "z":
+        b = 1.042 * 0.122832
+        
+    return 22.5-2.5 * np.log10(b) - 2.5 * np.log10(np.e) * np.arcsinh(flux/(2*b))
 
 def FDR_cut(grz):
     """
