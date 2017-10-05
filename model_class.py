@@ -2455,3 +2455,63 @@ class model3(parent_model):
                 # FoM[ibool] = 1.0*(redz[ibool]-0.6) # This means redz = 1.6 has FoM of 2.
                 return FoM
 
+
+    def gen_covar(self, ifit, ND=4):
+        """
+        Covariance matrix corresponding to the new parametrization.
+        Original parameterization: zf, rf, oii, redz, gf
+        New parameterization is given by the model3.
+        """
+        Nsample = np.sum(ifit)
+        Covar = np.zeros((Nsample, ND, ND))
+
+        zflux, rflux, gflux, oii, red_z = self.zflux[ifit], self.rflux[ifit], self.gflux[ifit], self.oii[ifit], self.red_z[ifit]
+        var_err_list = [self.zf_err[ifit], self.rf_err[ifit], self.oii_err[ifit], np.zeros(np.sum(Nsample)), self.gf_err[ifit]]
+
+        # constant factors
+        const = 0.542868
+        # Softening factors for asinh mags
+        b_g = 1.042 * 0.0284297
+        b_r = 1.042 * 0.0421544
+        b_z = 1.042 * 0.122832
+        b_oii= 1.042 * 0.574175        
+
+        for i in range(Nsample):
+            if ND == 2:
+                # Construct the original space covariance matrix in 3 x 3 subspace.
+                tmp = []
+                for j in [0, 1, 4]:
+                    tmp.append(var_err_list[j][i]**2) # var = err^2
+                Cx = np.diag(tmp)
+
+                g, r, z = gflux[i], rflux[i], zflux[i]
+                M00, M01, M02 = const/np.sqrt(b_z**2+z**2/4.), 0, -const/(g*np.sqrt(b_g**2+g**2/4.))
+                M10, M11, M12 = 0, const/np.sqrt(b_r**2+r**2/4.), -const/(g*np.sqrt(b_g**2+g**2/4.))
+                M = np.array([[M00, M01, M02],
+                            [M10, M11, M12]])
+                
+                Covar[i] = np.dot(np.dot(M, Cx), M.T)
+            elif ND == 4:
+                # Construct the original space covariance matrix in 5 x 5 subspace.
+                tmp = []
+                for j in range(5):
+                    tmp.append(var_err_list[j][i]**2) # var = err^2
+                Cx = np.diag(tmp)
+
+                # Construct the affine transformation matrix.
+                g, r, z, o = gflux[i], rflux[i], zflux[i], oii[i]
+                M00, M01, M02, M03, M04 = const/np.sqrt(b_z**2+z**2/4.), 0, 0, 0, -const/(g*np.sqrt(b_g**2+g**2/4.))
+                M10, M11, M12, M13, M14 = 0, const/np.sqrt(b_r**2+r**2/4.), 0, 0, -const/(g*np.sqrt(b_g**2+g**2/4.))
+                M20, M21, M22, M23, M24 = 0, 0, const/np.sqrt(b_oii**2+o**2/4.), 0, -const/(g*np.sqrt(b_g**2+g**2/4.))
+                M30, M31, M32, M33, M34 = 0, 0, 0, 1, 0
+                
+                M = np.array([[M00, M01, M02, M03, M04],
+                                    [M10, M11, M12, M13, M14],
+                                    [M20, M21, M22, M23, M24],
+                                    [M30, M31, M32, M33, M34]])
+                Covar[i] = np.dot(np.dot(M, Cx), M.T)
+            else: 
+                print "The input number of variables need to be either 2 or 4."
+                assert False
+
+        return Covar
