@@ -2683,6 +2683,8 @@ class model3(parent_model):
         Given the generated sample (intrinsic val + noise), generate a selection volume.
 
         If use_kernel, when use kernel approximation to the number density calculation.
+        That is, when tallying up the number of objects in each cell, use a gaussian kernel
+        centered at the cell where the particle happens to fall.
         
         Strategy:
             Generate cell number for each sample in each category based on var_x, var_y and gmag.
@@ -2729,19 +2731,34 @@ class model3(parent_model):
         # N_NonELG_cell = np.zeros(N_cell, dtype = float)
 
         # Iterate through each sample in all three categories and compute N_categories, N_total and FoM.
-        # NonELG
-        i=0
-        FoM_tmp, N_NonELG_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], use_kernel)
-        FoM += FoM_tmp
-        # NoZ
-        i=1
-        FoM_tmp, N_NoZ_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], use_kernel)
-        FoM += FoM_tmp
-        # ELG (DESI and NonDESI)
-        i=2
-        FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], use_kernel)
-        N_ELG_NonDESI_cell = N_ELG_all_cell - N_ELG_DESI_cell
-        FoM += FoM_tmp
+        if use_kernel:
+            # NonELG
+            i=0
+            FoM_tmp, N_NonELG_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+            FoM += FoM_tmp
+            # NoZ
+            i=1
+            FoM_tmp, N_NoZ_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+            FoM += FoM_tmp
+            # ELG (DESI and NonDESI)
+            i=2
+            FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+            N_ELG_NonDESI_cell = N_ELG_all_cell - N_ELG_DESI_cell
+            FoM += FoM_tmp
+        else:
+            # NonELG
+            i=0
+            FoM_tmp, N_NonELG_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+            FoM += FoM_tmp
+            # NoZ
+            i=1
+            FoM_tmp, N_NoZ_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+            FoM += FoM_tmp
+            # ELG (DESI and NonDESI)
+            i=2
+            FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+            N_ELG_NonDESI_cell = N_ELG_all_cell - N_ELG_DESI_cell
+            FoM += FoM_tmp
 
         # Computing the total and good number of objects.
         Ntotal_cell = N_NonELG_cell + N_NoZ_cell + N_ELG_all_cell
