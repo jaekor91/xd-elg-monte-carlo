@@ -794,6 +794,25 @@ def flux2asinh_mag(flux, band = "g"):
         b = 1.042 * 0.574175
     return 22.5-2.5 * np.log10(b) - 2.5 * np.log10(np.e) * np.arcsinh(flux/(2*b))
 
+
+
+def asinh_mag2flux(mu, band = "g"):
+    """
+    Invsere of flux2asinh_mag
+    """
+    b = None
+    if band == "g":
+        b = 1.042 * 0.0284297
+    elif band == "r":
+        b = 1.042 * 0.0421544
+    elif band == "z":
+        b = 1.042 * 0.122832
+    elif band == "oii":
+        b = 1.042 * 0.574175
+        
+    flux = 2* b * np.sinh((22.5-2.5 * np.log10(b) - mu) / (2.5 * np.log10(np.e)))
+    return flux
+    
 def FDR_cut(grz):
     """
     Given a list [g,r,z] magnitudes, apply the cut and return an indexing boolean vector.
