@@ -73,7 +73,7 @@ def tally_objects(N_cell, cell_number, cw, FoM):
 
     Also, return the number of good objects defined as objects with positive FoM.
     """
-    
+
     FoM_tally = np.zeros(N_cell, dtype = float)
     Ntotal_tally = np.zeros(N_cell, dtype = float)
     Ngood_tally = np.zeros(N_cell, dtype = float)
@@ -779,7 +779,9 @@ def flux2asinh_mag(flux, band = "g"):
     Returns asinh magnitude. The b parameter is set following discussion surrounding
     eq (9) of the paper on luptitude. b = 1.042 sig_f. 
     
-    Sig_f for each fitler has been obtained based on DEEP2 deep fields.
+    Sig_f for each fitler has been obtained based on DEEP2 deep fields and is in nanomaggies.
+
+    Sig_oii is based on DEEP2 OII flux values in 10^-17 ergs/cm^2/s unit.
     """
     b = None
     if band == "g":
@@ -788,7 +790,8 @@ def flux2asinh_mag(flux, band = "g"):
         b = 1.042 * 0.0421544
     elif band == "z":
         b = 1.042 * 0.122832
-        
+    elif band == "oii":
+        b = 1.042 * 0.574175
     return 22.5-2.5 * np.log10(b) - 2.5 * np.log10(np.e) * np.arcsinh(flux/(2*b))
 
 def FDR_cut(grz):
