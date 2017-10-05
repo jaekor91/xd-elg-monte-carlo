@@ -235,7 +235,7 @@ class parent_model:
 
 
 
-    def gen_train_set_idx(self):
+    def gen_train_set_idx(self, tag=""):
         """
         Generate sub sample set indices and corresponding area.
         Note: Data only from Field 3 and 4 are considered
@@ -256,7 +256,7 @@ class parent_model:
             area_train = self.areas[2]
         # 3-7: CV1-CV5: Sub-sample F34 into five-fold CV sets.
         if self.sub_sample_num in [3, 4, 5, 6, 7]:
-            iTrain, area_train = self.gen_train_set_idx_cv()
+            iTrain, area_train = self.gen_train_set_idx_cv(tag)
         # 8-10: Magnitude changes. For power law use full data. 
         # g in [22.5, 23.5], [22.75, 23.75], [23, 24]. 
         if self.sub_sample_num == 8:
@@ -445,7 +445,7 @@ class parent_model:
 
 
 
-    def gen_train_set_idx_cv(self):
+    def gen_train_set_idx_cv(self, tag=""):
         """
         Given a cv number, return the relevant CV partition. 
         Below hacked code was used to free the partitioning. 
@@ -501,8 +501,8 @@ class parent_model:
         """
 
         cv = self.sub_sample_num-3
-        train_list = np.load("cv_training_idx.npy")
-        area_list = np.load("cv_area.npy")
+        train_list = np.load("cv_training_idx%s.npy" % tag)
+        area_list = np.load("cv_area%s.npy" % tag)
         return train_list[cv], area_list[cv]
 
 
@@ -1888,6 +1888,9 @@ class model3(parent_model):
     """
     def __init__(self, sub_sample_num):
         parent_model.__init__(self, sub_sample_num)
+
+        # For training
+        self.iTrain, self.area_train = self.gen_train_set_idx(tag="_model3")        
 
         # Re-parametrizing variables
         self.var_x, self.var_y, self.var_z, self.gmag =\
