@@ -1974,9 +1974,9 @@ class model3(parent_model):
         self.cell_number_obs = [None, None, None]
 
         # Selection grid limits
-        self.var_x_limits = [-1., 3.]
-        self.var_y_limits = [0, 1.25]
-        self.gmag_limits = [22., 24.]
+        self.var_x_limits = [-0.5, 2.5]
+        self.var_y_limits = [-0.75, 1.25]
+        self.gmag_limits = [21.5, 24.]
 
         # Number of bins var_x, var_y, gmag
         self.num_bins = [100, 100, 100]
@@ -2550,3 +2550,262 @@ class model3(parent_model):
                 assert False
 
         return Covar
+
+
+    def validate_on_DEEP2(self, fnum, plot_nz=False, detection=False, use_kernel=False):
+        """
+        Model 3
+        
+        Given the field number, apply the selection to the DEEP2 training data set.
+        The error corresponding to the field is automatically determined form the data set.
+
+        If detection, then model in the detection process.
+
+        If plot_nz is True, make a plot of n(z) of both prediction and validation.
+
+        If use_kerenl True, then use kernal approximation method.
+
+        Return the following set of numbers
+        0: eff
+        1: eff_pred
+        2: Ntotal
+        3: Ntotal_weighted
+        4: Ntotal_pred
+        5: N_ELG_DESI
+        6: N_ELG_DESI_weighted
+        7: N_ELG_pred
+        8: N_ELG_NonDESI
+        9: N_ELG_NonDESI_weighted
+        10:N_ELG_NonDESI_pred 
+        11: N_NoZ
+        12: N_NoZ_weighted
+        13: N_NoZ_pred
+        14: N_NonELG
+        15: N_NonELG_weighted
+        16: N_NonELG_pred
+        17: N_leftover
+        18:N_leftover_weighted
+        """
+        # Selecting only objects in the field.
+        ifield = (self.field == fnum)
+        area_sample = self.areas[fnum-2]
+        gflux = self.gflux[ifield] 
+        rflux = self.rflux[ifield]
+        zflux = self.zflux[ifield]
+        oii = self.oii[ifield]
+        redz = self.red_z[ifield]
+        w = self.w[ifield]
+        iELG = self.iELG[ifield]
+        iNonELG = self.iNonELG[ifield]
+        iNoZ = self.iNoZ[ifield]
+        ra, dec = self.ra[ifield], self.dec[ifield]
+
+        # Compute the error characteristic of the field. Median.
+        glim_err = median_mag_depth(self.gf_err[ifield])
+        rlim_err = median_mag_depth(self.rf_err[ifield])
+        zlim_err = median_mag_depth(self.zf_err[ifield])
+        oii_lim_err = 8
+        self.set_err_lims(glim_err, rlim_err, zlim_err, oii_lim_err) # Training data is deep!
+
+        # Convolve error to the intrinsic sample.
+        self.gen_err_conv_sample()
+
+        # Create the selection.
+        eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred = self.gen_selection_volume(use_kernel)
+
+        # Used for debugging
+        # print self.cell_select.size
+        # print self.cell_select
+        # print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred
+
+        # Apply the selection.
+        iselected = self.apply_selection(gflux, rflux, zflux)
+
+        # ----- Selection validation ----- #
+        # Compute Ntotal and eff
+        Ntotal = np.sum(iselected)/area_sample
+        Ntotal_weighted = np.sum(w[iselected])/area_sample
+
+
+
+        # Boolean vectors
+        iselected_ELG_DESI = iselected & (oii>8) & (redz>0.6) & (redz<1.6) & iELG
+        N_ELG_DESI = np.sum(iselected_ELG_DESI)/area_sample
+        N_ELG_DESI_weighted = np.sum(w[iselected_ELG_DESI])/area_sample
+
+        iselected_ELG_NonDESI = iselected & ~((oii>8) & (redz>0.6) & (redz<1.6)) & iELG
+        N_ELG_NonDESI = np.sum(iselected_ELG_NonDESI)/area_sample
+        N_ELG_NonDESI_weighted = np.sum(w[iselected_ELG_NonDESI])/area_sample
+
+        iselected_NonELG = iselected & iNonELG
+        N_NonELG = np.sum(iselected_NonELG)/area_sample
+        N_NonELG_weighted = np.sum(w[iselected_NonELG])/area_sample
+
+        iselected_NoZ = iselected & iNoZ
+        N_NoZ = np.sum(iselected_NoZ)/area_sample
+        N_NoZ_weighted = np.sum(w[iselected_NoZ])/area_sample
+
+        # Left over?
+        iselected_leftover = np.logical_and.reduce((~iselected_ELG_DESI, ~iselected_ELG_NonDESI, ~iselected_NonELG, ~iselected_NoZ, iselected))
+        N_leftover = np.sum(iselected_leftover)/area_sample
+        N_leftover_weighted = np.sum(w[iselected_leftover])/area_sample
+
+        # Efficiency
+        eff = (N_ELG_DESI_weighted+self.f_NoZ*N_NoZ_weighted)/float(Ntotal_weighted)
+
+        print "Raw/Weigthed/Predicted number of selection"
+        print "----------"
+        print "DESI ELGs: %.1f, %.1f, %.1f" % (N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_DESI_pred)
+        print "NonDESI ELGs: %.1f, %.1f, %.1f" % (N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred)
+        print "NoZ: %.1f, %.1f, %.1f" % (N_NoZ, N_NoZ_weighted, N_NoZ_pred)
+        print "NonELG: %.1f, %.1f, %.1f" % (N_NonELG, N_NonELG_weighted, N_NonELG_pred)
+        print "Poorly characterized objects (not included in density modeling, no prediction): %.1f, %.1f, NA" % (N_leftover, N_leftover_weighted)
+        print "----------"
+        print "Total based on individual parts: NA, %.1f, NA" % ((N_NonELG_weighted + N_NoZ_weighted+ N_ELG_DESI_weighted+ N_ELG_NonDESI_weighted+N_leftover_weighted))        
+        print "Total number: %.1f, %.1f, %.1f" % (Ntotal, Ntotal_weighted, Ntotal_pred)
+        print "----------"
+        print "Efficiency, weighted vs. prediction (DESI/Ntotal): %.3f, %.3f" % (eff, eff_pred)
+
+        if plot_nz:
+            pass
+
+        return eff, eff_pred, Ntotal, Ntotal_weighted, Ntotal_pred, N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_DESI_pred,\
+         N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred, N_NoZ, N_NoZ_weighted, N_NoZ_pred,\
+         N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted, ra[iselected], dec[iselected]
+
+
+    def gen_selection_volume(self, use_kernel=False):
+        """
+        Given the generated sample (intrinsic val + noise), generate a selection volume.
+
+        If use_kernel, when use kernel approximation to the number density calculation.
+        
+        Strategy:
+            Generate cell number for each sample in each category based on var_x, var_y and gmag.
+            The limits are already specified by the class.
+
+            Given the cell number, we can order all the samples in a category by cell number. (Do this separately)
+            We then create a cell grid and compute Ntotal and FoM corresponding to each cell. 
+            Note that the total number is the sum of completeness weight of objects in the cell,
+            and when computing aggregate FoM, you have to weight it.
+
+            We then compute utility, say FoM/Ntot, and order the cells according to utility
+            and accept until we have the desired number. The cell number gives our desired selection.
+        """
+
+        # Compute cell number and order the samples according to the cell number
+        for i in range(3):
+            samples = [self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]
+            # Generating 
+            self.cell_number_obs[i] = multdim_grid_cell_number(samples, 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+
+            # Sorting
+            idx_sort = self.cell_number_obs[i].argsort()
+            self.cell_number_obs[i] = self.cell_number_obs[i][idx_sort]
+            self.cw_obs[i] = self.cw_obs[i][idx_sort] 
+            self.FoM_obs[i] = self.FoM_obs[i][idx_sort]
+
+            # Unncessary to sort these for computing the selection volume.
+            # However, would be good to self-validate by applying the selection volume generated
+            # to the derived sample to see if you get the proper number density and aggregate FoM.
+            self.var_x_obs[i] = self.var_x_obs[i][idx_sort] 
+            self.var_y_obs[i] = self.var_y_obs[i][idx_sort] 
+            self.gmag_obs[i] = self.gmag_obs[i][idx_sort]
+            if i == 2: # For ELGs 
+                self.var_z_obs[i] = self.var_z_obs[i][idx_sort] 
+                self.redz_obs[i] = self.redz_obs[i][idx_sort]
+        
+        # Placeholder for cell grid linearized. Cell index corresponds to cell number. 
+        N_cell = np.multiply.reduce(self.num_bins)
+        FoM = np.zeros(N_cell, dtype = float)
+        # Ntotal_cell = np.zeros(N_cell, dtype = float)
+        # N_NoZ_cell = np.zeros(N_cell, dtype = float)
+        # N_ELG_DESI_cell = np.zeros(N_cell, dtype = float)
+        # N_ELG_NonDESI_cell = np.zeros(N_cell, dtype = float)
+        # N_NonELG_cell = np.zeros(N_cell, dtype = float)
+
+        # Iterate through each sample in all three categories and compute N_categories, N_total and FoM.
+        # NonELG
+        i=0
+        FoM_tmp, N_NonELG_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        FoM += FoM_tmp
+        # NoZ
+        i=1
+        FoM_tmp, N_NoZ_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        FoM += FoM_tmp
+        # ELG (DESI and NonDESI)
+        i=2
+        FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        N_ELG_NonDESI_cell = N_ELG_all_cell - N_ELG_DESI_cell
+        FoM += FoM_tmp
+
+        # Computing the total and good number of objects.
+        Ntotal_cell = N_NonELG_cell + N_NoZ_cell + N_ELG_all_cell
+        Ngood_cell = self.f_NoZ * N_NoZ_cell + N_ELG_DESI_cell
+
+        # Compute utility
+        utility = FoM/(Ntotal_cell+ (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
+
+        # Order cells according to utility
+        # This corresponds to cell number of descending order sorted array.
+        idx_sort = (-utility).argsort()
+
+        utility = utility[idx_sort]
+        Ntotal_cell = Ntotal_cell[idx_sort]
+        Ngood_cell = Ngood_cell[idx_sort]
+        N_NonELG_cell = N_NonELG_cell[idx_sort]
+        N_NoZ_cell = N_NoZ_cell[idx_sort]
+        N_ELG_DESI_cell = N_ELG_DESI_cell[idx_sort]
+        N_ELG_NonDESI_cell = N_ELG_NonDESI_cell[idx_sort]
+
+        # Starting from the keep including cells until the desired number is eached.        
+        Ntotal = 0
+        counter = 0
+        for ntot in Ntotal_cell:
+            if Ntotal > (self.num_desired * self.area_MC): 
+                break            
+            Ntotal += ntot
+            counter +=1
+
+        # Predicted numbers in the selection.
+        Ntotal = np.sum(Ntotal_cell[:counter])/float(self.area_MC)
+        Ngood = np.sum(Ngood_cell[:counter])/float(self.area_MC)
+        N_NonELG = np.sum(N_NonELG_cell[:counter])/float(self.area_MC)
+        N_NoZ = np.sum(N_NoZ_cell[:counter])/float(self.area_MC)
+        N_ELG_DESI = np.sum(N_ELG_DESI_cell[:counter])/float(self.area_MC)
+        N_ELG_NonDESI = np.sum(N_ELG_NonDESI_cell[:counter])/float(self.area_MC)
+
+        # Save the selection
+        self.cell_select = np.sort(idx_sort[:counter])
+        eff = (Ngood/float(Ntotal))
+
+        return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI
+
+
+    def apply_selection(self, gflux, rflux, zflux):
+        """
+        Given gflux, rflux, zflux of samples, return a boolean vector that gives the selection.
+        """
+        mu_g = flux2asinh_mag(gflux, band = "g")
+        mu_r = flux2asinh_mag(rflux, band = "r")
+        mu_z = flux2asinh_mag(zflux, band = "z")
+
+        var_x = mu_g - mu_z
+        var_y = mu_g - mu_r
+        gmag = flux2mag(gflux)
+
+        samples = [var_x, var_y, gmag]
+
+        # Generate cell number 
+        cell_number = multdim_grid_cell_number(samples, 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+
+        # Sort the cell number
+        idx_sort = cell_number.argsort()
+        cell_number = cell_number[idx_sort]
+
+        # Placeholder for selection vector
+        iselect = check_in_arr2(cell_number, self.cell_select)
+
+        # The last step is necessary in order for iselect to have the same order as the input sample variables.
+        idx_undo_sort = idx_sort.argsort()        
+        return iselect[idx_undo_sort]
