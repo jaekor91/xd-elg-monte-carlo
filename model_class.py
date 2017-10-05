@@ -2731,15 +2731,15 @@ class model3(parent_model):
         # Iterate through each sample in all three categories and compute N_categories, N_total and FoM.
         # NonELG
         i=0
-        FoM_tmp, N_NonELG_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        FoM_tmp, N_NonELG_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], use_kernel)
         FoM += FoM_tmp
         # NoZ
         i=1
-        FoM_tmp, N_NoZ_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        FoM_tmp, N_NoZ_cell, _ = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], use_kernel)
         FoM += FoM_tmp
         # ELG (DESI and NonDESI)
         i=2
-        FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i])
+        FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], use_kernel)
         N_ELG_NonDESI_cell = N_ELG_all_cell - N_ELG_DESI_cell
         FoM += FoM_tmp
 

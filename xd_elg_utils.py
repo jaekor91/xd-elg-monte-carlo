@@ -64,7 +64,7 @@ def check_in_arr2(arr1, arr2):
 
 
 @nb.jit
-def tally_objects(N_cell, cell_number, cw, FoM):
+def tally_objects(N_cell, cell_number, cw, FoM, use_kernel=False):
     """
     Given number of cells and cell number, completeness weight, and FoM per sample,
     return a tally.
@@ -72,6 +72,8 @@ def tally_objects(N_cell, cell_number, cw, FoM):
     Note that the total number and FoM are weighted by completeness weight.
 
     Also, return the number of good objects defined as objects with positive FoM.
+
+    If use_kernel True, then deposit fractional quantity to each neighboring given by a gaussian kernel.
     """
 
     FoM_tally = np.zeros(N_cell, dtype = float)
@@ -812,7 +814,7 @@ def asinh_mag2flux(mu, band = "g"):
         
     flux = 2* b * np.sinh((22.5-2.5 * np.log10(b) - mu) / (2.5 * np.log10(np.e)))
     return flux
-    
+
 def FDR_cut(grz):
     """
     Given a list [g,r,z] magnitudes, apply the cut and return an indexing boolean vector.
