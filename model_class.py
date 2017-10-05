@@ -2077,3 +2077,203 @@ class model3(parent_model):
 
         plt.savefig("%s-%s-data-ELG-redz-oii.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
         plt.close()
+
+
+    def fit_MoG(self, NK_list, model_tag="", cv_tag="", cache=False, Niter=5):
+        """
+        Fit MoGs to data. Note that here we only consider fitting to 2 or 4 dimensions.
+
+        If cache = True, then search to see if there are models already fit and if available use them.
+        """
+        cache_success = False
+        if cache:
+            for i in range(3):
+                model_fname = "./MODELS-%s-%s-%s.npy" % (self.category[i], model_tag, cv_tag)
+                if os.path.isfile(model_fname):
+                    self.MODELS[i] = np.load(model_fname).item()
+                    cache_success = True
+                    print "Cached result will be used for MODELS-%s-%s-%s." % (self.category[i], model_tag, cv_tag)
+
+        if not cache_success: # If cached result was not requested or was searched for but not found.
+            # For NonELG and NoZ
+            ND = 2 # Dimension of model
+            ND_fit = 2 # Number of variables up to which MoG is being proposed
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ]):
+                print "Fitting MoGs to %s" % self.category[i]
+                ifit = ibool & self.iTrain
+                Ydata = np.array([self.var_x[ifit], self.var_y[ifit]]).T
+                Ycovar = self.gen_covar(ifit, ND=ND)
+                weight = self.w[ifit]
+                self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=Niter, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+
+            # For ELG
+            i = 2
+            ND = 4 # Dimension of model
+            ND_fit = 4 # Number of variables up to which MoG is being proposed
+            print "Fitting MoGs to %s" % self.category[i]
+            ifit = self.iELG & self.iTrain
+            Ydata = np.array([self.var_x[ifit], self.var_y[ifit], self.var_z[ifit], self.red_z[ifit]]).T
+            Ycovar = self.gen_covar(ifit, ND=ND)
+            weight = self.w[ifit]
+            self.MODELS[i] = fit_GMM(Ydata, Ycovar, ND, ND_fit, NK_list=NK_list, Niter=Niter, fname_suffix="%s-%s-%s" % (self.category[i], model_tag, cv_tag), MaxDIM=True, weight=weight)
+
+        return
+
+
+
+    def fit_dNdf(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.025):
+        """
+        Fit mag pow laws
+        """
+        cache_success = False
+        if cache:
+            for i in range(3):
+                model_fname = "./MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag)
+                if os.path.isfile(model_fname):
+                    self.MODELS_pow[i] = np.load(model_fname)
+                    cache_success = True
+                    print "Cached result will be used for MODELS-%s-%s-%s-pow." % (self.category[i], model_tag, cv_tag)
+        if not cache_success:
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+                print "Fitting power law for %s" % self.category[i]
+                ifit = self.iTrain & ibool
+                flux = self.gflux[ifit]
+                weight = self.w[ifit]
+                self.MODELS_pow[i] = dNdf_fit(flux, weight, bw, mag2flux(self.mag_max), mag2flux(self.mag_min), self.area_train, niter = Niter)
+                np.save("MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
+
+        return 
+
+
+
+
+    def gen_sample_intrinsic(self, K_selected=None):
+        """
+        Given MoG x power law parameters specified by [amps, means, covs] corresponding to K_selected[i] components
+        and MODELS_pow, return a sample proportional to area.
+        """
+        if K_selected is None:
+            K_selected = self.K_best
+
+        # NonELG, NoZ and ELG
+        for i in range(3):
+            # MoG model
+            MODELS = self.MODELS[i]
+            MODELS = MODELS[MODELS.keys()[0]][K_selected[i]] # We only want the model with K components
+            amps, means, covs = MODELS["amps"], MODELS["means"], MODELS["covs"]
+
+            # Pow law model
+            alpha, A = self.MODELS_pow[i]
+
+            # Compute the number of sample to draw.
+            NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MC, self.fmax_MC) * self.area_MC))#
+            print "%s sample number: %d" % (self.category[i], NSAMPLE)
+
+            # Generate Nsample flux.
+            gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)
+            
+            # Generate Nsample from MoG.
+            MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)
+
+            # Gen err seed and save
+            self.g_err_seed[i] = gen_err_seed(NSAMPLE)
+            self.r_err_seed[i] = gen_err_seed(NSAMPLE)
+            self.z_err_seed[i] = gen_err_seed(NSAMPLE)
+
+
+            if i<2:# NonELG and NoZ 
+                arcsinh_zg, arcsinh_rg = MoG_sample[:,0], MoG_sample[:,1]
+                zflux = np.sinh(arcsinh_zg) * gflux * 2
+                rflux =np.sinh(arcsinh_rg) * gflux * 2
+                
+                # Saving
+                self.gflux0[i] = gflux
+                self.rflux0[i] = rflux
+                self.zflux0[i] = zflux
+                self.NSAMPLE[i] = NSAMPLE
+
+            else: #ELG 
+                arcsinh_zg, arcsinh_rg, arcsinch_oiig, redz = MoG_sample[:,0], MoG_sample[:,1], MoG_sample[:,2], MoG_sample[:,3]
+                zflux = np.sinh(arcsinh_zg)*gflux * 2
+                rflux =np.sinh(arcsinh_rg)*gflux * 2
+                oii = np.sinh(arcsinch_oiig)*gflux * 2
+
+                # oii error seed
+                self.oii_err_seed[i] = gen_err_seed(NSAMPLE)
+
+                # Saving
+                self.gflux0[i] = gflux
+                self.rflux0[i] = rflux
+                self.zflux0[i] = zflux
+                self.redz0[i] = redz
+                self.oii0[i] = oii
+                self.NSAMPLE[i] = NSAMPLE
+
+        return
+
+
+    def set_err_lims(self, glim, rlim, zlim, oii_lim):
+        """
+        Set the error characteristics.
+        """
+        self.glim_err = glim
+        self.rlim_err = rlim 
+        self.zlim_err = zlim
+        self.oii_lim_err = oii_lim
+
+        return
+
+
+
+    def gen_err_conv_sample(self, detection=False):
+        """
+        Given the error properties glim_err, rlim_err, zlim_err, oii_lim_err, add noise to the intrinsic density
+        sample and compute the parametrization.
+
+        If detection, then apply incomplteness algorithm to get the completeness weight
+        """
+        print "Convolving error and re-parametrizing"        
+        # NonELG, NoZ and ELG
+        for i in range(3):
+            print "%s" % self.category[i]
+            self.gflux_obs[i] = self.gflux0[i] + self.g_err_seed[i] * mag2flux(self.glim_err)/5.
+            self.rflux_obs[i] = self.rflux0[i] + self.r_err_seed[i] * mag2flux(self.rlim_err)/5.
+            self.zflux_obs[i] = self.zflux0[i] + self.z_err_seed[i] * mag2flux(self.zlim_err)/5.
+
+            # Make flux cut
+            ifcut = self.gflux_obs[i] > self.fcut
+            self.gflux_obs[i] = self.gflux_obs[i][ifcut]
+            self.rflux_obs[i] = self.rflux_obs[i][ifcut]
+            self.zflux_obs[i] = self.zflux_obs[i][ifcut]
+
+            # Compute model parametrization
+            self.var_x_obs[i] = np.arcsinh(self.zflux_obs[i]/self.gflux_obs[i]/2.)
+            self.var_y_obs[i] = np.arcsinh(self.rflux_obs[i]/self.gflux_obs[i]/2.)
+            self.gmag_obs[i] = flux2mag(self.gflux_obs[i])
+
+            # Number of samples after the cut.
+            Nsample = self.gmag_obs[i].size
+
+            if detection: # If the user asks 
+                pass
+            else:
+                self.cw_obs[i] = np.ones(Nsample) # Note we do not divide by area
+
+            # More parametrization to compute for ELGs. Also, compute FoM.
+            if i==2:
+                # oii parameerization
+                self.oii_obs[i] = self.oii0[i] + self.oii_err_seed[i] * (self.oii_lim_err/7.) # 
+                self.oii_obs[i] = self.oii_obs[i][ifcut]
+                self.var_z_obs[i] = np.arcsinh(self.oii_obs[i]/self.gflux_obs[i]/2.)
+
+                # Redshift has no uncertainty
+                self.redz_obs[i] = self.redz0[i][ifcut]
+
+                # Gen FoM 
+                self.FoM_obs[i] = self.gen_FoM(i, Nsample, self.oii_obs[i], self.redz_obs[i])
+            else:
+                # Gen FoM 
+                self.FoM_obs[i] = self.gen_FoM(i, Nsample)
+
+        return
+    
