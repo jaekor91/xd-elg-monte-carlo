@@ -1862,3 +1862,147 @@ class model2(parent_model):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class model3(parent_model):
+    """
+    parametrization: asinh mag g-r (x), asinh mag g-z (y), asinh mag g-oii (z), redz, 
+    and gmag(which is practically asinh mag g)
+    """
+    def __init__(self, sub_sample_num):
+        parent_model.__init__(self, sub_sample_num)
+
+        # Re-parametrizing variables
+        self.var_x, self.var_y, self.var_z, self.gmag =\
+            self.var_reparam(self.gflux, self.rflux, self.zflux, self.oii) 
+
+        # Plot variables
+        # var limits
+        self.lim_x = [-.75, 4.5] # zf/gf
+        self.lim_y = [-.1, 2.2] # rf/gf        
+        self.lim_z = [-1, 7] # oii/gf
+        self.lim_gmag = [21., 24.0]
+
+        # bin widths
+        self.dx = 0.05
+        self.dy = 0.025
+        self.dz = 0.05
+        self.dgmag = 0.025
+
+        # var names
+        self.var_x_name = r"$\mu_g - \mu_r$"        
+        self.var_y_name = r"$\mu_g - \mu_z$"  
+        self.var_z_name = r"$\mu_g - \mu_{OII}$"
+        self.red_z_name = r"$\eta$"
+        self.gmag_name  = r"$g$"
+
+        # var lines
+        self.var_x_lines = range(-0.5, 4.5, 0.5)
+        self.var_y_lines = range(-0.0, 2.5, 0.5)
+        self.var_z_lines = range(-0.5, 7, 0.5)
+        self.redz_lines = [0.6, 1.1, 1.6] # Redz
+        self.gmag_lines = [21, 22, 23, 24]
+
+        # Fit parameters for pow law
+        self.MODELS_pow = [None, None, None]
+
+        # Number of components chosen for each category based on the training sample.
+        # self.K_best = self.gen_K_best()
+
+        # # ----- MC Sample Variables ----- # 
+        # self.area_MC = self.area_train # 
+        # # Flux range to draw the sample from. Slightly larger than the range we are interested.
+        # self.fmin_MC = mag2flux(24.025) # Note that around 23.8, the power law starts to break down.
+        # self.fmax_MC = mag2flux(21)
+        # self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
+        # # Original sample.
+        # # 0: NonELG, 1: NoZ, 2: ELG
+        # self.NSAMPLE = [None, None, None]
+        # self.gflux0 = [None, None, None] # 0 for original
+        # self.rflux0 = [None, None, None] # 0 for original
+        # self.zflux0 = [None, None, None] # 0 for original
+        # self.oii0 = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
+        # self.redz0 = [None, None, None]
+        # # Default noise levels
+        # self.glim_err = 23.8
+        # self.rlim_err = 23.4
+        # self.zlim_err = 22.4
+        # self.oii_lim_err = 8 # 7 sigma
+        # # Noise seed. err_seed ~ N(0, 1). This can be transformed by scaling appropriately.
+        # self.g_err_seed = [None, None, None] # Error seed.
+        # self.r_err_seed = [None, None, None] # Error seed.
+        # self.z_err_seed = [None, None, None] # Error seed.
+        # self.oii_err_seed = [None, None, None] # Error seed.
+        # # Noise convolved values
+        # self.gflux_obs = [None, None, None] # obs for observed
+        # self.rflux_obs = [None, None, None] # obs for observed
+        # self.zflux_obs = [None, None, None] # obs for observed
+        # self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
+        # # Completeness weight for each sample. If 1, the object is certain to be observed. If 0, the opposite.
+        # self.cw_obs = [None, None, None]
+        # # FoM per sample. Note that FoM depends on the observed property such as OII.
+        # self.FoM_obs = [None, None, None]
+
+        # # Observed final distributions
+        # self.var_x_obs = [None, None, None] # z/g
+        # self.var_y_obs = [None, None, None] # r/g
+        # self.var_z_obs = [None, None, None] # oii/g
+        # self.redz_obs = [None, None, None]        
+        # self.gmag_obs = [None, None, None]
+
+        # # Cell number
+        # self.cell_number_obs = [None, None, None]
+
+        # # Selection grid limits
+        # self.var_x_limits = [-1., 3.]
+        # self.var_y_limits = [0, 1.25]
+        # self.gmag_limits = [22., 24.]
+
+        # # Number of bins var_x, var_y, gmag
+        # self.num_bins = [100, 100, 100]
+
+        # # Cell_number in selection
+        # self.cell_select = None
+
+        # # Desired nubmer of objects
+        # self.num_desired = 2400
+
+        # # Regularization number when computing utility
+        # # In a square field, we expect about 20K objects.
+        # self.N_regular = 1e4
+
+        # # Fraction of NoZ objects that we expect to be good
+        # self.f_NoZ = 0.25
+
+
+
+    def var_reparam(self, gflux, rflux, zflux, oii = None):
+        """
+        Given the input variables return the model3 parametrization as noted above.
+        """
+        mu_g = flux2asinh_mag(gflux, band = "g")
+        mu_r = flux2asinh_mag(rflux, band = "r")
+        mu_z = flux2asinh_mag(zflux, band = "z")
+        if oii is not None:
+            mu_oii = flux2asinh_mag(oii, band = "oii")
+            return mu_g - mu_r, mu_g - mu_z, mu_g - mu_oii, flux2mag(gflux)
+        else:
+            return mu_g - mu_r, mu_g - mu_z, flux2mag(gflux)
+
