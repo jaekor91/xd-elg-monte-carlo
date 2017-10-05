@@ -857,6 +857,8 @@ def sample_GMM_generate(Sxamp,Sxmean, Sxcovar, cov):
     one_sample = np.random.multivariate_normal(Sxmean[m], Sxcovar[m]+cov, size=1)[0]
     return one_sample
 
+
+
 def plot_XD_fit_K(ydata, ycovar, Sxamp, Sxmean, Sxcovar, fname=None, pt_size=5, mask=None, show=False):
     """
     Used for model selection.
@@ -3000,3 +3002,22 @@ def plot_cov_ellipse(ax, mus, covs, var_num1, var_num2, MoG_color="Blue"):
 
     return
     
+def gen_gauss_kernel_3D(N):
+    """
+    Create a gaussian kernel of size for use in kernel approximation.
+    If ND = 3, sig = 1/3. 
+    """
+    from scipy.ndimage.filters import gaussian_filter
+    
+    assert (N == 3) or (N==5)
+    if N == 3:
+        sig = 1/3.
+    else:
+        sig = 3/5.
+    shape = (N,) * 3
+    a = np.zeros(shape)
+    a[(N/2,) * 3] = 1
+    gauss_kernel = np.zeros(shape)
+    gaussian_filter(a, sigma=sig, order=0, output=gauss_kernel, mode="constant", cval=0.0, truncate=4.0)
+    
+    return gauss_kernel
