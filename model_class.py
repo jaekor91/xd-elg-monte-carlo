@@ -1929,7 +1929,7 @@ class model3(parent_model):
         # ----- MC Sample Variables ----- # 
         self.area_MC = self.area_train # 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
-        self.fmin_MC = mag2flux(24.025) # Note that around 23.8, the power law starts to break down.
+        self.fmin_MC = mag2flux(24.1) # Note that around 23.8, the power law starts to break down.
         self.fmax_MC = mag2flux(21)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
@@ -2187,7 +2187,7 @@ class model3(parent_model):
             mu_z = mu_g - mu_gz
             mu_r = mu_g - mu_gr
 
-            zflux = asinh_mag2flux(mu_r, band = "z")
+            zflux = asinh_mag2flux(mu_z, band = "z")
             rflux = asinh_mag2flux(mu_r, band = "r")
             
             # Saving
