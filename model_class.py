@@ -1930,7 +1930,8 @@ class model3(parent_model):
         self.K_best = self.gen_K_best()
 
         # ----- MC Sample Variables ----- # 
-        self.area_MC = self.area_train # 
+        self.area_MC = self.area_train #
+        
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
         self.fmin_MC = mag2flux(24.1) # Note that around 23.8, the power law starts to break down.
         self.fmax_MC = mag2flux(21)
@@ -2009,6 +2010,9 @@ class model3(parent_model):
         else:
             return mu_g - mu_z, mu_g - mu_r, flux2mag(gflux)
 
+    def set_area_MC(self, val):
+        self.area_MC = val
+        return
 
     def gen_K_best(self):
         """
@@ -2555,7 +2559,7 @@ class model3(parent_model):
     def validate_on_DEEP2(self, fnum, plot_nz=False, detection=False, use_kernel=False):
         """
         Model 3
-        
+
         Given the field number, apply the selection to the DEEP2 training data set.
         The error corresponding to the field is automatically determined form the data set.
 
