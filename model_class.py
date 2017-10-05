@@ -1927,7 +1927,7 @@ class model3(parent_model):
         self.MODELS_pow = [None, None, None]
 
         # Number of components chosen for each category based on the training sample.
-        self.K_best = None # self.gen_K_best()
+        self.K_best = self.gen_K_best()
 
         # ----- MC Sample Variables ----- # 
         self.area_MC = self.area_train # 
@@ -2009,6 +2009,38 @@ class model3(parent_model):
         else:
             return mu_g - mu_z, mu_g - mu_r, flux2mag(gflux)
 
+
+    def gen_K_best(self):
+        """
+        Return best K number chosen by eye.
+
+        [K_NonELG, K_NoZ, K_ELG]
+        """
+        K_best = None
+        if self.sub_sample_num == 0: # Full
+            K_best = [7, 2, 4]
+        elif self.sub_sample_num == 1: #F3
+            K_best = [5, 2, 6]
+        elif self.sub_sample_num == 2: #F4
+            K_best = [4, 2, 4]            
+        elif self.sub_sample_num == 3: #CV1
+            K_best = [5, 3, 5]        
+        elif self.sub_sample_num == 4: #2
+            K_best = [6, 3, 5]            
+        elif self.sub_sample_num == 5: #3
+            K_best = [5, 2, 5]            
+        elif self.sub_sample_num == 6: #4
+            K_best = [6, 2, 5]            
+        elif self.sub_sample_num == 7: #5
+            K_best = [7, 7, 7]            
+        elif self.sub_sample_num == 8: #mag1
+            K_best = [5, 2, 3]            
+        elif self.sub_sample_num == 9: #mag2
+            K_best = [5, 2, 5]            
+        elif self.sub_sample_num == 10: #mag3
+            K_best = [5, 2, 7]            
+
+        return K_best
 
 
     def plot_data(self, model_tag="", cv_tag=""):
