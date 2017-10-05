@@ -72,8 +72,6 @@ def tally_objects(N_cell, cell_number, cw, FoM):
     Note that the total number and FoM are weighted by completeness weight.
 
     Also, return the number of good objects defined as objects with positive FoM.
-
-    If use_kernel True, then deposit fractional quantity to each neighboring given by a gaussian kernel.
     """
 
     FoM_tally = np.zeros(N_cell, dtype = float)
@@ -89,6 +87,33 @@ def tally_objects(N_cell, cell_number, cw, FoM):
                 Ngood_tally[cn] += cw[i]
 
     return FoM_tally, Ntotal_tally, Ngood_tally
+
+@nb.jit
+def tally_objects_kernel(N_cell, cell_number, cw, FoM, ND, limits, num_bins):
+    """
+    Given number of cells and cell number, completeness weight, and FoM per sample,
+    return a tally.
+
+    Note that the total number and FoM are weighted by completeness weight.
+
+    Also, return the number of good objects defined as objects with positive FoM.
+    """
+
+    FoM_tally = np.zeros(N_cell, dtype = float)
+    Ntotal_tally = np.zeros(N_cell, dtype = float)
+    Ngood_tally = np.zeros(N_cell, dtype = float)
+
+    for i, cn in enumerate(cell_number): # cn is cell number, which we can use as index.
+#         print (i, cn, FoM[i], cw[i])
+        if (cn>=0) and (cn<N_cell):
+            FoM_tally[cn] += FoM[i] * cw[i]
+            Ntotal_tally[cn] += cw[i]
+            if FoM[i] > 0: 
+                Ngood_tally[cn] += cw[i]
+
+    return FoM_tally, Ntotal_tally, Ngood_tally    
+
+    
 
 def multdim_grid_cell_number(samples, ND, limits, num_bins):
     """
@@ -132,6 +157,8 @@ def multdim_grid_cell_number(samples, ND, limits, num_bins):
     cell_number[ibool] = -1
     
     return cell_number
+
+
 
 def gen_bin_idx(X, Xmin, dX):
     """
