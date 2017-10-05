@@ -1931,7 +1931,7 @@ class model3(parent_model):
 
         # ----- MC Sample Variables ----- # 
         self.area_MC = self.area_train #
-        
+
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
         self.fmin_MC = mag2flux(24.1) # Note that around 23.8, the power law starts to break down.
         self.fmax_MC = mag2flux(21)
@@ -1975,12 +1975,12 @@ class model3(parent_model):
         self.cell_number_obs = [None, None, None]
 
         # Selection grid limits
-        self.var_x_limits = [-0.5, 2.5]
+        self.var_x_limits = [-0.25, 2.75]
         self.var_y_limits = [-0.75, 1.25]
         self.gmag_limits = [21.5, 24.]
 
         # Number of bins var_x, var_y, gmag
-        self.num_bins = [100, 100, 100]
+        self.num_bins = [150, 100, 100]
 
         # Cell_number in selection
         self.cell_select = None
@@ -2813,3 +2813,82 @@ class model3(parent_model):
         # The last step is necessary in order for iselect to have the same order as the input sample variables.
         idx_undo_sort = idx_sort.argsort()        
         return iselect[idx_undo_sort]
+
+    def cell_select_centers(self):
+        """
+        Return selected cells centers. Model3.
+        """
+        limits = [self.var_x_limits, self.var_y_limits, self.gmag_limits]
+        Ncell_select = self.cell_select.size # Number of cells in the selection
+        centers = [None, None, None]
+
+        for i in range(3):
+            Xmin, Xmax = limits[i]
+            bin_edges, dX = np.linspace(Xmin, Xmax, self.num_bins[i]+1, endpoint=True, retstep=True)
+            bin_centers = (bin_edges[1:]+bin_edges[:-1])/2.
+            idx = (self.cell_select % np.multiply.reduce(self.num_bins[i:])) //  np.multiply.reduce(self.num_bins[i+1:])
+            centers[i] = bin_centers[idx.astype(int)]
+
+        return np.asarray(centers).T
+
+
+
+    def gen_select_boundary_slices(self, slice_dir = 2, model_tag="", cv_tag="", centers=None, plot_ext=False,\
+        gflux_ext=None, rflux_ext=None, zflux_ext=None, ibool_ext = None):
+        """
+        Model3
+
+        Given slice direction, generate slices of boundary
+
+        0: var_x
+        1: var_y
+        2: gmag
+
+        If plot_ext True, then plot user supplied external objects.
+
+        If centers is not None, then use it instead of generating one.
+        """
+
+        slice_var_tag = ["mu_gz", "mu_gr", "gmag"]
+        var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+
+        if centers is None:
+            centers = self.cell_select_centers()
+
+        if plot_ext:
+            if ibool_ext is not None:
+                gflux_ext = gflux_ext[ibool_ext]
+                rflux_ext = rflux_ext[ibool_ext]
+                zflux_ext = zflux_ext[ibool_ext]
+
+            var_x_ext = np.arcsinh(zflux_ext/gflux_ext/2.)
+            var_y_ext = np.arcsinh(rflux_ext/gflux_ext/2.)
+            gmag_ext = flux2mag(gflux_ext)
+            variables = [var_x_ext, var_y_ext, gmag_ext]
+
+        limits = [self.var_x_limits, self.var_y_limits, self.gmag_limits]        
+        Xmin, Xmax = limits[slice_dir]
+        bin_edges, dX = np.linspace(Xmin, Xmax, self.num_bins[slice_dir]+1, endpoint=True, retstep=True)
+
+        print slice_var_tag[slice_dir]
+        for i in range(self.num_bins[slice_dir]):
+            ibool = (centers[:, slice_dir] < bin_edges[i+1]) & (centers[:, slice_dir] > bin_edges[i])
+            centers_slice = centers[ibool, :]
+            fig = plt.figure(figsize=(7, 7))
+            idx = range(3)
+            idx.remove(slice_dir)
+            plt.scatter(centers_slice[:,idx[0]], centers_slice[:,idx[1]], edgecolors="none", c="green", alpha=0.5, s=10)
+            if plot_ext:
+                ibool = (variables[slice_dir] < bin_edges[i+1]) & (variables[slice_dir] > bin_edges[i])
+                plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="blue", s=5)
+            plt.xlabel(var_names[idx[0]], fontsize=15)
+            plt.ylabel(var_names[idx[1]], fontsize=15)
+            plt.xlim(limits[idx[0]])
+            plt.ylim(limits[idx[1]])
+            title_str = "%s [%.3f, %.3f]" % (var_names[slice_dir], bin_edges[i], bin_edges[i+1])
+            print i, title_str
+            plt.title(title_str, fontsize=15)
+            plt.savefig("model3-Full-boudary-%s-%d.png" % (slice_var_tag[slice_dir], i), bbox_inches="tight", dpi=200)
+        #     plt.show()
+            plt.close()        
+        
