@@ -2556,7 +2556,7 @@ class model3(parent_model):
         return Covar
 
 
-    def validate_on_DEEP2(self, fnum, plot_nz=False, detection=False, use_kernel=False):
+    def validate_on_DEEP2(self, fnum, detection=False, use_kernel=False, plot_nz=False, model_tag="", cv_tag=""):
         """
         Model 3
 
@@ -2671,7 +2671,33 @@ class model3(parent_model):
         print "Efficiency, weighted vs. prediction (DESI/Ntotal): %.3f, %.3f" % (eff, eff_pred)
 
         if plot_nz:
-            pass
+            # n(z) of total in DESI ELG, DESI ELG selected, Predicted, and NP=1
+            # fig = plt.figure(figsize=(10, 10))
+
+            # # All
+            # ibool = (self.field == fnum) & self.iELG
+            # nobjs = np.sum(ibool)
+            # wobjs = np.sum(self.w[ibool])
+            # A = self.areas[fnum-2]
+            # ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
+            #  label="ALL: %d (%d) / %d (%d)" % (nobjs, nobjs/float(A), wobjs, wobjs/float(A)),\
+            #  histtype="step", lw=2.5, color="black")
+
+            # # DESI
+            # ibool = (self.field == fnum) & (self.red_z > 0.6) & (self.red_z < 1.6) & (self.oii > 8)
+            # nobjs = np.sum(ibool)
+            # wobjs = np.sum(self.w[ibool])
+            # ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
+            #  label="DESI: %d (%d) / %d (%d)" % (nobjs, nobjs/float(A), wobjs, wobjs/float(A)),\
+            #  histtype="stepfilled", lw=2.5, color="black", alpha=0.5)            
+            # ax_list[fnum-2].plot(x, y, c="red", lw=3, ls="--")            
+            # ax_list[fnum-2].set_title("Field %d. A = %.2f" % (fnum, A), fontsize=20)
+            # ax_list[fnum-2].legend(loc="upper left", fontsize=20)
+            # ax_list[fnum-2].set_ylim([0, 600])
+            # ax_list[fnum-2].set_xlim([0.5, 1.7])
+            # plt.suptitle("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
+            # plt.savefig("dNdz-DR5-matched-All-vs-DESI-ELGs.png", dpi=400, bbox_inches="tight")
+            # plt.close()
 
         return eff, eff_pred, Ntotal, Ntotal_weighted, Ntotal_pred, N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_DESI_pred,\
          N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred, N_NoZ, N_NoZ_weighted, N_NoZ_pred,\
