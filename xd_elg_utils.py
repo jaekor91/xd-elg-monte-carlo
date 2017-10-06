@@ -116,11 +116,12 @@ def tally_objects_kernel(N_cell, cell_number, cw, FoM, num_bins):
     Ntotal_tally = np.zeros(N_cell, dtype = float)
     Ngood_tally = np.zeros(N_cell, dtype = float)
 
+
     for i, cn in enumerate(cell_number): # cn is cell number, which we can use as index.
         if (cn>=0) and (cn<N_cell):
             # Compute the bin number corresponding to the cell.
             bin_indicies = [cn//N1, (cn%N1) // N2,  cn % N2]
-
+            
             # Extract common values
             cw_tmp = cw[i]
             FoM_tmp = FoM[i]
@@ -128,9 +129,9 @@ def tally_objects_kernel(N_cell, cell_number, cw, FoM, num_bins):
             # Iterate through the neighborhood of cells centered at the current cell cn,
             # increment the appropriate numbers.
             # Indicies for 0, 1, 2 directions: m, n, l
-            for m in range(-N_kernel/2, N_kernel+1): # e.g., N_kernel=3 gives -1, 0, 1
-                for n in range(-N_kernel/2, N_kernel+1): # e.g., N_kernel=3 gives -1, 0, 1
-                    for l in range(-N_kernel/2, N_kernel+1): # e.g., N_kernel=3 gives -1, 0, 1
+            for m in range(-N_kernel/2, N_kernel/2+1): # e.g., N_kernel=3 gives -1, 0, 1
+                for n in range(-N_kernel/2, N_kernel/2+1): # e.g., N_kernel=3 gives -1, 0, 1
+                    for l in range(-N_kernel/2, N_kernel/2+1): # e.g., N_kernel=3 gives -1, 0, 1
                         # Cell number computed 
                         cn_iter = (bin_indicies[0]+m)*N1 + (bin_indicies[1]+n)*N2 + (bin_indicies[2]+l)
                         gk_factor = gauss_kernel[m+N_kernel/2, n+N_kernel/2, l+N_kernel/2] # Gaussian kernel factor
