@@ -109,7 +109,7 @@ def tally_objects_kernel(N_cell, cell_number, cw, FoM, num_bins):
     N1 = np.multiply.reduce(num_bins[1:])
     N2 = np.multiply.reduce(num_bins[2:])
 
-    N_kernel = 3
+    N_kernel = 5
     gauss_kernel = gen_gauss_kernel_3D(N_kernel) # Normalized to sum to one.
 
     FoM_tally = np.zeros(N_cell, dtype = float)
@@ -121,7 +121,7 @@ def tally_objects_kernel(N_cell, cell_number, cw, FoM, num_bins):
         if (cn>=0) and (cn<N_cell):
             # Compute the bin number corresponding to the cell.
             bin_indicies = [cn//N1, (cn%N1) // N2,  cn % N2]
-            
+
             # Extract common values
             cw_tmp = cw[i]
             FoM_tmp = FoM[i]
@@ -3066,11 +3066,14 @@ def gen_gauss_kernel_3D(N):
     """
     from scipy.ndimage.filters import gaussian_filter
     
-    assert (N == 3) or (N==5)
+    assert (N == 3) or (N==5) or (N==7)
     if N == 3:
         sig = 1/3.
-    else:
+    elif N==5:
         sig = 3/5.
+    else:
+        sig = 4/5.
+    
     shape = (N,) * 3
     a = np.zeros(shape)
     a[(N/2,) * 3] = 1
