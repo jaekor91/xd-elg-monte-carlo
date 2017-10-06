@@ -109,7 +109,7 @@ def tally_objects_kernel(N_cell, cell_number, cw, FoM, num_bins):
     N1 = np.multiply.reduce(num_bins[1:])
     N2 = np.multiply.reduce(num_bins[2:])
 
-    N_kernel = 5
+    N_kernel = 7
     gauss_kernel = gen_gauss_kernel_3D(N_kernel) # Normalized to sum to one.
 
     FoM_tally = np.zeros(N_cell, dtype = float)
