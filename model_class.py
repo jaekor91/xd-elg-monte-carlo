@@ -1975,12 +1975,12 @@ class model3(parent_model):
         self.cell_number_obs = [None, None, None]
 
         # Selection grid limits
-        self.var_x_limits = [0.25, 2.5]
+        self.var_x_limits = [0.25, 2.45]
         self.var_y_limits = [-0.25, 1.25]
         self.gmag_limits = [21.5, 24.]
 
-        # Number of bins var_x, var_y, gmag
-        self.num_bins = [225, 150, 250]
+        # Number of bins var_x, var_y, gmag. Width (0.02, 0.02, 0.02)
+        self.num_bins = [110, 75, 125]
 
         # Cell_number in selection
         self.cell_select = None
