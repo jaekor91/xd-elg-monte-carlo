@@ -109,7 +109,7 @@ def tally_objects_kernel(N_cell, cell_number, cw, FoM, num_bins):
     N1 = np.multiply.reduce(num_bins[1:])
     N2 = np.multiply.reduce(num_bins[2:])
 
-    N_kernel = 7
+    N_kernel = 11
     gauss_kernel = gen_gauss_kernel_3D(N_kernel) # Normalized to sum to one.
 
     FoM_tally = np.zeros(N_cell, dtype = float)
@@ -3066,15 +3066,17 @@ def gen_gauss_kernel_3D(N):
     """
     from scipy.ndimage.filters import gaussian_filter
     
-    assert (N == 3) or (N==5) or (N==7) or (N==9)
+    assert N in [3, 5, 7, 9, 11]
     if N == 3:
         sig = 1/3.
     elif N==5:
         sig = 3/5.
     elif N==7:
         sig = 4/5.
-    else:
+    elif N==9:
         sig = 1.
+    else:
+        sig = 1.25
     
     shape = (N,) * 3
     a = np.zeros(shape)
