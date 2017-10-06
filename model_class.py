@@ -2022,7 +2022,7 @@ class model3(parent_model):
         """
         K_best = None
         if self.sub_sample_num == 0: # Full
-            K_best = [7, 2, 4]
+            K_best = [7, 2, 2]
         elif self.sub_sample_num == 1: #F3
             K_best = [5, 2, 6]
         elif self.sub_sample_num == 2: #F4
