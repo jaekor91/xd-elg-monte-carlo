@@ -2734,15 +2734,15 @@ class model3(parent_model):
         if use_kernel:
             # NonELG
             i=0
-            FoM_tmp, N_NonELG_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+            FoM_tmp, N_NonELG_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], self.num_bins)
             FoM += FoM_tmp
             # NoZ
             i=1
-            FoM_tmp, N_NoZ_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+            FoM_tmp, N_NoZ_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], self.num_bins)
             FoM += FoM_tmp
             # ELG (DESI and NonDESI)
             i=2
-            FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+            FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], self.num_bins)
             N_ELG_NonDESI_cell = N_ELG_all_cell - N_ELG_DESI_cell
             FoM += FoM_tmp
         else:
