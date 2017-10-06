@@ -2905,7 +2905,7 @@ class model3(parent_model):
             title_str = "%s [%.3f, %.3f]" % (var_names[slice_dir], bin_edges[i], bin_edges[i+1])
             print i, title_str
             plt.title(title_str, fontsize=15)
-            plt.savefig("model3-%s-%s-boudary-%s-%d.png" % (model_tag, cv_tag, slice_var_tag[slice_dir], i), bbox_inches="tight", dpi=200)
+            plt.savefig("%s-%s-boudary-%s-%d.png" % (model_tag, cv_tag, slice_var_tag[slice_dir], i), bbox_inches="tight", dpi=200)
         #     plt.show()
             plt.close()        
         
