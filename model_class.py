@@ -1934,7 +1934,7 @@ class model3(parent_model):
 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
         self.fmin_MC = mag2flux(24.1) # Note that around 23.8, the power law starts to break down.
-        self.fmax_MC = mag2flux(21)
+        self.fmax_MC = mag2flux(21.45)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
         # 0: NonELG, 1: NoZ, 2: ELG
@@ -1975,12 +1975,12 @@ class model3(parent_model):
         self.cell_number_obs = [None, None, None]
 
         # Selection grid limits
-        self.var_x_limits = [-0.25, 2.75]
-        self.var_y_limits = [-0.75, 1.25]
+        self.var_x_limits = [0.25, 2.5]
+        self.var_y_limits = [-0.25, 1.25]
         self.gmag_limits = [21.5, 24.]
 
         # Number of bins var_x, var_y, gmag
-        self.num_bins = [150, 100, 100]
+        self.num_bins = [225, 150, 250]
 
         # Cell_number in selection
         self.cell_select = None
