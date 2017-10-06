@@ -89,7 +89,7 @@ def tally_objects(N_cell, cell_number, cw, FoM):
     return FoM_tally, Ntotal_tally, Ngood_tally
 
 @nb.jit
-def tally_objects_kernel(N_cell, cell_number, cw, FoM, ND, limits, num_bins):
+def tally_objects_kernel(N_cell, cell_number, cw, FoM, num_bins):
     """
     Given number of cells and cell number, completeness weight, and FoM per sample,
     return a tally. Use Gaussian kernel approximation for each particle in a cell.
