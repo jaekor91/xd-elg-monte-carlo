@@ -2737,6 +2737,114 @@ class model3(parent_model):
          N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted, ra[iselected], dec[iselected]
 
 
+    def gen_selection_volume_FFT(self, N_kernel):
+        """
+        Given the generated sample (intrinsic val + noise), generate a selection volume,
+        using kernel approximation to the number density. That is, when tallying up the 
+        number of objects in each cell, use a gaussian kernel centered at the cell where
+        the particle happens to fall.
+
+        This version is different from the vanila version with kernel option in that
+        the cross correlation or convolution is done in the Fourier space.
+
+        N_kernel decides the size of the kernel to be used.
+        
+        Strategy:
+            - Construct a multi-dimensional histogram.
+            - Perform FFT convolution with a gaussian kernel. Use padding.
+            - Given the resulting convolved MD histogram, we can flatten it and order them according to
+            utility. Currently, the utility is FoM divided by Ntot.
+            - We can either predict the number density to define a cell of selected cells 
+            or remember the order of the entire (or half of) the cells. Then when selection is applied
+            we can include objects up to the number we want by adjust the utility threshold.
+            This would require remember the number density of all the objects.
+        """
+
+        # Compute cell number and order the samples according to the cell number
+        for i in range(3):
+            samples = [self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]
+            # Generating 
+            self.cell_number_obs[i] = multdim_grid_cell_number(samples, 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+
+            # Sorting
+            idx_sort = self.cell_number_obs[i].argsort()
+            self.cell_number_obs[i] = self.cell_number_obs[i][idx_sort]
+            self.cw_obs[i] = self.cw_obs[i][idx_sort] 
+            self.FoM_obs[i] = self.FoM_obs[i][idx_sort]
+
+            # Unncessary to sort these for computing the selection volume.
+            # However, would be good to self-validate by applying the selection volume generated
+            # to the derived sample to see if you get the proper number density and aggregate FoM.
+            self.var_x_obs[i] = self.var_x_obs[i][idx_sort] 
+            self.var_y_obs[i] = self.var_y_obs[i][idx_sort] 
+            self.gmag_obs[i] = self.gmag_obs[i][idx_sort]
+            if i == 2: # For ELGs 
+                self.var_z_obs[i] = self.var_z_obs[i][idx_sort] 
+                self.redz_obs[i] = self.redz_obs[i][idx_sort]
+        
+        # Placeholder for cell grid linearized. Cell index corresponds to cell number. 
+        N_cell = np.multiply.reduce(self.num_bins)
+        FoM = np.zeros(N_cell, dtype = float)
+
+        # Iterate through each sample in all three categories and compute N_categories, N_total and FoM.
+        # NonELG
+        i=0
+        FoM_tmp, N_NonELG_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], self.num_bins)
+        FoM += FoM_tmp
+        # NoZ
+        i=1
+        FoM_tmp, N_NoZ_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], self.num_bins)
+        FoM += FoM_tmp
+        # ELG (DESI and NonDESI)
+        i=2
+        FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], self.num_bins)
+        N_ELG_NonDESI_cell = N_ELG_all_cell - N_ELG_DESI_cell
+        FoM += FoM_tmp
+
+        # Computing the total and good number of objects.
+        Ntotal_cell = N_NonELG_cell + N_NoZ_cell + N_ELG_all_cell
+        Ngood_cell = self.f_NoZ * N_NoZ_cell + N_ELG_DESI_cell
+
+        # Compute utility
+        utility = FoM/(Ntotal_cell+ (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
+
+        # Order cells according to utility
+        # This corresponds to cell number of descending order sorted array.
+        idx_sort = (-utility).argsort()
+
+        utility = utility[idx_sort]
+        Ntotal_cell = Ntotal_cell[idx_sort]
+        Ngood_cell = Ngood_cell[idx_sort]
+        N_NonELG_cell = N_NonELG_cell[idx_sort]
+        N_NoZ_cell = N_NoZ_cell[idx_sort]
+        N_ELG_DESI_cell = N_ELG_DESI_cell[idx_sort]
+        N_ELG_NonDESI_cell = N_ELG_NonDESI_cell[idx_sort]
+
+        # Starting from the keep including cells until the desired number is eached.        
+        Ntotal = 0
+        counter = 0
+        for ntot in Ntotal_cell:
+            if Ntotal > (self.num_desired * self.area_MC): 
+                break            
+            Ntotal += ntot
+            counter +=1
+
+        # Predicted numbers in the selection.
+        Ntotal = np.sum(Ntotal_cell[:counter])/float(self.area_MC)
+        Ngood = np.sum(Ngood_cell[:counter])/float(self.area_MC)
+        N_NonELG = np.sum(N_NonELG_cell[:counter])/float(self.area_MC)
+        N_NoZ = np.sum(N_NoZ_cell[:counter])/float(self.area_MC)
+        N_ELG_DESI = np.sum(N_ELG_DESI_cell[:counter])/float(self.area_MC)
+        N_ELG_NonDESI = np.sum(N_ELG_NonDESI_cell[:counter])/float(self.area_MC)
+
+        # Save the selection
+        self.cell_select = np.sort(idx_sort[:counter])
+        eff = (Ngood/float(Ntotal))
+
+        return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI
+
+
+
     def gen_selection_volume(self, use_kernel=False):
         """
         Given the generated sample (intrinsic val + noise), generate a selection volume.
