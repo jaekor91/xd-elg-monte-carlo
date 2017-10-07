@@ -1880,7 +1880,8 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                     plot_MoG1=False, amps1=None, means1=None, covs1=None, ND1=0, color_MoG1="blue",\
                     plot_MoG2=False, amps2=None, means2=None, covs2=None, ND2=0, color_MoG2="red",\
                    plot_MoG_general=False, var_num_tuple=None, amps_general=None, means_general=None, covs_general=None, color_general="red",\
-                   cum_contour=False, plot_pow=False, pow_model=None, pow_var_num=None):
+                   cum_contour=False, plot_pow=False, pow_model=None, pow_var_num=None,\
+                   hist_types=None):
     """
     Add correlation plots for each variable pair to a given axis list. 
     Also, make marginalized plots in histogram.
@@ -1896,7 +1897,8 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
     hist_normed: If True, all histograms are normalized.
     cum_contour: If true AND Plot_MoG_general=True, then 
         plot the cum_contour of the "general MoG" instead of the individual components.
-    
+    hist_types: A list of histtypes. If None is given, then use "step"
+
     Plot_MoG1,2:
     The function can also plot MoG specified by the user. amps, means, and covs are required.
     ND represents the dimension of the MoG. If ND=3, then model fit is in var1, var2, var3.
@@ -1971,6 +1973,15 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
             pt_size = 5
         else:
             pt_size = pt_sizes[i]
+        if hist_types is not None:
+            hist_type_tmp = hist_types[i]
+            if hist_type_tmp == "step":
+                alpha = 1
+            else:
+                alpha = 0.5
+        else:
+            hist_type_tmp = "step"
+            alpha = 1
             
         # Plot each axis
         for i in range(num_vars): # row
@@ -1995,9 +2006,9 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         bin_width = binws[var_num1]
                         hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
                         if plot_pow and (var_num1 == pow_var_num):
-                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname)  
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha, color=color, weights=w_tmp, lw=lw, label = cname)  
                         else:
-                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, normed=hist_normed)                          
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha, color=color, weights=w_tmp, lw=lw, label = cname, normed=hist_normed)                          
                         if plot_MoG1 and (var_num1<ND1):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2):
@@ -2014,9 +2025,9 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         bin_width = binws[var_num1]
                         hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
                         if plot_pow and (var_num1 == pow_var_num):
-                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal")  
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha, color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal")  
                         else:
-                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype="step", color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal", normed=hist_normed)  
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha, color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal", normed=hist_normed)  
                         if plot_MoG1 and (var_num1<ND1):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, vertical=False, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2):
@@ -3058,7 +3069,7 @@ def plot_cov_ellipse(ax, mus, covs, var_num1, var_num2, MoG_color="Blue"):
             e.set_edgecolor(MoG_color)
 
     return
-    
+
 def gen_gauss_kernel_3D(N):
     """
     Create a gaussian kernel of size for use in kernel approximation.
