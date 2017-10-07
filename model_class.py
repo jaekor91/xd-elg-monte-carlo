@@ -2748,6 +2748,8 @@ class model3(parent_model):
         the cross correlation or convolution is done in the Fourier space.
 
         N_kernel decides the size of the kernel to be used.
+
+        Note we don't alter the generated sample in any way.
         
         Strategy:
             - Construct a multi-dimensional histogram.
@@ -2760,7 +2762,12 @@ class model3(parent_model):
             This would require remember the number density of all the objects.
         """
 
-        # Compute cell number and order the samples according to the cell number
+        # Create MD histogarm of each type of objects. 
+        # 0: NonELG, 1: NoZ, 2: ELG
+        MD_hist_Ni = [None, None, None] # All objects in the category
+        MD_hist_Ni_FoM = [None, None, None] # Tally of FoM corresponding to all objects in the category.
+        MD_hist_Ni_good = [None, None, None] # Tally of only good objects. For example, DESI ELGs.
+
         for i in range(3):
             samples = [self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]
             # Generating 
@@ -2769,19 +2776,7 @@ class model3(parent_model):
             # Sorting
             idx_sort = self.cell_number_obs[i].argsort()
             self.cell_number_obs[i] = self.cell_number_obs[i][idx_sort]
-            self.cw_obs[i] = self.cw_obs[i][idx_sort] 
-            self.FoM_obs[i] = self.FoM_obs[i][idx_sort]
 
-            # Unncessary to sort these for computing the selection volume.
-            # However, would be good to self-validate by applying the selection volume generated
-            # to the derived sample to see if you get the proper number density and aggregate FoM.
-            self.var_x_obs[i] = self.var_x_obs[i][idx_sort] 
-            self.var_y_obs[i] = self.var_y_obs[i][idx_sort] 
-            self.gmag_obs[i] = self.gmag_obs[i][idx_sort]
-            if i == 2: # For ELGs 
-                self.var_z_obs[i] = self.var_z_obs[i][idx_sort] 
-                self.redz_obs[i] = self.redz_obs[i][idx_sort]
-        
         # Placeholder for cell grid linearized. Cell index corresponds to cell number. 
         N_cell = np.multiply.reduce(self.num_bins)
         FoM = np.zeros(N_cell, dtype = float)
