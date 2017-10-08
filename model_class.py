@@ -71,7 +71,7 @@ class parent_model:
         # Basic class variables
         self.areas = np.load("spec-area-DR5-matched.npy")
         self.mag_max = 24 # We model moderately deeper than 24. But only model down to 21.
-        self.mag_min = 21
+        self.mag_min = 21.5
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
 
@@ -259,12 +259,12 @@ class parent_model:
         if self.sub_sample_num in [3, 4, 5, 6, 7]:
             iTrain, area_train = self.gen_train_set_idx_cv(tag)
         # 8-10: Magnitude changes. For power law use full data. 
-        # g in [22.5, 23.5], [22.75, 23.75], [23, 24]. 
+        # g in [21.5, 22.5], [22.5, 23.5], [23, 24]. 
         if self.sub_sample_num == 8:
-            iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(22.5))  & (self.field!=2)
+            iTrain = (self.gflux > mag2flux(22.5)) & (self.gflux < mag2flux(21.5))  & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 9:
-            iTrain = (self.gflux > mag2flux(23.75)) & (self.gflux < mag2flux(22.75)) & (self.field!=2)
+            iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(23.5)) & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 10:
             iTrain = (self.gflux > mag2flux(24.)) & (self.gflux < mag2flux(23.)) & (self.field!=2)
