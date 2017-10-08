@@ -3049,7 +3049,7 @@ class model3(parent_model):
 
 
     def gen_select_boundary_slices(self, slice_dir = 2, model_tag="", cv_tag="", centers=None, plot_ext=False,\
-        gflux_ext=None, rflux_ext=None, zflux_ext=None, ibool_ext = None):
+        gflux_ext=None, rflux_ext=None, zflux_ext=None, ibool_ext = None, pt_size=10, pt_size_ext=10, alpha_ext=0.5):
         """
         Model3
 
@@ -3092,10 +3092,10 @@ class model3(parent_model):
             fig = plt.figure(figsize=(7, 7))
             idx = range(3)
             idx.remove(slice_dir)
-            plt.scatter(centers_slice[:,idx[0]], centers_slice[:,idx[1]], edgecolors="none", c="green", alpha=0.5, s=10)
+            plt.scatter(centers_slice[:,idx[0]], centers_slice[:,idx[1]], edgecolors="none", c="green", alpha=0.5, s=pt_size)
             if plot_ext:
                 ibool = (variables[slice_dir] < bin_edges[i+1]) & (variables[slice_dir] > bin_edges[i])
-                plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="blue", s=5)
+                plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="blue", s=pt_size_ext, alpha=alpha_ext)
             plt.xlabel(var_names[idx[0]], fontsize=15)
             plt.ylabel(var_names[idx[1]], fontsize=15)
             # plt.axis("equal")
@@ -3104,7 +3104,7 @@ class model3(parent_model):
             title_str = "%s [%.3f, %.3f]" % (var_names[slice_dir], bin_edges[i], bin_edges[i+1])
             print i, title_str
             plt.title(title_str, fontsize=15)
-            plt.savefig("%s-%s-boudary-%s-%d.png" % (model_tag, cv_tag, slice_var_tag[slice_dir], i), bbox_inches="tight", dpi=200)
+            plt.savefig("%s-%s-boundary-%s-%d.png" % (model_tag, cv_tag, slice_var_tag[slice_dir], i), bbox_inches="tight", dpi=200)
         #     plt.show()
             plt.close()        
         
