@@ -2497,7 +2497,7 @@ class model3(parent_model):
                     ibool = (oii>8) & (redz > 0.6) # For objects that lie within this criteria
                     FoM = np.zeros(Nsample, dtype=float)
                     FoM[ibool] = 1.0
-                elif self.FoM_option = "NoOII" # NoOII means objects without OII values are also included.
+                elif self.FoM_option == "NoOII": # NoOII means objects without OII values are also included.
                     ibool = (redz > 0.6) # For objects that lie within this criteria
                     FoM = np.zeros(Nsample, dtype=float)
                     FoM[ibool] = 1.0
@@ -3049,7 +3049,9 @@ class model3(parent_model):
 
 
     def gen_select_boundary_slices(self, slice_dir = 2, model_tag="", cv_tag="", centers=None, plot_ext=False,\
-        gflux_ext=None, rflux_ext=None, zflux_ext=None, ibool_ext = None, pt_size=10, pt_size_ext=10, alpha_ext=0.5):
+        gflux_ext=None, rflux_ext=None, zflux_ext=None, ibool_ext = None,\
+        var_x_ext=None, var_y_ext=None, gmag_ext=None, use_parameterized_ext=False,\
+        pt_size=10, pt_size_ext=10, alpha_ext=0.5):
         """
         Model3
 
@@ -3071,14 +3073,22 @@ class model3(parent_model):
             centers = self.cell_select_centers()
 
         if plot_ext:
-            if ibool_ext is not None:
-                gflux_ext = gflux_ext[ibool_ext]
-                rflux_ext = rflux_ext[ibool_ext]
-                zflux_ext = zflux_ext[ibool_ext]
+            if use_parameterized_ext:
+                if ibool_ext is not None:
+                    var_x_ext = var_x_ext[ibool_ext]
+                    var_y_ext = var_y_ext[ibool_ext]
+                    gmag_ext = gmag_ext[ibool_ext]                
+            else:     
+                if ibool_ext is not None:
+                    gflux_ext = gflux_ext[ibool_ext]
+                    rflux_ext = rflux_ext[ibool_ext]
+                    zflux_ext = zflux_ext[ibool_ext]
 
-            var_x_ext = np.arcsinh(zflux_ext/gflux_ext/2.)
-            var_y_ext = np.arcsinh(rflux_ext/gflux_ext/2.)
-            gmag_ext = flux2mag(gflux_ext)
+                mu_g, mu_r, mu_z = flux2asinh_mag(gflux_ext, band="g"), flux2asinh_mag(rflux_ext, band="r"), flux2asinh_mag(zflux_ext, band="z")
+                var_x_ext = mu_g-mu_z
+                var_y_ext = mu_g-mu_r
+                gmag_ext = flux2mag(gflux_ext)
+
             variables = [var_x_ext, var_y_ext, gmag_ext]
 
         limits = [self.var_x_limits, self.var_y_limits, self.gmag_limits]        
