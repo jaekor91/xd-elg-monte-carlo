@@ -245,19 +245,19 @@ class parent_model:
 
         # 0: Full F34 data
         if self.sub_sample_num == 0:
-            iTrain = self.field !=2
+            iTrain = (self.field !=2) & (self.gflux < mag2flux(22))
             area_train = area_F34
         # 1: F3 data only
         if self.sub_sample_num == 1:
-            iTrain = self.field == 3
+            iTrain = (self.field == 3) & (self.gflux < mag2flux(22))
             area_train = self.areas[1]
         # 2: F4 data only
         if self.sub_sample_num == 2:
-            iTrain = self.field == 4
+            iTrain = (self.field == 4) & (self.gflux < mag2flux(22))
             area_train = self.areas[2]
         # 3-7: CV1-CV5: Sub-sample F34 into five-fold CV sets.
         if self.sub_sample_num in [3, 4, 5, 6, 7]:
-            iTrain, area_train = self.gen_train_set_idx_cv(tag)
+            iTrain, area_train = self.gen_train_set_idx_cv(tag) & (self.gflux < mag2flux(22))
         # 8-10: Magnitude changes. For power law use full data. 
         # g in [21.5, 22.5], [22.5, 23.5], [23, 24]. 
         if self.sub_sample_num == 8:
@@ -2030,7 +2030,7 @@ class model3(parent_model):
         """
         K_best = None
         if self.sub_sample_num == 0: # Full
-            K_best = [7, 2, 2]
+            K_best = [7, 2, 4]
         elif self.sub_sample_num == 1: #F3
             K_best = [5, 2, 6]
         elif self.sub_sample_num == 2: #F4
@@ -2653,7 +2653,8 @@ class model3(parent_model):
 
 
         # Boolean vectors
-        iselected_ELG_DESI = iselected & (oii>8) & (redz>0.6) & (redz<1.6) & iELG
+        iELG_DESI = (oii>8) & (redz>0.6) & (redz<1.6) & iELG
+        iselected_ELG_DESI = iselected & iELG_DESI
         N_ELG_DESI = np.sum(iselected_ELG_DESI)/area_sample
         N_ELG_DESI_weighted = np.sum(w[iselected_ELG_DESI])/area_sample
 
@@ -2722,33 +2723,51 @@ class model3(parent_model):
             plt.savefig("%s-%s-DEEP2-F%d-validation-plot-corr.png" % (model_tag, cv_tag, fnum), dpi=200, bbox_inches="tight")
             plt.close()
 
-                        # n(z) of total in DESI ELG, DESI ELG selected, Predicted, and NP=1
-            # fig = plt.figure(figsize=(10, 10))
 
-            # # All
-            # ibool = (self.field == fnum) & self.iELG
-            # nobjs = np.sum(ibool)
-            # wobjs = np.sum(self.w[ibool])
-            # A = self.areas[fnum-2]
-            # ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
-            #  label="ALL: %d (%d) / %d (%d)" % (nobjs, nobjs/float(A), wobjs, wobjs/float(A)),\
-            #  histtype="step", lw=2.5, color="black")
 
-            # # DESI
-            # ibool = (self.field == fnum) & (self.red_z > 0.6) & (self.red_z < 1.6) & (self.oii > 8)
-            # nobjs = np.sum(ibool)
-            # wobjs = np.sum(self.w[ibool])
-            # ax_list[fnum-2].hist(self.red_z[ibool], bins=redz_bins, weights=self.w[ibool]/float(A),\
-            #  label="DESI: %d (%d) / %d (%d)" % (nobjs, nobjs/float(A), wobjs, wobjs/float(A)),\
-            #  histtype="stepfilled", lw=2.5, color="black", alpha=0.5)            
-            # ax_list[fnum-2].plot(x, y, c="red", lw=3, ls="--")            
-            # ax_list[fnum-2].set_title("Field %d. A = %.2f" % (fnum, A), fontsize=20)
-            # ax_list[fnum-2].legend(loc="upper left", fontsize=20)
-            # ax_list[fnum-2].set_ylim([0, 600])
-            # ax_list[fnum-2].set_xlim([0.5, 1.7])
-            # plt.suptitle("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
-            # plt.savefig("dNdz-DR5-matched-All-vs-DESI-ELGs.png", dpi=400, bbox_inches="tight")
-            # plt.close()
+            # 2) OII and redshift plots
+            #     - Redshift plot: Plot all ELGs, all DESI ELGs, all selected DESI, plot predicted. ELGs NP=1 line
+            #     - OII plot: Plot all OII, plot dotted line at OII=8, plot OII of selected. Plot OII of predicted.
+
+            # np=1 Line
+            dz = 0.025
+            doii = 0.5
+            x, y = np1_line(dz=dz)        
+            redz_bins = np.arange(0.5, 1.7, dz)
+            oii_bins = np.arange(0, 50, doii)
+
+            histtypes = ["step", "stepfilled", "step"]
+            colors = ["black", "black", "red"]
+            alphas = [1, 0.5, 1.]
+            labels = ["All", "All DESI", "Selected DESI"]
+
+            # All ELGs, DESI ELGs, selected DESI ELGs
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(22, 10)) 
+            for i, ibool in enumerate([iELG, iELG_DESI, iselected_ELG_DESI]):
+                wobjs = np.sum(w[ibool])
+                # Redshfit
+                ax1.hist(redz[ibool], bins=redz_bins, weights=w[ibool]/float(area_sample),\
+                 label="%s: %d" % (labels[i], wobjs/float(area_sample)),\
+                 histtype=histtypes[i], lw=2.5, color=colors[i], alpha=alphas[i])
+
+                # OII
+                ax2.hist(oii[ibool], bins=oii_bins, weights=w[ibool]/float(area_sample),\
+                 label="%s: %d" % (labels[i], wobjs/float(area_sample)),\
+                 histtype=histtypes[i], lw=2.5, color=colors[i], alpha=alphas[i])                
+
+            ax1.plot(x, y, c="green", lw=3, ls="--")            
+            ax1.legend(loc="upper right", fontsize=20)
+            ax1.set_ylim([0, 400])
+            ax1.set_xlim([0.5, 1.7])
+
+            ax2.legend(loc="upper right", fontsize=20)
+            ax2.set_ylim([0, 200])
+            ax2.set_xlim([0, 40])  
+
+            # Save
+            plt.suptitle("dNdz and dNdOII. Density per sq. deg.", fontsize=25)
+            plt.savefig("%s-%s-DEEP2-F%d-validation-plot-redz-OII.png" % (model_tag, cv_tag, fnum), dpi=200, bbox_inches="tight")
+            plt.close()
 
         return eff, eff_pred, Ntotal, Ntotal_weighted, Ntotal_pred, N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_DESI_pred,\
          N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred, N_NoZ, N_NoZ_weighted, N_NoZ_pred,\
