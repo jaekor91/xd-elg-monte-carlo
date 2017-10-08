@@ -1902,7 +1902,7 @@ class model3(parent_model):
         self.lim_x = [-1.25, 5.] # g-z
         self.lim_y = [-.75, 2.75] # r-z
         self.lim_z = [-0, 6] # g-oii
-        self.lim_gmag = [21., 24.0]
+        self.lim_gmag = [21.5, 24.0]
 
         # bin widths
         self.dx = 0.05
