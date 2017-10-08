@@ -2570,21 +2570,21 @@ class model3(parent_model):
         return Covar
 
 
-    def validate_on_DEEP2(self, fnum, plot_nz=False, model_tag="", cv_tag="", plot_scatter=False):
+    def validate_on_DEEP2(self, fnum, model_tag="", cv_tag="", plot_validation=False):
         """
         Model 3
 
         Given the field number, apply the selection to the DEEP2 training data set.
         The error corresponding to the field is automatically determined form the data set.
-
-        If detection, then model in the detection process.
-
-        If plot_nz is True, make a plot of n(z) of both prediction and validation.
-
-        If use_kerenl True, then use kernal approximation method.
-
-        If plot_scatter = True, then plot the original objects in the field (black), selected (red)
-        in scatter, and step histogram and filled histogram.
+        
+        If plot validation is True, then plot 
+        1) var_x - var_y - gmag corr plot
+            - corr_plots: All selected objects in red and others in black
+            - Hist: Plot prediction, selected, and total original. 
+            The hieght is set at minimum(max(dNdvar_original), 1.5 * max(dNdvar_selected, dNdvar_predicted))
+        2) OII and redshift plots
+            - Redshift plot: Plot all ELGs, all DESI ELGs, all selected DESI, plot predicted. ELGs NP=1 line
+            - OII plot: Plot all OII, plot dotted line at OII=8, plot OII of selected. Plot OII of predicted.
 
         Return the following set of numbers
         0: eff
@@ -2629,7 +2629,7 @@ class model3(parent_model):
         rlim_err = median_mag_depth(self.rf_err[ifield])
         zlim_err = median_mag_depth(self.zf_err[ifield])
         oii_lim_err = 8
-        self.set_err_lims(glim_err, rlim_err, zlim_err, oii_lim_err) # Training data is deep!
+        self.set_err_lims(glim_err, rlim_err, zlim_err, oii_lim_err) 
 
         # Convolve error to the intrinsic sample.
         self.gen_err_conv_sample()
@@ -2690,9 +2690,32 @@ class model3(parent_model):
         print "----------"
         print "Efficiency, weighted vs. prediction (DESI/Ntotal): %.3f, %.3f" % (eff, eff_pred)
 
-        if plot_nz:
-            pass
-            # n(z) of total in DESI ELG, DESI ELG selected, Predicted, and NP=1
+        if plot_validation:
+            print "Corr plot - var_xyz"
+            lims = [self.lim_x, self.lim_y, self.lim_gmag]
+            binws = [self.dx, self.dy, self.dgmag]
+            var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
+            lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
+            num_cat = 6
+            num_vars = 3
+            colors = ["black", "red", "blue", "black", "red", "blue"]
+            categories = ["NonELG", "NoZ", "ELG", "NonELG-XD", "NoZ-XD", "ELG-XD"]
+
+            variables = []
+            weights = []
+            hist_types = ["step", "step", "step", "stepfilled", "stepfilled", "stepfilled"]
+
+            for ibool in [iNonELG, iNoZ, iELG, iselected_NonELG, iselected_NoZ, iselected_ELG_DESI]:
+                variables.append([var_x[ibool], var_y[ibool], gmag[ibool]])
+                weights.append(w[ibool]/area_sample)
+
+            fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines,\
+            category_names=categories, pt_sizes=None, colors=colors, ft_size_legend = 15, lw_dot=2, hist_types = hist_types)
+            plt.savefig("%s-%s-DEEP2-F%d-validation-plot-corr.png" % (model_tag, cv_tag, fnum), dpi=200, bbox_inches="tight")
+            plt.close()
+
+                        # n(z) of total in DESI ELG, DESI ELG selected, Predicted, and NP=1
             # fig = plt.figure(figsize=(10, 10))
 
             # # All
@@ -2719,31 +2742,6 @@ class model3(parent_model):
             # plt.suptitle("dNdz. Field: Raw/Weighted. (Density in parenthesis). A = Area.", fontsize=25)
             # plt.savefig("dNdz-DR5-matched-All-vs-DESI-ELGs.png", dpi=400, bbox_inches="tight")
             # plt.close()
-
-        if plot_scatter:
-            print "Corr plot - var_xyz - all classes together"
-            lims = [self.lim_x, self.lim_y, self.lim_gmag]
-            binws = [self.dx, self.dy, self.dgmag]
-            var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
-            lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
-            num_cat = 6
-            num_vars = 3
-            colors = ["black", "red", "blue", "black", "red", "blue"]
-            categories = ["NonELG", "NoZ", "ELG", "NonELG-XD", "NoZ-XD", "ELG-XD"]
-
-            variables = []
-            weights = []
-            hist_types = ["step", "step", "step", "stepfilled", "stepfilled", "stepfilled"]
-
-            for ibool in [iNonELG, iNoZ, iELG, iselected_NonELG, iselected_NoZ, iselected_ELG_DESI]:
-                variables.append([var_x[ibool], var_y[ibool], gmag[ibool]])
-                weights.append(w[ibool]/area_sample)
-
-            fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines,\
-            category_names=categories, pt_sizes=None, colors=colors, ft_size_legend = 15, lw_dot=2, hist_types = hist_types)
-            plt.savefig("%s-%s-DEEP2-F%d-corr-plot.png" % (model_tag, cv_tag, fnum), dpi=200, bbox_inches="tight")
-            plt.close()
 
         return eff, eff_pred, Ntotal, Ntotal_weighted, Ntotal_pred, N_ELG_DESI, N_ELG_DESI_weighted, N_ELG_DESI_pred,\
          N_ELG_NonDESI, N_ELG_NonDESI_weighted, N_ELG_NonDESI_pred, N_NoZ, N_NoZ_weighted, N_NoZ_pred,\
