@@ -2737,7 +2737,7 @@ class model3(parent_model):
          N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted, ra[iselected], dec[iselected]
 
 
-    def gen_selection_volume_FFT(self, N_kernel):
+    def gen_selection_volume_scipy(self):
         """
         Given the generated sample (intrinsic val + noise), generate a selection volume,
         using kernel approximation to the number density. That is, when tallying up the 
@@ -2745,9 +2745,7 @@ class model3(parent_model):
         the particle happens to fall.
 
         This version is different from the vanila version with kernel option in that
-        the cross correlation or convolution is done in the Fourier space.
-
-        N_kernel decides the size of the kernel to be used.
+        the cross correlation or convolution is done using scipy convolution function.
 
         Note we don't alter the generated sample in any way.
         
@@ -2761,76 +2759,102 @@ class model3(parent_model):
             we can include objects up to the number we want by adjust the utility threshold.
             This would require remember the number density of all the objects.
         """
-
         # Create MD histogarm of each type of objects. 
         # 0: NonELG, 1: NoZ, 2: ELG
-        MD_hist_Ni = [None, None, None] # All objects in the category
-        MD_hist_Ni_FoM = [None, None, None] # Tally of FoM corresponding to all objects in the category.
-        MD_hist_Ni_good = [None, None, None] # Tally of only good objects. For example, DESI ELGs.
+        MD_hist_N_NonELG, MD_hist_N_NoZ, MD_hist_N_ELG_DESI, MD_hist_N_ELG_NonDESI = None, None, None, None
+        MD_hist_N_FoM = None # Tally of FoM corresponding to all objects in the category.
+        MD_hist_N_good = None # Tally of only good objects. For example, DESI ELGs.
+        MD_hist_N_total = None # Tally of all objects.
 
-        for i in range(3):
-            samples = [self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]
-            # Generating 
-            self.cell_number_obs[i] = multdim_grid_cell_number(samples, 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
-
-            # Sorting
-            idx_sort = self.cell_number_obs[i].argsort()
-            self.cell_number_obs[i] = self.cell_number_obs[i][idx_sort]
-
-        # Placeholder for cell grid linearized. Cell index corresponds to cell number. 
-        N_cell = np.multiply.reduce(self.num_bins)
-        FoM = np.zeros(N_cell, dtype = float)
-
-        # Iterate through each sample in all three categories and compute N_categories, N_total and FoM.
         # NonELG
-        i=0
-        FoM_tmp, N_NonELG_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], self.num_bins)
-        FoM += FoM_tmp
+        i = 0
+        samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
+        MD_hist_N_NonELG, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits])
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
+        MD_hist_N_FoM = FoM_tmp
+        MD_hist_N_total = np.copy(MD_hist_N_NonELG)
+
         # NoZ
         i=1
-        FoM_tmp, N_NoZ_cell, _ = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], self.num_bins)
-        FoM += FoM_tmp
+        samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
+        MD_hist_N_NoZ, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits])
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
+        MD_hist_N_FoM += FoM_tmp
+        MD_hist_N_good = self.f_NoZ * MD_hist_N_NoZ
+        MD_hist_N_total += MD_hist_N_NoZ
+
         # ELG (DESI and NonDESI)
         i=2
-        FoM_tmp, N_ELG_all_cell, N_ELG_DESI_cell = tally_objects_kernel(N_cell, self.cell_number_obs[i], self.cw_obs[i], self.FoM_obs[i], self.num_bins)
-        N_ELG_NonDESI_cell = N_ELG_all_cell - N_ELG_DESI_cell
-        FoM += FoM_tmp
+        samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
+        w_DESI = self.FoM_obs[i]>0 # Only objects with positive FoM are DESI ELGs
+        MD_hist_N_ELG_DESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_DESI)
+        MD_hist_N_ELG_NonDESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=~w_DESI)
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
+        MD_hist_N_FoM += FoM_tmp
+        MD_hist_N_good += MD_hist_N_ELG_DESI
+        MD_hist_N_total += MD_hist_N_ELG_DESI 
+        MD_hist_N_total += MD_hist_N_ELG_NonDESI
 
-        # Computing the total and good number of objects.
-        Ntotal_cell = N_NonELG_cell + N_NoZ_cell + N_ELG_all_cell
-        Ngood_cell = self.f_NoZ * N_NoZ_cell + N_ELG_DESI_cell
+        # Applying Gaussian filtering
+        sigma = [2.5, 2.5, 2] 
+        sigma_limit = 3
+        gaussian_filter(MD_hist_N_NonELG, sigma, order=0, output=MD_hist_N_NonELG, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_NoZ, sigma, order=0, output=MD_hist_N_NoZ, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_ELG_DESI, sigma, order=0, output=MD_hist_N_ELG_DESI, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_ELG_NonDESI, sigma, order=0, output=MD_hist_N_ELG_NonDESI, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_FoM, sigma, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_good, sigma, order=0, output=MD_hist_N_good, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_total, sigma, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=sigma_limit)
+
+        # ---- Debug: Check that flattening operation behaves in the expected fashion ---- # 
+        # Nsample = 50
+        # bin_indicies = [np.random.randint(low=10, high=50, size=Nsample)]*3
+        # print "Values from MD array"
+        # idx = np.array(bin_indicies).T
+        # for i in range(idx.shape[0]):
+        #     print i, utility[idx[i][0], idx[i][1], idx[i][2]]
+        # print "Values from flattened array"
+        # print utility_flat[compute_cell_number(bin_indicies, self.num_bins)]
 
         # Compute utility
-        utility = FoM/(Ntotal_cell+ (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
+        utility = MD_hist_N_FoM/(MD_hist_N_total+ (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
+
+        # # Fraction of cells filled
+        # frac_filled = np.sum(utility>0)/float(utility.size) * 100
+        # print "Fraction of cells filled: %.1f precent" % frac_filled
+
+        # Flatten utility array
+        utility_flat = utility.flatten()
 
         # Order cells according to utility
         # This corresponds to cell number of descending order sorted array.
-        idx_sort = (-utility).argsort()
+        idx_sort = (-utility_flat).argsort()
 
-        utility = utility[idx_sort]
-        Ntotal_cell = Ntotal_cell[idx_sort]
-        Ngood_cell = Ngood_cell[idx_sort]
-        N_NonELG_cell = N_NonELG_cell[idx_sort]
-        N_NoZ_cell = N_NoZ_cell[idx_sort]
-        N_ELG_DESI_cell = N_ELG_DESI_cell[idx_sort]
-        N_ELG_NonDESI_cell = N_ELG_NonDESI_cell[idx_sort]
+        # Flatten other arrays and sort them according to utility.
+        MD_hist_N_NonELG_flat = MD_hist_N_NonELG.flatten()[idx_sort]
+        MD_hist_N_NoZ_flat = MD_hist_N_NoZ.flatten()[idx_sort]
+        MD_hist_N_ELG_DESI_flat = MD_hist_N_ELG_DESI.flatten()[idx_sort]
+        MD_hist_N_ELG_NonDESI_flat = MD_hist_N_ELG_NonDESI.flatten()[idx_sort]
+        MD_hist_N_FoM_flat = MD_hist_N_FoM.flatten()[idx_sort]
+        MD_hist_N_good_flat = MD_hist_N_good.flatten()[idx_sort]
+        MD_hist_N_total_flat = MD_hist_N_total.flatten()[idx_sort]
 
         # Starting from the keep including cells until the desired number is eached.        
         Ntotal = 0
         counter = 0
-        for ntot in Ntotal_cell:
+        for ntot in MD_hist_N_total_flat:
             if Ntotal > (self.num_desired * self.area_MC): 
                 break            
             Ntotal += ntot
             counter +=1
 
         # Predicted numbers in the selection.
-        Ntotal = np.sum(Ntotal_cell[:counter])/float(self.area_MC)
-        Ngood = np.sum(Ngood_cell[:counter])/float(self.area_MC)
-        N_NonELG = np.sum(N_NonELG_cell[:counter])/float(self.area_MC)
-        N_NoZ = np.sum(N_NoZ_cell[:counter])/float(self.area_MC)
-        N_ELG_DESI = np.sum(N_ELG_DESI_cell[:counter])/float(self.area_MC)
-        N_ELG_NonDESI = np.sum(N_ELG_NonDESI_cell[:counter])/float(self.area_MC)
+        Ntotal = np.sum(MD_hist_N_total_flat[:counter])/float(self.area_MC)
+        Ngood = np.sum(MD_hist_N_good_flat[:counter])/float(self.area_MC)
+        N_NonELG = np.sum(MD_hist_N_NonELG_flat[:counter])/float(self.area_MC)
+        N_NoZ = np.sum(MD_hist_N_NoZ_flat[:counter])/float(self.area_MC)
+        N_ELG_DESI = np.sum(MD_hist_N_ELG_DESI_flat[:counter])/float(self.area_MC)
+        N_ELG_NonDESI = np.sum(MD_hist_N_ELG_NonDESI_flat[:counter])/float(self.area_MC)
 
         # Save the selection
         self.cell_select = np.sort(idx_sort[:counter])
