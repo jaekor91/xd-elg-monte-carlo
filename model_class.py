@@ -1985,7 +1985,7 @@ class model3(parent_model):
         self.var_x_limits = [0.25, 2.45]
         self.var_y_limits = [-0.25, 1.05]
         self.gmag_limits = [21.5, 24.]
-        self.num_bins = [135, 65, 250]
+        self.num_bins = [110, 65, 250]
 
         # Sigma widths to be used in kernel approximation.
         self.sigmas = [2.5, 2.5, 2.5]
@@ -3064,6 +3064,8 @@ class model3(parent_model):
         If plot_ext True, then plot user supplied external objects.
 
         If centers is not None, then use it instead of generating one.
+
+        If use_parameterized_ext, then the user may provide already parameterized version of the external data points.
         """
 
         slice_var_tag = ["mu_gz", "mu_gr", "gmag"]
@@ -3105,7 +3107,7 @@ class model3(parent_model):
             plt.scatter(centers_slice[:,idx[0]], centers_slice[:,idx[1]], edgecolors="none", c="green", alpha=0.5, s=pt_size)
             if plot_ext:
                 ibool = (variables[slice_dir] < bin_edges[i+1]) & (variables[slice_dir] > bin_edges[i])
-                plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="blue", s=pt_size_ext, alpha=alpha_ext)
+                plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="red", s=pt_size_ext, alpha=alpha_ext)
             plt.xlabel(var_names[idx[0]], fontsize=15)
             plt.ylabel(var_names[idx[1]], fontsize=15)
             # plt.axis("equal")
