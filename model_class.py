@@ -3107,4 +3107,8 @@ class model3(parent_model):
             plt.savefig("%s-%s-boundary-%s-%d.png" % (model_tag, cv_tag, slice_var_tag[slice_dir], i), bbox_inches="tight", dpi=200)
         #     plt.show()
             plt.close()        
+
+    def set_FoM_option(self, FoM_option):
+        self.FoM_option = FoM_option
+        return None
         
