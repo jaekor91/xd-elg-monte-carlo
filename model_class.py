@@ -67,11 +67,11 @@ def load_tractor_DR5_matched_to_DEEP2_full(ibool=None):
 
 
 class parent_model:
-    def __init__(self, sub_sample_num):
+    def __init__(self, sub_sample_num, tag=""):
         # Basic class variables
         self.areas = np.load("spec-area-DR5-matched.npy")
         self.mag_max = 24 # We model moderately deeper than 24. But only model down to 21.
-        self.mag_min = 21.5
+        self.mag_min = 21.
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
 
@@ -123,7 +123,7 @@ class parent_model:
 
         # Trainig idices and area
         self.sub_sample_num = sub_sample_num # Determine which sub sample to use
-        self.iTrain, self.area_train = self.gen_train_set_idx()
+        self.iTrain, self.area_train = self.gen_train_set_idx(tag)
 
         # MODELS: GMM fit to the data
         self.MODELS = [None, None, None]
@@ -257,7 +257,8 @@ class parent_model:
             area_train = self.areas[2]
         # 3-7: CV1-CV5: Sub-sample F34 into five-fold CV sets.
         if self.sub_sample_num in [3, 4, 5, 6, 7]:
-            iTrain, area_train = self.gen_train_set_idx_cv(tag) & (self.gflux < mag2flux(22))
+            iTrain, area_train = self.gen_train_set_idx_cv(tag)
+            iTrain = iTrain & (self.gflux < mag2flux(22))
         # 8-10: Magnitude changes. For power law use full data. 
         # g in [21.5, 22.5], [22.5, 23.5], [23, 24]. 
         if self.sub_sample_num == 8:
@@ -1888,10 +1889,7 @@ class model3(parent_model):
     and gmag(which is practically asinh mag g)
     """
     def __init__(self, sub_sample_num):
-        parent_model.__init__(self, sub_sample_num)
-
-        # For training
-        self.iTrain, self.area_train = self.gen_train_set_idx(tag="_model3")        
+        parent_model.__init__(self, sub_sample_num, tag="_model3")      
 
         # Re-parametrizing variables
         self.var_x, self.var_y, self.var_z, self.gmag =\
