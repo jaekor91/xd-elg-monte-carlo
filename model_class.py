@@ -2692,26 +2692,33 @@ class model3(parent_model):
 
         if plot_validation:
             print "Corr plot - var_xyz"
+
+            # 1) var_x - var_y - gmag corr plot
+            #     - corr_plots: All selected objects in red and others in black
+            #     - Hist: Plot prediction, selected, and total original. 
+            #     The hieght is set at minimum(max(dNdvar_original), 1.5 * max(dNdvar_selected, dNdvar_predicted))
+
             lims = [self.lim_x, self.lim_y, self.lim_gmag]
             binws = [self.dx, self.dy, self.dgmag]
             var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
             lines = [self.var_x_lines, self.var_y_lines, self.gmag_lines]
-            num_cat = 6
+            num_cat = 2
             num_vars = 3
-            colors = ["black", "red", "blue", "black", "red", "blue"]
-            categories = ["NonELG", "NoZ", "ELG", "NonELG-XD", "NoZ-XD", "ELG-XD"]
+            colors = ["black", "red"]
+            categories = ["Total", "Selected"]
+            pt_sizes = [5, 20]
 
             variables = []
             weights = []
-            hist_types = ["step", "step", "step", "stepfilled", "stepfilled", "stepfilled"]
+            hist_types = ["step", "stepfilled"]
 
-            for ibool in [iNonELG, iNoZ, iELG, iselected_NonELG, iselected_NoZ, iselected_ELG_DESI]:
+            for ibool in [np.ones(var_x.size, dtype=bool), iselected]:
                 variables.append([var_x[ibool], var_y[ibool], gmag[ibool]])
                 weights.append(w[ibool]/area_sample)
 
             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
             ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines,\
-            category_names=categories, pt_sizes=None, colors=colors, ft_size_legend = 15, lw_dot=2, hist_types = hist_types)
+            category_names=categories, pt_sizes=pt_sizes, colors=colors, ft_size_legend = 15, lw_dot=2, hist_types = hist_types)
             plt.savefig("%s-%s-DEEP2-F%d-validation-plot-corr.png" % (model_tag, cv_tag, fnum), dpi=200, bbox_inches="tight")
             plt.close()
 
