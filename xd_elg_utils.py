@@ -109,7 +109,7 @@ def compute_cell_number(bin_indicies, num_bins):
             cell_num += bin_indicies[i]
     
     return cell_num
-    
+
 
 @nb.jit
 def tally_objects_kernel(N_cell, cell_number, cw, FoM, num_bins):
@@ -1999,12 +1999,12 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
         if hist_types is not None:
             hist_type_tmp = hist_types[i]
             if hist_type_tmp == "step":
-                alpha = 1
+                alpha_hist = 1
             else:
-                alpha = 0.5
+                alpha_hist = 0.5
         else:
             hist_type_tmp = "step"
-            alpha = 1
+            alpha_hist = 1
             
         # Plot each axis
         for i in range(num_vars): # row
@@ -2029,9 +2029,9 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         bin_width = binws[var_num1]
                         hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
                         if plot_pow and (var_num1 == pow_var_num):
-                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha, color=color, weights=w_tmp, lw=lw, label = cname)  
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha_hist, color=color, weights=w_tmp, lw=lw, label = cname)  
                         else:
-                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha, color=color, weights=w_tmp, lw=lw, label = cname, normed=hist_normed)                          
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha_hist, color=color, weights=w_tmp, lw=lw, label = cname, normed=hist_normed)                          
                         if plot_MoG1 and (var_num1<ND1):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2):
@@ -2048,9 +2048,9 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                         bin_width = binws[var_num1]
                         hist_bins = np.arange(var_min, var_max+bin_width/2., bin_width)
                         if plot_pow and (var_num1 == pow_var_num):
-                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha, color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal")  
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha_hist, color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal")  
                         else:
-                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha, color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal", normed=hist_normed)  
+                            ax_list[i, j].hist(vars_tmp[var_num1], bins=hist_bins, histtype=hist_type_tmp, alpha=alpha_hist, color=color, weights=w_tmp, lw=lw, label = cname, orientation="horizontal", normed=hist_normed)  
                         if plot_MoG1 and (var_num1<ND1):
                             plot_1D_gauss(ax_list[i, j], lims[var_num1], amps1, means1, covs1, var_num1, vertical=False, MoG_color=color_MoG1)
                         if plot_MoG2 and (var_num1<ND2):
