@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.lib.recfunctions as rec
+from scipy.ndimage.filters import gaussian_filter
 
 from astropy.io import ascii, fits
 from astropy.wcs import WCS
@@ -3075,8 +3076,6 @@ def gen_gauss_kernel_3D(N):
     Create a gaussian kernel of size for use in kernel approximation.
     If ND = 3, sig = 1/3. 
     """
-    from scipy.ndimage.filters import gaussian_filter
-    
     assert N in [3, 5, 7, 9, 11]
     if N == 3:
         sig = 1/3.

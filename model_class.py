@@ -4,6 +4,7 @@ from astropy.wcs import WCS
 from xd_elg_utils import *
 import sys
 import os.path
+from scipy.ndimage.filters import gaussian_filter
 
 import numpy as np
 import matplotlib.pyplot as plt
