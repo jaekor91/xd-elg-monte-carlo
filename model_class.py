@@ -2558,8 +2558,7 @@ class model3(parent_model):
         return Covar
 
 
-    def validate_on_DEEP2(self, fnum, detection=False, use_kernel=False, plot_nz=False,\
-        model_tag="", cv_tag="", plot_scatter=False):
+    def validate_on_DEEP2(self, fnum, plot_nz=False, model_tag="", cv_tag="", plot_scatter=False):
         """
         Model 3
 
@@ -2624,7 +2623,7 @@ class model3(parent_model):
         self.gen_err_conv_sample()
 
         # Create the selection.
-        eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred = self.gen_selection_volume(use_kernel)
+        eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred = self.gen_selection_volume_scipy()
 
         # Used for debugging
         # print self.cell_select.size
@@ -3087,6 +3086,7 @@ class model3(parent_model):
                 plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="blue", s=5)
             plt.xlabel(var_names[idx[0]], fontsize=15)
             plt.ylabel(var_names[idx[1]], fontsize=15)
+            plt.axis("equal")
             plt.xlim(limits[idx[0]])
             plt.ylim(limits[idx[1]])
             title_str = "%s [%.3f, %.3f]" % (var_names[slice_dir], bin_edges[i], bin_edges[i+1])
