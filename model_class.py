@@ -1981,6 +1981,9 @@ class model3(parent_model):
         self.gmag_limits = [21.5, 24.]
         self.num_bins = [135, 65, 250]
 
+        # Sigma widths to be used in kernel approximation.
+        self.sigmas = [2.5, 2.5, 2.5]
+
         # Cell_number in selection
         self.cell_select = None
 
@@ -2795,15 +2798,14 @@ class model3(parent_model):
         MD_hist_N_total += MD_hist_N_ELG_NonDESI
 
         # Applying Gaussian filtering
-        sigma = [2.5, 2.5, 2] 
         sigma_limit = 3
-        gaussian_filter(MD_hist_N_NonELG, sigma, order=0, output=MD_hist_N_NonELG, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_NoZ, sigma, order=0, output=MD_hist_N_NoZ, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_ELG_DESI, sigma, order=0, output=MD_hist_N_ELG_DESI, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_ELG_NonDESI, sigma, order=0, output=MD_hist_N_ELG_NonDESI, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_FoM, sigma, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_good, sigma, order=0, output=MD_hist_N_good, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_total, sigma, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_NonELG, self.sigmas, order=0, output=MD_hist_N_NonELG, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_NoZ, self.sigmas, order=0, output=MD_hist_N_NoZ, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_ELG_DESI, self.sigmas, order=0, output=MD_hist_N_ELG_DESI, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_ELG_NonDESI, self.sigmas, order=0, output=MD_hist_N_ELG_NonDESI, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_FoM, self.sigmas, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_good, self.sigmas, order=0, output=MD_hist_N_good, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_total, self.sigmas, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=sigma_limit)
 
         # ---- Debug: Check that flattening operation behaves in the expected fashion ---- # 
         # Nsample = 50
