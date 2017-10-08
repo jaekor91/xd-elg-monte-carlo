@@ -3087,7 +3087,7 @@ class model3(parent_model):
                 plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="blue", s=5)
             plt.xlabel(var_names[idx[0]], fontsize=15)
             plt.ylabel(var_names[idx[1]], fontsize=15)
-            plt.axis("equal")
+            # plt.axis("equal")
             plt.xlim(limits[idx[0]])
             plt.ylim(limits[idx[1]])
             title_str = "%s [%.3f, %.3f]" % (var_names[slice_dir], bin_edges[i], bin_edges[i+1])
