@@ -1933,6 +1933,11 @@ class model3(parent_model):
         # ----- MC Sample Variables ----- # 
         self.area_MC = self.area_train #
 
+        # FoM value options.
+        # "flat": Assign 1.0 to all objects that meet DESI criteria
+        # "NoOII": Assign 1.0 to all objects with z>0.6.
+        self.FoM_option = "flat"
+
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
         self.fmin_MC = mag2flux(24.1) # Note that around 23.8, the power law starts to break down.
         self.fmax_MC = mag2flux(21.45)
@@ -2471,6 +2476,8 @@ class model3(parent_model):
 
     def gen_FoM(self, cat, Nsample, oii=None, redz=None):
         """
+        Model3 
+
         Give the category number
         0: NonELG
         1: NoZ
@@ -2486,10 +2493,14 @@ class model3(parent_model):
                 "You must provide oii AND redz"
                 assert False
             else:
-                # Flat option
-                ibool = (oii>8) & (redz > 0.6) # For objects that lie within this criteria
-                FoM = np.zeros(Nsample, dtype=float)
-                FoM[ibool] = 1.0
+                if self.FoM_option == "flat":# Flat option
+                    ibool = (oii>8) & (redz > 0.6) # For objects that lie within this criteria
+                    FoM = np.zeros(Nsample, dtype=float)
+                    FoM[ibool] = 1.0
+                elif self.FoM_option = "NoOII" # NoOII means objects without OII values are also included.
+                    ibool = (redz > 0.6) # For objects that lie within this criteria
+                    FoM = np.zeros(Nsample, dtype=float)
+                    FoM[ibool] = 1.0
 
                 # # Linear option
                 # ibool = (oii>8) & (redz < 1.6) & (redz > 0.6) # For objects that lie within this criteria
