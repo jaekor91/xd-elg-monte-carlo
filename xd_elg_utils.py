@@ -89,6 +89,28 @@ def tally_objects(N_cell, cell_number, cw, FoM):
 
     return FoM_tally, Ntotal_tally, Ngood_tally
 
+
+
+def compute_cell_number(bin_indicies, num_bins):
+    """
+    Give number of bins in each direction of a multi-dimensional grid, 
+    return a cell number corresponding to a particular set of bin indices.
+    
+    bin_indicies is a list of numpy arrays [bin_num1, bin_num2, ...]
+    
+    num_bins is a list.
+    """
+    cell_num = np.zeros(bin_indicies[0].size, dtype=int)
+    ND = len(num_bins)
+    for i in range(ND):
+        if i < ND-1:
+            cell_num += bin_indicies[i] * np.multiply.reduce(num_bins[i+1:])
+        else:
+            cell_num += bin_indicies[i]
+    
+    return cell_num
+    
+
 @nb.jit
 def tally_objects_kernel(N_cell, cell_number, cw, FoM, num_bins):
     """
