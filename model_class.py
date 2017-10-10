@@ -265,7 +265,7 @@ class parent_model:
             iTrain = (self.gflux > mag2flux(22.5)) & (self.gflux < mag2flux(21.5))  & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 9:
-            iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(23.5)) & (self.field!=2)
+            iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(22.5)) & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 10:
             iTrain = (self.gflux > mag2flux(24.)) & (self.gflux < mag2flux(23.)) & (self.field!=2)
@@ -2028,7 +2028,7 @@ class model3(parent_model):
         """
         K_best = None
         if self.sub_sample_num == 0: # Full
-            K_best = [7, 2, 4]
+            K_best = [5, 2, 4]
         elif self.sub_sample_num == 1: #F3
             K_best = [5, 2, 6]
         elif self.sub_sample_num == 2: #F4
