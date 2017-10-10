@@ -27,16 +27,6 @@ sub_sample_name = ["Full", "F3", "F4", "CV1", "CV2", "CV3", "CV4", "CV5", "Mag1"
 NK_list = [1]#, 3, 4, 5, 6, 7]
 Niter = 1
 
-
-# Series of operations to apply
-plot_data = False
-make_fits = True
-# *************** Never turn it False! *********************** #
-use_cached = True # Use cached models?
-# *************** Never turn it False! *********************** #
-visualize_fit = False
-validate = True
-plot_boundary = True
 MC_AREA = 1000 # In sq. deg.
 
 # Correspond to 1,000 sq. deg.
@@ -45,108 +35,84 @@ MC_AREA = 1000 # In sq. deg.
 # ELG sample number: 7,925,135
 # 15 seconds
 
-nums_list = [] # Keeps trac of validation information. 1st and 2nd levels -- cv and field.
-for j in range(1):
-    print "/----- %s -----/" % sub_sample_name[j]
 
-    print("# ----- Model3 ----- #")
-    instance_model = model3(j)        
-    if plot_data:
-        print "Plot original data points"
-        instance_model.plot_data("model3", sub_sample_name[j]) # Plot all together
-        print "\n"
+j = 0
+print "/----- %s -----/" % sub_sample_name[j]
 
-    if make_fits:
-        print "Fit MoGs"
-        instance_model.fit_MoG(NK_list, "model3", sub_sample_name[j], cache=True, Niter=Niter)
-        print "\n"
-        print "Fit Pow"
-        instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)
-        print "\n"
-
-    # if visualize_fit:
-    #     print "MC sample draw from the intrinsic distribution"
-    #     instance_model.set_err_lims(25., 24.5, 23.5, 8) # Training data is deep!        
-    #     for K in NK_list:
-    #         K_selected = [K] * 3
-    #         instance_model.gen_sample_intrinsic(K_selected)
-    #         instance_model.gen_err_conv_sample()
-    #         print "\n"
-
-    #         print "Visualize the fits"
-    #         for i in range(3):
-    #             print "Plotting %s with K %d" % (category[i], K_selected[i])
-    #             instance_model.visualize_fit("model3", sub_sample_name[j], cat=i, K=K_selected[i], cum_contour=True, MC=True)  
-    #         print "\n"
-
-    # if validate:
-    #     print "Generate Nsample from intrinsic density proportional to area: %.1f" % MC_AREA
-    #     instance_model.set_area_MC(MC_AREA)
-    #     start = time.time()
-    #     instance_model.gen_sample_intrinsic()
-    #     print "Time for generating samples: %.1f seconds" % (time.time()-start)
-    #     print "Validate on the DEEP2 sample by field"
-    #     nums_list_2nd = []
-    #     for fnum in [2, 3, 4]:
-    #         print "Validating on field %d" % fnum
-    #         # nums = instance_model.validate_on_DEEP2(fnum)
-    #         returned  = instance_model.validate_on_DEEP2(fnum, use_kernel = True, plot_scatter = True, model_tag="model3", cv_tag="Full-typical")
-    #         # np.save("radec-XD-F%d-model3-kernel"%fnum, np.asarray(returned[-2:])) # radec
-    #         nums = returned[:-2] # nums_list
-    #         nums_list_2nd.append(np.asarray(nums))
-    #         print "\n"
-    #     nums_list.append(np.asarray(nums_list_2nd))
-
-    if plot_boundary:
-        print "/---- Plotting boundary ----/"
-        if j ==0:
-            instance_model.set_area_MC(MC_AREA)            
-            instance_model.gen_sample_intrinsic()
-
-            print "Typcial depths"
-            # Convolve error to the intrinsic sample.
-            start = time.time()
-            instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
-            instance_model.gen_err_conv_sample()
-            print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
-
-            # Create the selection.
-            start = time.time()            
-            eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-                N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
-            print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+print("# ----- Model3 ----- #")
+instance_model = model3(j)        
 
 
-            print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
-            print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-                N_ELG_NonDESI_pred
+print "Fit MoGs"
+instance_model.fit_MoG(NK_list, "model3", sub_sample_name[j], cache=True, Niter=Niter)
+print "\n"
+print "Fit Pow"
+instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)
+print "\n"
 
-            for i in [2, 1, 0]:
-                instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical")
-            print "\n"
+
+print "/---- Plotting boundary ----/"
+instance_model.set_area_MC(MC_AREA)            
+instance_model.gen_sample_intrinsic()
+
+print "Typcial depths"
+# Convolve error to the intrinsic sample.
+start = time.time()
+instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
+instance_model.gen_err_conv_sample()
+print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
+
+# Create the selection.
+start = time.time()            
+eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+    N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
+print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+
+
+print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
+print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+    N_ELG_NonDESI_pred
+
+
+for i in [2, 1, 0]:
+    instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical")
+
+print "Remember the selected cells for the first option"
+cell_centers_typical = instance_model.cell_select_centers()
+
+print "\n\n"
 
 
 
-            print "Deep depths"
-            # Convolve error to the intrinsic sample.
-            start = time.time()
-            instance_model.set_err_lims(23.8+1, 23.4+1, 22.4+1, 8) 
-            instance_model.gen_err_conv_sample()
-            print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
-
-            # Create the selection.
-            start = time.time()            
-            eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-                N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
-            print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
 
 
-            print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
-            print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-                N_ELG_NonDESI_pred
+print "Deep depths"
+# Convolve error to the intrinsic sample.
+start = time.time()
+instance_model.set_err_lims(23.8+1, 23.4+1, 22.4+1, 8) 
+instance_model.gen_err_conv_sample()
+print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
 
-            for i in [2, 1, 0]:
-                instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-deep")
+# Create the selection.
+start = time.time()            
+eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+    N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
+print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
 
-# Part of validation scheme 
-# np.save("validation_set_model3", np.asarray(nums_list))
+
+print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
+print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+    N_ELG_NonDESI_pred
+
+for i in [2, 1, 0]:
+    instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-deep")
+
+
+print "\n\n"
+
+
+# print "Plotting them together"
+# for i in range(3):
+#     instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-deep-vs-typical",\
+#         var_x_ext = cell_centers_typical[:, 0], var_y_ext = cell_centers_typical[:, 1], gmag_ext = cell_centers_typical[:, 2],\
+#         use_parameterized_ext=True, plot_ext =True, alpha_ext=0.3)
