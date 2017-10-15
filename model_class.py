@@ -70,8 +70,9 @@ class parent_model:
     def __init__(self, sub_sample_num, tag=""):
         # Basic class variables
         self.areas = np.load("spec-area-DR5-matched.npy")
-        self.mag_max = 24 # We model moderately deeper than 24. But only model down to 21.
-        self.mag_min = 21.
+        self.mag_max = 24 # We model moderately deeper than 24.
+        self.mag_min = 21.5
+        self.mag_min_model = 22.
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
 
@@ -1328,7 +1329,7 @@ class model2(parent_model):
                 ifit = self.iTrain & ibool
                 flux = self.gflux[ifit]
                 weight = self.w[ifit]
-                self.MODELS_pow[i] = dNdf_fit(flux, weight, bw, mag2flux(self.mag_max), mag2flux(self.mag_min), self.area_train, niter = Niter)
+                self.MODELS_pow[i] = dNdf_fit(flux, weight, bw, mag2flux(self.mag_max), mag2flux(self.mag_min_model), self.area_train, niter = Niter)
                 np.save("MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
 
         return 
@@ -2191,7 +2192,7 @@ class model3(parent_model):
                 ifit = self.iTrain & ibool
                 flux = self.gflux[ifit]
                 weight = self.w[ifit]
-                self.MODELS_pow[i] = dNdf_fit(flux, weight, bw, mag2flux(self.mag_max), mag2flux(self.mag_min), self.area_train, niter = Niter)
+                self.MODELS_pow[i] = dNdf_fit(flux, weight, bw, mag2flux(self.mag_max), mag2flux(self.mag_min_model), self.area_train, niter = Niter)
                 np.save("MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
 
         return 
