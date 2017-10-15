@@ -270,7 +270,7 @@ class parent_model:
         if self.sub_sample_num == 10:
             iTrain = (self.gflux > mag2flux(24.)) & (self.gflux < mag2flux(23.)) & (self.field!=2)
             area_train = area_F34                        
-        if self.sub_sample_num == 11:
+        if self.sub_sample_num == 11: # F2
             area_train = self.areas[0]
             iTrain = (self.field ==2) & (self.gflux < mag2flux(22))
 
