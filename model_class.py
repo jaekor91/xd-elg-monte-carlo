@@ -2061,10 +2061,13 @@ class model3(parent_model):
         return K_best
 
 
-    def plot_data(self, model_tag="", cv_tag=""):
+    def plot_data(self, model_tag="", cv_tag="", guide=False):
         """
+        Model 3
         Use self model/plot variables to plot the data given an external figure ax_list.
         Save the resulting image using title_str (does not include extension)
+
+        If guide True, then plot visual guide.
         """
 
         print "Corr plot - var_xyz - all classes together"
@@ -2082,7 +2085,7 @@ class model3(parent_model):
             variables.append([self.var_x[iplot], self.var_y[iplot], self.gmag[iplot]])
             weights.append(self.w[iplot]/self.area_train)
         fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=None, colors=self.colors, ft_size_legend = 15, lw_dot=2)
+        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights, lines=lines, category_names=self.category, pt_sizes=None, colors=self.colors, ft_size_legend = 15, lw_dot=2, guide=guide)
         plt.savefig("%s-%s-data-all.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
         plt.close()        
 
@@ -2106,7 +2109,7 @@ class model3(parent_model):
             weights.append(self.w[iplot]/self.area_train)
 
             fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(35, 35))
-            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
+            ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, guide=guide)
 
             plt.savefig("%s-%s-data-%s.png" % (model_tag, cv_tag, self.category[i]), dpi=200, bbox_inches="tight")
             plt.close()
@@ -2126,7 +2129,7 @@ class model3(parent_model):
         weights = [self.w[iplot]/self.area_train]
 
         fig, ax_list = plt.subplots(num_vars, num_vars, figsize=(50, 50))
-        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2)
+        ax_dict = make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=weights, lines=lines, category_names=[self.category[i]], pt_sizes=None, colors=None, ft_size_legend = 15, lw_dot=2, guide=guide)
 
         plt.savefig("%s-%s-data-ELG-redz-oii.png" % (model_tag, cv_tag), dpi=200, bbox_inches="tight")
         plt.close()
@@ -3081,7 +3084,7 @@ class model3(parent_model):
     def gen_select_boundary_slices(self, slice_dir = 2, model_tag="", cv_tag="", centers=None, plot_ext=False,\
         gflux_ext=None, rflux_ext=None, zflux_ext=None, ibool_ext = None,\
         var_x_ext=None, var_y_ext=None, gmag_ext=None, use_parameterized_ext=False,\
-        pt_size=10, pt_size_ext=10, alpha_ext=0.5):
+        pt_size=10, pt_size_ext=10, alpha_ext=0.5, guide=False):
         """
         Model3
 
@@ -3096,6 +3099,8 @@ class model3(parent_model):
         If centers is not None, then use it instead of generating one.
 
         If use_parameterized_ext, then the user may provide already parameterized version of the external data points.
+
+        If guide True, then plot the guide line.
         """
 
         slice_var_tag = ["mu_gz", "mu_gr", "gmag"]
@@ -3103,6 +3108,9 @@ class model3(parent_model):
 
         if centers is None:
             centers = self.cell_select_centers()
+
+        if guide:
+            x_guide, y_guide = gen_guide_line()
 
         if plot_ext:
             if use_parameterized_ext:
@@ -3140,6 +3148,9 @@ class model3(parent_model):
                 plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="red", s=pt_size_ext, alpha=alpha_ext)
             plt.xlabel(var_names[idx[0]], fontsize=15)
             plt.ylabel(var_names[idx[1]], fontsize=15)
+
+            if guide:
+                plt.plot(x_guide, y_guide, c="orange", lw = 2)
             # plt.axis("equal")
             plt.xlim(limits[idx[0]])
             plt.ylim(limits[idx[1]])
