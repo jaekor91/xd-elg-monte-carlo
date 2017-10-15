@@ -261,9 +261,9 @@ class parent_model:
             iTrain, area_train = self.gen_train_set_idx_cv(tag)
             iTrain = iTrain & (self.gflux < mag2flux(22))
         # 8-10: Magnitude changes. For power law use full data. 
-        # g in [21.5, 22.5], [22.5, 23.5], [23, 24]. 
+        # g in [22, 23], [22.5, 23.5], [23, 24]. 
         if self.sub_sample_num == 8:
-            iTrain = (self.gflux > mag2flux(22.5)) & (self.gflux < mag2flux(21.5))  & (self.field!=2)
+            iTrain = (self.gflux > mag2flux(23)) & (self.gflux < mag2flux(22))  & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 9:
             iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(22.5)) & (self.field!=2)
@@ -2034,29 +2034,29 @@ class model3(parent_model):
         """
         K_best = None
         if self.sub_sample_num == 0: # Full
-            K_best = [5, 2, 4]
+            K_best = [4, 2, 5]
         elif self.sub_sample_num == 1: #F3
             K_best = [5, 2, 6]
         elif self.sub_sample_num == 2: #F4
-            K_best = [4, 2, 4]            
-        elif self.sub_sample_num == 3: #CV1
-            K_best = [5, 3, 5]        
-        elif self.sub_sample_num == 4: #2
-            K_best = [6, 3, 5]            
-        elif self.sub_sample_num == 5: #3
-            K_best = [5, 2, 5]            
-        elif self.sub_sample_num == 6: #4
             K_best = [6, 2, 5]            
+        elif self.sub_sample_num == 3: #CV1
+            K_best = [5, 2, 5]        
+        elif self.sub_sample_num == 4: #2
+            K_best = [6, 2, 5]            
+        elif self.sub_sample_num == 5: #3
+            K_best = [5, 2, 4]            
+        elif self.sub_sample_num == 6: #4
+            K_best = [6, 2, 4]            
         elif self.sub_sample_num == 7: #5
-            K_best = [7, 7, 7]            
+            K_best = [7, 2, 5]            
         elif self.sub_sample_num == 8: #mag1
-            K_best = [5, 2, 3]            
+            K_best = [7, 2, 4]            
         elif self.sub_sample_num == 9: #mag2
-            K_best = [5, 2, 5]            
+            K_best = [6, 2, 4]            
         elif self.sub_sample_num == 10: #mag3
-            K_best = [5, 2, 7]
+            K_best = [4, 2, 7]
         elif self.sub_sample_num == 11: #F2
-            K_best = [5, 2, 7]
+            K_best = [5, 1, 7]
 
         return K_best
 
@@ -2341,6 +2341,8 @@ class model3(parent_model):
 
     def visualize_fit(self, model_tag="", cv_tag="", cat=0, K=1, cum_contour=False, MC=False):
         """
+        Model 3
+
         Make corr plots of a choosen classes with fits overlayed.
         cat. 0: NonELG, 1: NoZ, 2: ELG
 
