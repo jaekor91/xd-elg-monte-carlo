@@ -1897,6 +1897,21 @@ def contour_plot_range(Xrange):
 
     return xmin-2*Delta_X, xmax+2*Delta_X
 
+def gen_guide_line():
+    """
+    Line to guide eye.
+    """
+    # Two points 
+    x1, y1 = 1, 0.45
+    x2, y2 = 2, 1
+    m = (y2-y1)/float(x2-x1) # slope
+    b = (y2-m*x2) # intercept
+
+    x = np.arange(-1.5, 5.5, 0.01)
+    y = m*x+b
+    return x, y
+
+
 def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_names, weights=None,\
                     lines=None, pt_sizes=None, lw=1.5, lw_dot=1, ft_size=30, category_names = None,\
                     colors=None, ft_size_legend=15, hist_normed=False, alphas=None,\
@@ -1904,7 +1919,7 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                     plot_MoG2=False, amps2=None, means2=None, covs2=None, ND2=0, color_MoG2="red",\
                    plot_MoG_general=False, var_num_tuple=None, amps_general=None, means_general=None, covs_general=None, color_general="red",\
                    cum_contour=False, plot_pow=False, pow_model=None, pow_var_num=None,\
-                   hist_types=None):
+                   hist_types=None, guide=False):
     """
     Add correlation plots for each variable pair to a given axis list. 
     Also, make marginalized plots in histogram.
@@ -1942,7 +1957,12 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
     (x1, x3), (x2, x3), (x3-hist-v)
     (x1-hist), (x2-hist)
     - At the end, add auxilary lines
+
+    If guide True, then plot a line that can guide the eye in bright orange solid line.
     """
+    if guide: 
+        x_guide, y_guide = gen_guide_line()
+
     # Disable panels that won't be used
     for i in range(0, num_vars-2):
         for j in range(i+2, num_vars):
@@ -2024,6 +2044,10 @@ def make_corr_plots(ax_list, num_cat, num_vars, variables, lims, binws, var_name
                                 plot_2D_contour_GMM(ax_list[i, j], Xrange, Yrange, amps_general, means_general, covs_general, var_num_tuple.index(var_num1), var_num_tuple.index(var_num2))
                             else:
                                 plot_cov_ellipse(ax_list[i, j], means_general, covs_general, var_num_tuple.index(var_num1), var_num_tuple.index(var_num2), MoG_color=color_general)
+                        # If guide True and i,j = (0,0), then plot a line that can guide eye.
+                        if guide and (i==0) and (j==0):
+                            ax_list[i,j].plot(x_guide, y_guide, c="orange", lw = 2)
+
                     elif plot_type == "hist":
                         var_min, var_max = lims[var_num1]
                         bin_width = binws[var_num1]
