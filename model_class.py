@@ -1890,6 +1890,8 @@ class model3(parent_model):
     """
     parametrization: asinh mag g-r (x), asinh mag g-z (y), asinh mag g-oii (z), redz, 
     and gmag(which is practically asinh mag g)
+
+    Note that all models were trained using g [22, 24] sample.
     """
     def __init__(self, sub_sample_num):
         parent_model.__init__(self, sub_sample_num, tag="_model3")      
@@ -2051,7 +2053,9 @@ class model3(parent_model):
         elif self.sub_sample_num == 9: #mag2
             K_best = [5, 2, 5]            
         elif self.sub_sample_num == 10: #mag3
-            K_best = [5, 2, 7]            
+            K_best = [5, 2, 7]
+        elif self.sub_sample_num == 11: #F2
+            K_best = [5, 2, 7]
 
         return K_best
 
