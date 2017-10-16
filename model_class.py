@@ -1943,7 +1943,7 @@ class model3(parent_model):
         self.FoM_option = "flat"
 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
-        self.fmin_MC = mag2flux(24.1) # Note that around 23.8, the power law starts to break down.
+        self.fmin_MC = mag2flux(24.25) # Note that around 23.8, the power law starts to break down.
         self.fmax_MC = mag2flux(21.45)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
@@ -1989,10 +1989,10 @@ class model3(parent_model):
         self.var_x_limits = [0.25, 2.45]
         self.var_y_limits = [-0.25, 1.05]
         self.gmag_limits = [21.5, 24.]
-        self.num_bins = [110, 65, 250]
+        self.num_bins = [220, 130, 250]
 
         # Sigma widths to be used in kernel approximation.
-        self.sigmas = [2.5, 2.5, 2.5]
+        self.sigmas = [5., 5., 2.5]
 
         # Cell_number in selection
         self.cell_select = None
