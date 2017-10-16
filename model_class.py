@@ -2056,7 +2056,7 @@ class model3(parent_model):
         elif self.sub_sample_num == 10: #mag3
             K_best = [4, 2, 7]
         elif self.sub_sample_num == 11: #F2
-            K_best = [5, 1, 7]
+            K_best = [5, 1, 3]
 
         return K_best
 
