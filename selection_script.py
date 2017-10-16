@@ -54,12 +54,26 @@ def apply_selection(fname, option=1):
     # Extract necessary columns.
     bid, objtype, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5(fname)
 
+    # Compute parameterization
+    mu_g = flux2asinh_mag(gflux, band = "g")
+    mu_r = flux2asinh_mag(rflux, band = "r")
+    mu_z = flux2asinh_mag(zflux, band = "z")
+
+    var_x = mu_g - mu_z
+    var_y = mu_g - mu_r    
+
     # Place holder for the ansewr
     Nobjs = ra.size
     iselect = np.zeros(Nobjs, dtype=bool)
 
+
+
     # Quality and flux cuts
-    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (gflux > mag2flux(24))
+    ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0)\
+    & (givar>0) & (rivar>0) & (zivar>0)\
+    & (gflux > mag2flux(24)) & (gflux < mag2flux(21))\
+    & np.logical_or( ((0.55*(var_x)+0.) > (var_y)) & (var_y < 1.3), var_y <0.3) # Reject most of low redshift conntaminants by line cuts
+
 
     # Focusing on the subset that passes the above cut
     bid, objtype, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5(fname, ibool=ibool)
@@ -70,6 +84,7 @@ def apply_selection(fname, option=1):
     gmag_limits = [21.5, 24.]
     num_bins = [220, 130, 250]
 
+    # Compute parametrization again
     mu_g = flux2asinh_mag(gflux, band = "g")
     mu_r = flux2asinh_mag(rflux, band = "r")
     mu_z = flux2asinh_mag(zflux, band = "z")
@@ -89,6 +104,7 @@ def apply_selection(fname, option=1):
 
     # Placeholder for selection vector
     iselect_tmp = check_in_arr2(cell_number, cell_select)
+#     iselect_tmp = np.in1d(cell_number, cell_select)
 
     # The last step is necessary in order for iselect to have the same order as the input sample variables.
     idx_undo_sort = idx_sort.argsort()        
