@@ -2664,7 +2664,8 @@ class model3(parent_model):
 
 
         # Boolean vectors
-        iselected_ELG_DESI = iselected & (oii>8) & (redz>0.6) & (redz<1.6) & iELG
+        iELG_DESI = (oii>8) & (redz>0.6) & (redz<1.6) & iELG
+        iselected_ELG_DESI = iselected & iELG_DESI
         N_ELG_DESI = np.sum(iselected_ELG_DESI)/area_sample
         N_ELG_DESI_weighted = np.sum(w[iselected_ELG_DESI])/area_sample
 
