@@ -2664,12 +2664,11 @@ class model3(parent_model):
 
 
         # Boolean vectors
-        iELG_DESI = (oii>8) & (redz>0.6) & (redz<1.6) & iELG
-        iselected_ELG_DESI = iselected & iELG_DESI
+        iselected_ELG_DESI = iselected & (oii>8) & (redz>0.6) & (redz<1.6) & iELG
         N_ELG_DESI = np.sum(iselected_ELG_DESI)/area_sample
         N_ELG_DESI_weighted = np.sum(w[iselected_ELG_DESI])/area_sample
 
-        iselected_ELG_NonDESI = iselected & ~((oii>8) & (redz>0.6) & (redz<1.6)) & iELG
+        iselected_ELG_NonDESI = iselected & ((oii<8) & (redz>0.6) & (redz<1.6)) & iELG
         N_ELG_NonDESI = np.sum(iselected_ELG_NonDESI)/area_sample
         N_ELG_NonDESI_weighted = np.sum(w[iselected_ELG_NonDESI])/area_sample
 
@@ -3038,6 +3037,7 @@ class model3(parent_model):
 
     def apply_selection(self, gflux, rflux, zflux):
         """
+        Model 3
         Given gflux, rflux, zflux of samples, return a boolean vector that gives the selection.
         """
         mu_g = flux2asinh_mag(gflux, band = "g")
