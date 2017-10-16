@@ -2515,12 +2515,8 @@ class model3(parent_model):
                 elif self.FoM_option == "Linear_redz": # FoM linearly scale with redshift
                     ibool = (oii>8) & (redz > 0.6) & (redz <1.6) # For objects that lie within this criteria
                     FoM = np.zeros(Nsample, dtype=float)
-                    FoM[ibool] = 1 + (redz-0.6) * 0.5
+                    FoM[ibool] = 1 + (redz-0.6) * 0.5 # This means redz = 1.6 has FoM of 2.
 
-                # # Linear option
-                # ibool = (oii>8) & (redz < 1.6) & (redz > 0.6) # For objects that lie within this criteria
-                # FoM = np.zeros(Nsample, dtype=float)
-                # FoM[ibool] = 1.0*(redz[ibool]-0.6) # This means redz = 1.6 has FoM of 2.
                 return FoM
 
 
