@@ -113,6 +113,3 @@ for i in range(3):
     instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical-flat-vs-OII",\
     	var_x_ext = cell_centers_flat_option[:, 0], var_y_ext = cell_centers_flat_option[:, 1], gmag_ext = cell_centers_flat_option[:, 2],\
     	use_parameterized_ext=True, plot_ext =True, alpha_ext=0.3)
-
-# Part of validation scheme 
-# np.save("validation_set_model3", np.asarray(nums_list))

@@ -74,8 +74,8 @@ print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_p
     N_ELG_NonDESI_pred
 
 
-for i in [2, 1, 0]:
-    instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical")
+# for i in [2, 1, 0]:
+#     instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical")
 
 print "Remember the selected cells for the first option"
 cell_centers_typical = instance_model.cell_select_centers()
@@ -111,8 +111,8 @@ for i in [2, 1, 0]:
 print "\n\n"
 
 
-# print "Plotting them together"
-# for i in range(3):
-#     instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-deep-vs-typical",\
-#         var_x_ext = cell_centers_typical[:, 0], var_y_ext = cell_centers_typical[:, 1], gmag_ext = cell_centers_typical[:, 2],\
-#         use_parameterized_ext=True, plot_ext =True, alpha_ext=0.3)
+print "Plotting them together"
+for i in range(3):
+    instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-deep-vs-typical",\
+        var_x_ext = cell_centers_typical[:, 0], var_y_ext = cell_centers_typical[:, 1], gmag_ext = cell_centers_typical[:, 2],\
+        use_parameterized_ext=True, plot_ext =True, alpha_ext=0.3)
