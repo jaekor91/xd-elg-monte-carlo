@@ -2833,9 +2833,10 @@ class model3(parent_model):
         # ELG (DESI and NonDESI)
         i=2
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
-        w_DESI = self.FoM_obs[i]>0 # Only objects with positive FoM are DESI ELGs
+        w_DESI = (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) (self.oii_obs[i]>8) # Only objects in the correct redshift and OII ranges.
+        w_NonDESI = (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) (self.oii_obs[i]<8) # Only objects in the correct redshift and OII ranges.
         MD_hist_N_ELG_DESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_DESI)
-        MD_hist_N_ELG_NonDESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=~w_DESI)
+        MD_hist_N_ELG_NonDESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_NonDESI)
         FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
         MD_hist_N_FoM += FoM_tmp
         MD_hist_N_good += MD_hist_N_ELG_DESI
