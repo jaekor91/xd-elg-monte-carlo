@@ -3157,7 +3157,7 @@ class model3(parent_model):
             plt.xlabel(var_names[idx[0]], fontsize=15)
             plt.ylabel(var_names[idx[1]], fontsize=15)
 
-            if guide:
+            if guide and (slice_dir==2):
                 plt.plot(x_guide, y_guide, c="orange", lw = 2)
             # plt.axis("equal")
             plt.xlim(limits[idx[0]])

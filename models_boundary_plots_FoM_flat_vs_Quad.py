@@ -46,35 +46,35 @@ j = 0
 print "/----- %s -----/" % sub_sample_name[j]
 
 instance_model = model3(j)        
+instance_model.cell_select = np.load("cell_select_002.npy") # Pre_computed.
+# print "Fit MoGs"
+# instance_model.fit_MoG(NK_list, "model3", sub_sample_name[j], cache=True, Niter=Niter)
+# print "\n"
+# print "Fit Pow"
+# instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)
+# print "\n"
 
-print "Fit MoGs"
-instance_model.fit_MoG(NK_list, "model3", sub_sample_name[j], cache=True, Niter=Niter)
-print "\n"
-print "Fit Pow"
-instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)
-print "\n"
 
+# print "Generate intrinsic sample using default (flat) FoM option."
+# instance_model.set_area_MC(MC_AREA)             
+# instance_model.gen_sample_intrinsic()
 
-print "Generate intrinsic sample using default (flat) FoM option."
-instance_model.set_area_MC(MC_AREA)             
-instance_model.gen_sample_intrinsic()
+# print "Typcial depths"
+# # Convolve error to the intrinsic sample.
+# start = time.time()
+# instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
+# instance_model.gen_err_conv_sample()
+# print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
 
-print "Typcial depths"
-# Convolve error to the intrinsic sample.
-start = time.time()
-instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
-instance_model.gen_err_conv_sample()
-print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
+# # Create the selection.
+# start = time.time()            
+# eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+#     N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
+# print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
 
-# Create the selection.
-start = time.time()            
-eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-    N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
-print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
-
-print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
-print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-    N_ELG_NonDESI_pred
+# print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
+# print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+#     N_ELG_NonDESI_pred
 
 print "Remember the selected cells for the first option"
 cell_centers_flat_option = instance_model.cell_select_centers()
@@ -86,30 +86,31 @@ print "\n\n"
 
 print "Generate intrinsic sample using Quadratic_redz FoM option."
 instance_model.set_FoM_option("Quadratic_redz")       
-instance_model.gen_sample_intrinsic()
+instance_model.cell_select = np.load("cell_select_005.npy")
+# instance_model.gen_sample_intrinsic()
 
-print "Typcial depths"
-# Convolve error to the intrinsic sample.
-start = time.time()
-instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
-instance_model.gen_err_conv_sample()
-print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
+# print "Typcial depths"
+# # Convolve error to the intrinsic sample.
+# start = time.time()
+# instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
+# instance_model.gen_err_conv_sample()
+# print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
 
-# Create the selection.
-start = time.time()            
-eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-    N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
-print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+# # Create the selection.
+# start = time.time()            
+# eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+#     N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
+# print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
 
-print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
-print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-    N_ELG_NonDESI_pred
+# print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
+# print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+#     N_ELG_NonDESI_pred
 
-print "\n\n"
+# print "\n\n"
 
 
 print "/---- Plotting boundary ----/"
 for i in range(3):
     instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical-flat-vs-Quadratic",\
     	var_x_ext = cell_centers_flat_option[:, 0], var_y_ext = cell_centers_flat_option[:, 1], gmag_ext = cell_centers_flat_option[:, 2],\
-    	use_parameterized_ext=True, plot_ext =True, alpha_ext=0.3)
+    	use_parameterized_ext=True, plot_ext =True, alpha_ext=0.3, guide=True)
