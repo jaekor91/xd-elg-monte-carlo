@@ -72,3 +72,29 @@ tbhdu = fits.BinTableHDU.from_columns(cols)
 tbhdu.writeto("DR"+dr_v+"-Tractor-D2f4.fits", clobber=True)
 print("Completed.")
 
+
+##############################################################################	
+print("5. Check that the files were correctly saved by comparing the number of objects.")
+
+# Field 2
+nobjs_before = tracf2.size
+tracf2 = load_fits_table("DR5-Tractor-D2f2.fits")
+nobjs_after = tracf2.size
+print "Field: Before vs. After"
+print "F2: %d / %d" % (nobjs_before, nobjs_after)
+
+# Field 3
+nobjs_before = tracf3.size
+tracf3 = load_fits_table("DR5-Tractor-D2f3.fits")
+nobjs_after = tracf3.size
+print "Field: Before vs. After"
+print "F3: %d / %d" % (nobjs_before, nobjs_after)
+
+# Field 4
+nobjs_before = tracf4.size
+tracf4 = load_fits_table("DR5-Tractor-D2f4.fits")
+nobjs_after = tracf4.size
+print "Field: Before vs. After"
+print "F4: %d / %d" % (nobjs_before, nobjs_after)
+
+
