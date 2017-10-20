@@ -12,6 +12,7 @@ deg2arcsec=3600
 
 # Data directory (set by the user)
 data_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DEEP2/pcats/"
+data_directory_cleaned = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DEEP2/pcat_cleaned/"
 zcat_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DEEP2/redz-oii-catalog/"
 color_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DEEP2/"
 windowf_directory= "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-repository/DEEP2/windowf/"
@@ -58,7 +59,10 @@ ibool1[idx41in42] = False
 ibool3 = np.ones(pcat43.shape[0], dtype=bool)
 ibool3[idx43in42] = False
 
-pcat4 = np.hstack((pcat41[ibool1], pcat42, pcat43[ibool3]))
+pcat4 = np.hstack((np.copy(pcat41[ibool1]), np.copy(pcat42), np.copy(pcat43[ibool3])))
+
+# Or use cleaned file provided by Newman
+# pcat4 = fits.open(data_directory_cleaned+"deep2-f4-photo-newman.fits")[1].data
 
 print("Completed.\n")
 
@@ -89,6 +93,7 @@ pcat3_trimmed = pcat3_good[idx]
 
 # Field 4
 idx = np.logical_or(window_mask(pcat4_good["RA_DEEP"], pcat4_good["DEC_DEEP"], windowf_directory+"windowf.41.fits"), window_mask(pcat4_good["RA_DEEP"], pcat4_good["DEC_DEEP"], windowf_directory+"windowf.42.fits"))
+# idx = np.logical_or(window_mask(pcat4_good["RA"], pcat4_good["DEC"], windowf_directory+"windowf.41.fits"), window_mask(pcat4_good["RA"], pcat4_good["DEC"], windowf_directory+"windowf.42.fits"))
 pcat4_trimmed = np.copy(pcat4_good[idx])
 
 print("Completed.\n")
@@ -97,17 +102,17 @@ print("Completed.\n")
 ##############################################################################
 print("4. Save the trimmed DEEP2 photometric catalogs as deep2-f**-photo-trimmed.fits.")
 # Field 2
-cols = fits.ColDefs(pcat2_trimmed)
+cols = fits.ColDefs(np.copy(pcat2_trimmed))
 tbhdu = fits.BinTableHDU.from_columns(cols)
 tbhdu.writeto('deep2-f2-photo-trimmed.fits', clobber=True)
 
 # Field 3
-cols = fits.ColDefs(pcat3_trimmed)
+cols = fits.ColDefs(np.copy(pcat3_trimmed))
 tbhdu = fits.BinTableHDU.from_columns(cols)
 tbhdu.writeto('deep2-f3-photo-trimmed.fits', clobber=True)
 
 # Field 4
-cols = fits.ColDefs(pcat4_trimmed)
+cols = fits.ColDefs(np.copy(pcat4_trimmed))
 tbhdu = fits.BinTableHDU.from_columns(cols)
 tbhdu.writeto('deep2-f4-photo-trimmed.fits', clobber=True)
 
@@ -296,6 +301,27 @@ cols = fits.ColDefs(pcat4)
 tbhdu = fits.BinTableHDU.from_columns(cols)
 tbhdu.writeto('deep2-f4-photo-redz-oii.fits', clobber=True)
 print("Completed.\n")
+
+# Field 2
+nobjs_before = pcat2.size
+pcat2 = load_fits_table("deep2-f2-photo-redz-oii.fits")
+nobjs_after = pcat2.size
+print "Field: Before vs. After"
+print "F2: %d / %d" % (nobjs_before, nobjs_after)
+
+# Field 3
+nobjs_before = pcat3.size
+pcat3 = load_fits_table("deep2-f3-photo-redz-oii.fits")
+nobjs_after = pcat3.size
+print "Field: Before vs. After"
+print "F3: %d / %d" % (nobjs_before, nobjs_after)
+
+# Field 4
+nobjs_before = pcat4.size
+pcat4 = load_fits_table("deep2-f4-photo-redz-oii.fits")
+nobjs_after = pcat4.size
+print "Field: Before vs. After"
+print "F4: %d / %d" % (nobjs_before, nobjs_after)
     
 
 ##############################################################################
