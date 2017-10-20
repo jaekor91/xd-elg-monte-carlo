@@ -114,4 +114,11 @@ for i, fnum in enumerate([2, 3, 4]):
     save_fits(trac_new, "DR5-matched-to-DEEP2-f%d-glim24p25.fits" % fnum)
     print("Completed.\n")
 
+    print("Comparison of number of objects before and after save.")
+    nobjs = trac_new.size
+    trac_new = load_fits_table("DR5-matched-to-DEEP2-f%d-glim24p25.fits" % fnum)
+    nobjs_after = trac_new.size
+
+    print "F%d: %d / %d" % (fnum, nobjs, nobjs_after)
+
     print("\n\n\n")
