@@ -1,0 +1,32 @@
+Two selections for the first survey wide systematics test were generated based on 
+
+- 002: Typical depths model with flat FoM.
+# instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
+# FoM[ibool] = 1 + 10 * (redz[ibool]-0.6) ** 2 # This means redz = 1.6 has FoM of 11.
+
+- 005: Typical depths model with Qudratic redshift dependent FoM. 
+# instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
+# FoM[ibool] = 1 + 10 * (redz[ibool]-0.6) ** 2 # This means redz = 1.6 has FoM of 11.
+
+
+
+
+
+Other FoM classification:
+
+if self.FoM_option == "flat":# Flat option
+    ibool = (oii>8) & (redz > 0.6) # For objects that lie within this criteria
+    FoM = np.zeros(Nsample, dtype=float)
+    FoM[ibool] = 1.0
+elif self.FoM_option == "NoOII": # NoOII means objects without OII values are also included.
+    ibool = (redz > 0.6) # For objects that lie within this criteria
+    FoM = np.zeros(Nsample, dtype=float)
+    FoM[ibool] = 1.0
+elif self.FoM_option == "Linear_redz": # FoM linearly scale with redshift
+    ibool = (oii>8) & (redz > 0.6) & (redz <1.6) # For objects that lie within this criteria
+    FoM = np.zeros(Nsample, dtype=float)
+    FoM[ibool] = 1 + (redz[ibool]-0.6) * 5. # This means redz = 1.6 has FoM of 2.
+elif self.FoM_option == "Quadratic_redz": # FoM linearly scale with redshift
+    ibool = (oii>8) & (redz > 0.6) & (redz <1.6) # For objects that lie within this criteria
+    FoM = np.zeros(Nsample, dtype=float)
+    FoM[ibool] = 1 + 10 * (redz[ibool]-0.6) ** 2 # This means redz = 1.6 has FoM of 2.                    
