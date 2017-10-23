@@ -2848,6 +2848,9 @@ def apply_tycho(objgal, tychofn,galtype='LRG'):
     return objgal
 
 def apply_tycho_radec(ra, dec, tychofn,galtype='LRG'):
+    """
+    Return tycho mask given ra, dec of objects.
+    """
     # reading tycho star catalogs
     tychostar = tycho(tychofn)
     #
