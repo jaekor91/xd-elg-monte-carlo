@@ -130,7 +130,6 @@ class parent_model:
         self.MODELS = [None, None, None]
 
 
-
     def plot_dNdm_all(self):
         """
         Plot dNdm for all four classes (ALL ELG, DESI ELG, NoZ, NonELG) in 3 by 4 plot.
@@ -3172,4 +3171,11 @@ class model3(parent_model):
     def set_FoM_option(self, FoM_option):
         self.FoM_option = FoM_option
         return None
-        
+    
+    def set_f_NoZ(self, fNoZ):
+        self.f_NoZ = fNoZ
+        return None
+
+    def set_num_desired(self, Ntot):
+        self.num_desired = Ntot
+        return None
