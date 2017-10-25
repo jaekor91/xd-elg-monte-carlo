@@ -12,8 +12,7 @@ tycho_directory = "/Users/jaehyeon/Documents/Research/ELG_target_selection/data-
 
 print "Load ccdtosky output file."
 # Load in hpix file
-data = np.load("../../DESI-angular-clustering/ccdtosky/outputs/DR5/decals_Nside11/output_arr_chunk0thru50331648.npy")
-# data = np.load("../../DESI-angular-clustering/ccdtosky/outputs/DR5/decals_Nside9/output_arr_chunk0thru3145728.npy")
+data = np.load("/Users/jaehyeon/Documents/Research/DESI-angular-clustering/ccdtosky/outputs/DR5/decals_Nside11/output_arr_chunk0thru50331648.npy")
 ra, dec = data["hpix_ra"], data["hpix_dec"]
 Ng, Nr, Nz = data["g_Nexp_sum"], data["r_Nexp_sum"], data["z_Nexp_sum"]
 N_pix = ra.size# 
