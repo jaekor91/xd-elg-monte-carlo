@@ -24,7 +24,7 @@ center_ra = [11.8, 39.3, 120.2]
 center_dec = [1.0, 0.2, 27.5]
 
 # Using survye-bricks file to get all bricks near the center bricks specified above
-data = fits.open("../../../data-repository/DR5/survey-bricks.fits")[1].data
+data = fits.open("../../../data-repository/DR5/survey-bricks-dr5.fits")[1].data
 ra_bricks = data["RA"]
 dec_bricks = data["DEC"]
 names_bricks = data["BRICKNAME"]
