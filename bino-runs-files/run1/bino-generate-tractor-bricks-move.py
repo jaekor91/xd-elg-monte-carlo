@@ -6,6 +6,8 @@ import numpy as np
 from os import listdir
 from os.path import isfile, join
 import sys
+from astropy.io import fits
+
 
 large_random_constant = -999119283571
 deg2arcsec=3600
@@ -17,14 +19,30 @@ to_directory = "/global/homes/j/jaehyeon/"
 
 ##############################################################################
 # run 1
-# bricks = ['0178p010', '0118p010', '0093p002', '0101p007', '0143p010', '0116p007', '0093p007', '0076p002', '0123p010', '0438p007', '0386p002', '0431p012', '0428p002', '0393p002', '0426p002', '0381p002', '0423p005', '0431p007', '1342p262', '1327p257', '1202p275', '1182p285', '1269p270', '1313p285', '1157p270', '1151p275', '1149p265']
+# bricks = ["0118p010", "0393p002", "1202p275"]
+center_ra = [11.8, 39.3, 120.2]
+center_dec = [1.0, 0.2, 27.5]
 
-# run test
-bname_selected = np.load("bname_selected.npy")
-bricks = [item for sublist in bname_selected for item in sublist]
+# Using survye-bricks file to get all bricks near the center bricks specified above
+data = fits.open("../../../data-repository/DR5/survey-bricks.fits")[1].data
+ra_bricks = data["RA"]
+dec_bricks = data["DEC"]
+names_bricks = data["BRICKNAME"]
+
+tol = 0.5
+bricks = []
+for i in range(3):
+    ra_c = center_ra[i]
+    dec_c = center_dec[i]
+    ibool = (ra_bricks < ra_c+tol) & (ra_bricks > ra_c - tol) & (dec_bricks > dec_c -tol) & (dec_bricks < dec_c+tol)
+    bricks.append(list(names_bricks[ibool]))
+    
+bricks = [item for sublist in bricks for item in sublist]
+# print bricks
 
 postfix = ".fits"
 prefix = "cp "
+
 
 f = open("tractor-move-binospec-test.sh","w")
 for brick in bricks:
