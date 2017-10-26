@@ -104,15 +104,15 @@ print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_
 print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
     N_ELG_NonDESI_pred
 
-for i in [2, 1, 0]:
-    instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-deep")
+# for i in [2, 1, 0]:
+#     instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-deep")
 
 
 print "\n\n"
 
 
 print "Plotting them together"
-for i in [2]:
+for i in [2, 1, 0]:
     instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-deep-vs-typical",\
         var_x_ext = cell_centers_typical[:, 0], var_y_ext = cell_centers_typical[:, 1], gmag_ext = cell_centers_typical[:, 2],\
         use_parameterized_ext=True, plot_ext =True, alpha_ext=0.3, guide=True)
