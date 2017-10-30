@@ -47,16 +47,22 @@ MC_AREA = 1000  # In sq. deg.
 # 15 seconds
 
 # Goal: Check the effect of model specification based on predicted distribution. 
-# Strategy:
-# - Set the fiducial depths at g=23.8, r=23.4, z=22.4
-# - For each band, change the selection by pm [0.05, 0.1, 0.15, 0.2, 0.25]. 
-# - For each selection, compute
-#     - Efficiency and other quantities IF the selection was adapated. 
-#     - Efficiency and other quantities IF the selection was NOT adpated.
-# - Apply to Field 2, 3 and 4 data. 
+# Two scenarios:
+# - 1: Data is generated with different depths but the fixed selection is applied. 
+#       Compare to adapted selection performance.
+# - 2: Data is fixed to the fiducial but different selection is applied.
+
+# Results: 
+# - 1: Show how the efficiency varies as data distribution changes (fixed vs. adapted selection)
+# - 2: " " " as the selection is varied (and data is fixed)
 
 
-nums_list = [] # Keeps trac of validation information. 1st and 2nd levels -- cv and field.
+
+
+
+
+
+
 j=0 # Only use the full data model.
 
 print("# ----- Model3 ----- #")
@@ -66,25 +72,68 @@ print "Load fitted model parameters"
 print "Fit MoGs"
 instance_model.fit_MoG(NK_list, "model3", sub_sample_name[j], cache=True, Niter=Niter)
 print "Fit Pow"
-instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)            
+instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)
 
-# if validate:
-#     print "Generate Nsample from intrinsic density proportional to area: %.1f" % MC_AREA
-#     instance_model.set_area_MC(MC_AREA)
-#     start = time.time()
+print "\n\n"
+
+
+
+print("# ----- Scenario 1 ----- #")
+print("Data is generated with different depths but the fixed selection is applied. Compare to the adapated selection case.")
+# Strategy:
+# - Use a model3 instance to generate the fiducial depth data and selection at g=23.8, r=23.4, z=22.4.
+# - Save the cell number of the fiducial selection.
+# - Use the same model3 instance to:
+#     - For each band, generate selection by changing the depth by pm dm
+#     - Record the efficiency and other quantities IF the selection was adapated to the newly generated data. 
+#     - Apply the fiducial selection, and record efficiency and other quantities.
+#     - Plot boundary different between typical vs. adapted for chosen slices for dm = +- 0.25 cases.
+
+bands = ["g", "r", "z"]
+bands_fiducial = [23.8, 23.4, 22.4]
+
+print("Generating the fiducial selection boundary.")
+start = time.time()
+instance_model.set_area_MC(MC_AREA)            
+instance_model.gen_sample_intrinsic()
+instance_model.set_err_lims(23.8, 23.4, 22.4, 8)
+instance_model.gen_err_conv_sample()
+eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+    N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
+print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+
+
+
+# # dm_list = np.arange(-0.5, 0.54, 0.05)
+# dm_list = np.arange(-0.05, 0.054, 0.05)
+# for i, b in enumerate(bands):
+#     for j, dm in enumerate(dm_list):
+#         print "Band %s: dm = %.2f" % (b, dm)
+
+#     instance_model.set_area_MC(MC_AREA)            
 #     instance_model.gen_sample_intrinsic()
-#     print "Time for generating samples: %.1f seconds" % (time.time()-start)
-#     print "Validate on the DEEP2 sample by field"
-#     nums_list_2nd = []
-#     for fnum in [2, 3, 4]:
-#         print "Validating on field %d" % fnum
-#         # nums = instance_model.validate_on_DEEP2(fnum)
-#         returned  = instance_model.validate_on_DEEP2(fnum, model_tag="model3", cv_tag=sub_sample_name[j], plot_validation=False)
-#         # np.save("radec-XD-F%d-model3-kernel"%fnum, np.asarray(returned[-2:])) # radec
-#         nums = returned[:-2] # nums_list
-#         nums_list_2nd.append(np.asarray(nums))
-#         print "\n"
-#     nums_list.append(np.asarray(nums_list_2nd))
+
+#     print "Typcial depths"
+#     # Convolve error to the intrinsic sample.
+#     start = time.time()
+#     instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
+#     instance_model.gen_err_conv_sample()
+#     print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
+
+#     # Create the selection.
+#     start = time.time()            
+#     eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+#         N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
+#     print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+
+
+#     print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
+#     print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+#         N_ELG_NonDESI_pred
+
+#     for i in [2, 1, 0]:
+#             instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
+#     print "\n"
 
 
 # print "/---- Plotting boundary ----/"
