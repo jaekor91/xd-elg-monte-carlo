@@ -81,7 +81,7 @@ print "\n\n"
 print("# ----- Scenario 1 ----- #")
 print("Data is generated with different depths but the fixed selection is applied. Compare to the adapated selection case.")
 # Strategy:
-# - Use a model3 instance to generate the fiducial depth data and selection at g=23.8, r=23.4, z=22.4.
+# - Use a model3 instance to generate the fiducial depth data and selection at g=23.8, r=23.4, z=22.4, OII=8.
 # - Save the cell number of the fiducial selection.
 # - Use the same model3 instance to:
 #     - For each band, generate selection by changing the depth by pm dm
@@ -89,80 +89,73 @@ print("Data is generated with different depths but the fixed selection is applie
 #     - Apply the fiducial selection, and record efficiency and other quantities.
 #     - Plot boundary different between typical vs. adapted for chosen slices for dm = +- 0.25 cases.
 
-bands = ["g", "r", "z"]
-bands_fiducial = [23.8, 23.4, 22.4]
+# Note:
+# - There is no need to generate intrinsic sample each time, only new error convolution is necessary.
+
+bands = ["g", "r", "z", "OII"]
+bands_fiducial = [23.8, 23.4, 22.4, 8]
 
 print("Generating the fiducial selection boundary.")
 start = time.time()
-instance_model.set_area_MC(MC_AREA)            
+instance_model.set_area_MC(1000)            
 instance_model.gen_sample_intrinsic()
 instance_model.set_err_lims(23.8, 23.4, 22.4, 8)
 instance_model.gen_err_conv_sample()
-eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-    N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
-print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI,\
+    N_ELG_NonDESI = instance_model.gen_selection_volume_scipy()
+print "Time for generating the fiducial selection volume: %.2f seconds" % (time.time() - start)
 
+print "Eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI"
+print "%.3f, %d, %d, %d, %d, %d, %d" % (eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI)
 
+print "Save the fiducial selection."
+cell_select_fiducial = instance_model.cell_select
 
-# # dm_list = np.arange(-0.5, 0.54, 0.05)
-# dm_list = np.arange(-0.05, 0.054, 0.05)
-# for i, b in enumerate(bands):
-#     for j, dm in enumerate(dm_list):
-#         print "Band %s: dm = %.2f" % (b, dm)
+# Place holder for the result
+error_misspec1_list = []
 
-#     instance_model.set_area_MC(MC_AREA)            
-#     instance_model.gen_sample_intrinsic()
+# dm_list = np.arange(-0.25 , 0., 0.5) # Debug
+for i, b in enumerate(bands):
+    if i < 3: 
+        dm_list = np.arange(-0.5, 0.51, 0.05)
+    else:
+        dm_list = np.arange(-2, 0.51, 0.25)
 
-#     print "Typcial depths"
-#     # Convolve error to the intrinsic sample.
-#     start = time.time()
-#     instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
-#     instance_model.gen_err_conv_sample()
-#     print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
+    for j, dm in enumerate(dm_list):
+        print "Band %s: dm = %.2f" % (b, dm)
+        bands_fiducial_tmp = np.copy(bands_fiducial)
+        bands_fiducial_tmp[i] = bands_fiducial_tmp[i] + dm
+        gtmp, rtmp, ztmp, OIItmp = bands_fiducial_tmp
+        print "New depths g/r/z/OII: %.2f / %.2f / %.2f / %.2f" % (gtmp, rtmp, ztmp, OIItmp)
 
-#     # Create the selection.
-#     start = time.time()            
-#     eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-#         N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
-#     print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+        print "Generate the selection"
+        start = time.time()
+        instance_model.set_err_lims(gtmp, rtmp, ztmp, OIItmp) 
+        instance_model.gen_err_conv_sample()
 
+        eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
+        eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext,\
+        = instance_model.gen_selection_volume_scipy(selection_ext = cell_select_fiducial)
+        print "Time for generating the new selection volume: %.2f seconds" % (time.time() - start)
 
-#     print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
-#     print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-#         N_ELG_NonDESI_pred
+        print "Adapted (fixed)"        
+        print "Eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI"
+        print "%.3f (%.3f), %d (%d), %d (%d), %d (%d), %d (%d), %d (%d), %d (%d)" \
+        % (eff, eff_ext, Ntotal, Ntotal_ext, Ngood, Ngood_ext, N_NonELG, N_NonELG_ext, N_NoZ, N_NoZ_ext,\
+         N_ELG_DESI,  N_ELG_DESI_ext, N_ELG_NonDESI, N_ELG_NonDESI_ext)
 
-#     for i in [2, 1, 0]:
-#             instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
-#     print "\n"
+        # for i in [2, 1, 0]:
+            # instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
 
+        # Save the result into an array
+        # 0-3: Error model
+        # 4-9: Adpated result
+        # 10-15: Fixed result
+        error_misspec1_list.append([gtmp, rtmp, ztmp, OIItmp, \
+            eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
+            eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext])
 
-# print "/---- Plotting boundary ----/"
-# if j ==0:
-#     instance_model.set_area_MC(MC_AREA)            
-#     instance_model.gen_sample_intrinsic()
+        print "\n"
 
-#     print "Typcial depths"
-#     # Convolve error to the intrinsic sample.
-#     start = time.time()
-#     instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
-#     instance_model.gen_err_conv_sample()
-#     print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
+np.save("model3_error_misspec1", np.asarray(error_misspec1_list))
 
-#     # Create the selection.
-#     start = time.time()            
-#     eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-#         N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
-#     print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
-
-
-#     print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
-#     print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-#         N_ELG_NonDESI_pred
-
-#     for i in [2, 1, 0]:
-#             instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
-#     print "\n"
-
-# Part of validation scheme 
-# np.save("validation_set_model3_Full_PowerLaw", np.asarray(nums_list))
-# 
