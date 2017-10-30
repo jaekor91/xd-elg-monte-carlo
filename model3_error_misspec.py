@@ -23,7 +23,8 @@ category = ["NonELG", "NoZ", "ELG"]
 # 8-10: Magnitude changes. For power law use full data. Not used. 
 # 11: F2 data only
 
-sub_sample_name = ["Full", "F3", "F4", "CV1", "CV2", "CV3", "CV4", "CV5", "Mag1", "Mag2", "Mag3", "F2"] # No need to touch this
+# Should not be altered.
+sub_sample_name = ["Full", "F3", "F4", "CV1", "CV2", "CV3", "CV4", "CV5", "Mag1", "Mag2", "Mag3", "F2"] 
 NK_list = [1]#, 3, 4, 5, 6, 7]
 Niter = 1
 
@@ -45,90 +46,74 @@ MC_AREA = 1000  # In sq. deg.
 # ELG sample number: 7,925,135
 # 15 seconds
 
+# Goal: Check the effect of model specification based on predicted distribution. 
+# Strategy:
+# - Set the fiducial depths at g=23.8, r=23.4, z=22.4
+# - For each band, change the selection by pm [0.05, 0.1, 0.15, 0.2, 0.25]. 
+# - For each selection, compute
+#     - Efficiency and other quantities IF the selection was adapated. 
+#     - Efficiency and other quantities IF the selection was NOT adpated.
+# - Apply to Field 2, 3 and 4 data. 
+
+
 nums_list = [] # Keeps trac of validation information. 1st and 2nd levels -- cv and field.
-for j in range(12):
-    print "/----- %s -----/" % sub_sample_name[j]
+j=0 # Only use the full data model.
 
-    print("# ----- Model3 ----- #")
-    instance_model = model3(j)        
-    if plot_data:
-        print "Plot original data points"
-        instance_model.plot_data("model3", sub_sample_name[j], guide=True) # Plot all together
-        print "\n"
+print("# ----- Model3 ----- #")
+instance_model = model3(j)        
 
-    if make_fits:
-        print "Fit MoGs"
-        instance_model.fit_MoG(NK_list, "model3", sub_sample_name[j], cache=True, Niter=Niter)
-        print "\n"
-        print "Fit Pow"
-        if (j < 8) or (j == 11):
-            instance_model.fit_dNdf("model3", sub_sample_name[j], cache=True, Niter=Niter)
-        else:
-            instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)            
-        print "\n"
+print "Load fitted model parameters"
+print "Fit MoGs"
+instance_model.fit_MoG(NK_list, "model3", sub_sample_name[j], cache=True, Niter=Niter)
+print "Fit Pow"
+instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)            
 
-#     # if visualize_fit:
-#     #     print "MC sample draw from the intrinsic distribution"
-#     #     instance_model.set_err_lims(25., 24.5, 23.5, 8) # Training data is deep!        
-#     #     for K in NK_list:
-#     #         K_selected = [K] * 3
-#     #         instance_model.gen_sample_intrinsic(K_selected)
-#     #         instance_model.gen_err_conv_sample()
-#     #         print "\n"
-
-#     #         print "Visualize the fits"
-#     #         for i in range(3):
-#     #             print "Plotting %s with K %d" % (category[i], K_selected[i])
-#     #             instance_model.visualize_fit("model3", sub_sample_name[j], cat=i, K=K_selected[i], cum_contour=True, MC=True)  
-#     #         print "\n"
-
-    if validate:
-        print "Generate Nsample from intrinsic density proportional to area: %.1f" % MC_AREA
-        instance_model.set_area_MC(MC_AREA)
-        start = time.time()
-        instance_model.gen_sample_intrinsic()
-        print "Time for generating samples: %.1f seconds" % (time.time()-start)
-        print "Validate on the DEEP2 sample by field"
-        nums_list_2nd = []
-        for fnum in [2, 3, 4]:
-            print "Validating on field %d" % fnum
-            # nums = instance_model.validate_on_DEEP2(fnum)
-            returned  = instance_model.validate_on_DEEP2(fnum, model_tag="model3", cv_tag=sub_sample_name[j], plot_validation=False)
-            # np.save("radec-XD-F%d-model3-kernel"%fnum, np.asarray(returned[-2:])) # radec
-            nums = returned[:-2] # nums_list
-            nums_list_2nd.append(np.asarray(nums))
-            print "\n"
-        nums_list.append(np.asarray(nums_list_2nd))
-
-    if plot_boundary:
-        print "/---- Plotting boundary ----/"
-        if j ==0:
-            instance_model.set_area_MC(MC_AREA)            
-            instance_model.gen_sample_intrinsic()
-
-            print "Typcial depths"
-            # Convolve error to the intrinsic sample.
-            start = time.time()
-            instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
-            instance_model.gen_err_conv_sample()
-            print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
-
-            # Create the selection.
-            start = time.time()            
-            eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-                N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
-            print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+# if validate:
+#     print "Generate Nsample from intrinsic density proportional to area: %.1f" % MC_AREA
+#     instance_model.set_area_MC(MC_AREA)
+#     start = time.time()
+#     instance_model.gen_sample_intrinsic()
+#     print "Time for generating samples: %.1f seconds" % (time.time()-start)
+#     print "Validate on the DEEP2 sample by field"
+#     nums_list_2nd = []
+#     for fnum in [2, 3, 4]:
+#         print "Validating on field %d" % fnum
+#         # nums = instance_model.validate_on_DEEP2(fnum)
+#         returned  = instance_model.validate_on_DEEP2(fnum, model_tag="model3", cv_tag=sub_sample_name[j], plot_validation=False)
+#         # np.save("radec-XD-F%d-model3-kernel"%fnum, np.asarray(returned[-2:])) # radec
+#         nums = returned[:-2] # nums_list
+#         nums_list_2nd.append(np.asarray(nums))
+#         print "\n"
+#     nums_list.append(np.asarray(nums_list_2nd))
 
 
-            print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
-            print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-                N_ELG_NonDESI_pred
+# print "/---- Plotting boundary ----/"
+# if j ==0:
+#     instance_model.set_area_MC(MC_AREA)            
+#     instance_model.gen_sample_intrinsic()
 
-            for i in [2, 1, 0]:
-                    instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
-            print "\n"
+#     print "Typcial depths"
+#     # Convolve error to the intrinsic sample.
+#     start = time.time()
+#     instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
+#     instance_model.gen_err_conv_sample()
+#     print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
+
+#     # Create the selection.
+#     start = time.time()            
+#     eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+#         N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
+#     print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+
+
+#     print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
+#     print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+#         N_ELG_NonDESI_pred
+
+#     for i in [2, 1, 0]:
+#             instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
+#     print "\n"
 
 # Part of validation scheme 
 # np.save("validation_set_model3_Full_PowerLaw", np.asarray(nums_list))
-np.save("validation_set_model3_Sub_PowerLaw", np.asarray(nums_list))
 # 
