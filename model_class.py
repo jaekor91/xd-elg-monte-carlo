@@ -2788,8 +2788,10 @@ class model3(parent_model):
          N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted, ra[iselected], dec[iselected]
 
 
-    def gen_selection_volume_scipy(self):
+    def gen_selection_volume_scipy(self, selection_ext=None):
         """
+        Model 3
+
         Given the generated sample (intrinsic val + noise), generate a selection volume,
         using kernel approximation to the number density. That is, when tallying up the 
         number of objects in each cell, use a gaussian kernel centered at the cell where
@@ -2809,6 +2811,9 @@ class model3(parent_model):
             or remember the order of the entire (or half of) the cells. Then when selection is applied
             we can include objects up to the number we want by adjust the utility threshold.
             This would require remember the number density of all the objects.
+
+        If selection_ext is not None, then to the generated data is applied external selction specfieid by the cell numbers
+        and the resulting selection statistics is reported.
         """
         # Create MD histogarm of each type of objects. 
         # 0: NonELG, 1: NoZ, 2: ELG
@@ -2868,7 +2873,7 @@ class model3(parent_model):
         # print utility_flat[compute_cell_number(bin_indicies, self.num_bins)]
 
         # Compute utility
-        utility = MD_hist_N_FoM/(MD_hist_N_total+ (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
+        utility = MD_hist_N_FoM/(MD_hist_N_total + (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
 
         # # Fraction of cells filled
         # frac_filled = np.sum(utility>0)/float(utility.size) * 100
@@ -2881,14 +2886,33 @@ class model3(parent_model):
         # This corresponds to cell number of descending order sorted array.
         idx_sort = (-utility_flat).argsort()
 
-        # Flatten other arrays and sort them according to utility.
-        MD_hist_N_NonELG_flat = MD_hist_N_NonELG.flatten()[idx_sort]
-        MD_hist_N_NoZ_flat = MD_hist_N_NoZ.flatten()[idx_sort]
-        MD_hist_N_ELG_DESI_flat = MD_hist_N_ELG_DESI.flatten()[idx_sort]
-        MD_hist_N_ELG_NonDESI_flat = MD_hist_N_ELG_NonDESI.flatten()[idx_sort]
-        MD_hist_N_FoM_flat = MD_hist_N_FoM.flatten()[idx_sort]
-        MD_hist_N_good_flat = MD_hist_N_good.flatten()[idx_sort]
-        MD_hist_N_total_flat = MD_hist_N_total.flatten()[idx_sort]
+        # Flatten other arrays.
+        MD_hist_N_NonELG_flat = MD_hist_N_NonELG.flatten()
+        MD_hist_N_NoZ_flat = MD_hist_N_NoZ.flatten()
+        MD_hist_N_ELG_DESI_flat = MD_hist_N_ELG_DESI.flatten()
+        MD_hist_N_ELG_NonDESI_flat = MD_hist_N_ELG_NonDESI.flatten()
+        MD_hist_N_FoM_flat = MD_hist_N_FoM.flatten()
+        MD_hist_N_good_flat = MD_hist_N_good.flatten()
+        MD_hist_N_total_flat = MD_hist_N_total.flatten()        
+
+        # If external selection result is asked for, then perform the selection now and report the result.
+        if selection_ext is not None:
+            Ntotal_ext = np.sum(MD_hist_N_total_flat[selection_ext])/float(self.area_MC)
+            Ngood_ext = np.sum(MD_hist_N_good_flat[selection_ext])/float(self.area_MC)
+            N_NonELG_ext = np.sum(MD_hist_N_NonELG_flat[selection_ext])/float(self.area_MC)
+            N_NoZ_ext = np.sum(MD_hist_N_NoZ_flat[selection_ext])/float(self.area_MC)
+            N_ELG_DESI_ext = np.sum(MD_hist_N_ELG_DESI_flat[selection_ext])/float(self.area_MC)
+            N_ELG_NonDESI_ext = np.sum(MD_hist_N_ELG_NonDESI_flat[selection_ext])/float(self.area_MC)
+            eff_ext = (Ngood_ext/float(Ntotal_ext))        
+
+        # Sort flattened arrays according to utility.
+        MD_hist_N_NonELG_flat = MD_hist_N_NonELG_flat[idx_sort]
+        MD_hist_N_NoZ_flat = MD_hist_N_NoZ_flat[idx_sort]
+        MD_hist_N_ELG_DESI_flat = MD_hist_N_ELG_DESI_flat[idx_sort]
+        MD_hist_N_ELG_NonDESI_flat = MD_hist_N_ELG_NonDESI_flat[idx_sort]
+        MD_hist_N_FoM_flat = MD_hist_N_FoM_flat[idx_sort]
+        MD_hist_N_good_flat = MD_hist_N_good_flat[idx_sort]
+        MD_hist_N_total_flat = MD_hist_N_total_flat[idx_sort]
 
         # Starting from the keep including cells until the desired number is eached.        
         Ntotal = 0
@@ -2906,12 +2930,18 @@ class model3(parent_model):
         N_NoZ = np.sum(MD_hist_N_NoZ_flat[:counter])/float(self.area_MC)
         N_ELG_DESI = np.sum(MD_hist_N_ELG_DESI_flat[:counter])/float(self.area_MC)
         N_ELG_NonDESI = np.sum(MD_hist_N_ELG_NonDESI_flat[:counter])/float(self.area_MC)
+        eff = (Ngood/float(Ntotal))        
 
         # Save the selection
         self.cell_select = np.sort(idx_sort[:counter])
-        eff = (Ngood/float(Ntotal))
 
-        return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI
+        # Return the answer
+        if selection_ext is None:
+            return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI
+        else: 
+            return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
+            eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext
+
 
 
 
