@@ -3132,7 +3132,7 @@ class model3(parent_model):
     def gen_select_boundary_slices(self, slice_dir = 2, model_tag="", cv_tag="", centers=None, plot_ext=False,\
         gflux_ext=None, rflux_ext=None, zflux_ext=None, ibool_ext = None,\
         var_x_ext=None, var_y_ext=None, gmag_ext=None, use_parameterized_ext=False,\
-        pt_size=10, pt_size_ext=10, alpha_ext=0.5, guide=False):
+        pt_size=10, pt_size_ext=10, alpha_ext=0.5, guide=False, output_sparse=False):
         """
         Model3
 
@@ -3149,6 +3149,8 @@ class model3(parent_model):
         If use_parameterized_ext, then the user may provide already parameterized version of the external data points.
 
         If guide True, then plot the guide line.
+
+        If output_sparse=True, then only 10% of the boundaries are plotted and saved.
         """
 
         slice_var_tag = ["mu_gz", "mu_gr", "gmag"]
@@ -3184,7 +3186,12 @@ class model3(parent_model):
         bin_edges, dX = np.linspace(Xmin, Xmax, self.num_bins[slice_dir]+1, endpoint=True, retstep=True)
 
         print slice_var_tag[slice_dir]
-        for i in range(self.num_bins[slice_dir]):
+        if output_sparse:
+            iterator = range(0, self.num_bins[slice_dir], self.num_bins[slice_dir]//10)
+        else:
+            iterator = range(self.num_bins[slice_dir])
+
+        for i in iterator: 
             ibool = (centers[:, slice_dir] < bin_edges[i+1]) & (centers[:, slice_dir] > bin_edges[i])
             centers_slice = centers[ibool, :]
             fig = plt.figure(figsize=(7, 7))
