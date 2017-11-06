@@ -2788,7 +2788,7 @@ class model3(parent_model):
          N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted, ra[iselected], dec[iselected]
 
 
-    def gen_selection_volume_scipy(self, selection_ext=None):
+    def gen_selection_volume_scipy(self, selection_ext=None, return_hists=False):
         """
         Model 3
 
@@ -2811,6 +2811,8 @@ class model3(parent_model):
             or remember the order of the entire (or half of) the cells. Then when selection is applied
             we can include objects up to the number we want by adjust the utility threshold.
             This would require remember the number density of all the objects.
+
+        If return_hists True, then return the MD histograms along with other values.
 
         If selection_ext is not None, then to the generated data is applied external selction specfieid by the cell numbers
         and the resulting selection statistics is reported.
@@ -2937,10 +2939,19 @@ class model3(parent_model):
 
         # Return the answer
         if selection_ext is None:
-            return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI
+            if return_hists:
+                return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI, MD_hist_N_total
+            else:
+                return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI                
         else: 
-            return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
-            eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext
+            if return_hists:
+                return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
+                eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext,\
+                MD_hist_N_total
+            else:
+                return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
+                eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext
+
 
 
 
