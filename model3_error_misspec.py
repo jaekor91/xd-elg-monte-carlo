@@ -92,19 +92,19 @@ if True:
     print "\n\n"
 
     print "Adjust the box sizes so we don't run into limits."
-    instance_model.var_x_limits = [-.15, 2.75]
-    instance_model.var_y_limits = [-0.5, 1.2]
-    instance_model.gmag_limits = [21.0, 24.]
-    instance_model.num_bins = [290, 170, 300]
+    instance_model.var_x_limits = [-.5, 4.0] # g-z
+    instance_model.var_y_limits = [-1.5, 1.75] # r-z
+    instance_model.gmag_limits = [18.0, 24.]
+    instance_model.num_bins = [450, 325, 600]
 
-
+    instance_model.N_regular = 10**(3.5) # New regularization value.
 
     bands = ["g", "r", "z", "OII"]
     bands_fiducial = [23.8, 23.4, 22.4, 8]
 
     print("Generating the fiducial selection boundary.")
     start = time.time()
-    instance_model.set_area_MC(1000)            
+    instance_model.set_area_MC(1500)            
     instance_model.gen_sample_intrinsic()
     instance_model.set_err_lims(23.8, 23.4, 22.4, 8)
     instance_model.gen_err_conv_sample()
@@ -194,23 +194,25 @@ if True:
     print "\n\n"
 
     print "Adjust the box sizes so we don't run into limits."
-    instance_model.var_x_limits = [-.15, 2.75]
-    instance_model.var_y_limits = [-0.5, 1.2]
-    instance_model.gmag_limits = [21.0, 24.]
-    instance_model.num_bins = [290, 170, 300]
+    instance_model.var_x_limits = [-.5, 4.0] # g-z
+    instance_model.var_y_limits = [-1.5, 1.75] # r-z
+    instance_model.gmag_limits = [18.0, 24.]
+    instance_model.num_bins = [450, 325, 600]
 
 
     print "Adjust the box sizes so we don't run into limits."
-    instance_model2.var_x_limits = [-.15, 2.75]
-    instance_model2.var_y_limits = [-0.5, 1.2]
-    instance_model2.gmag_limits = [21.0, 24.]
-    instance_model2.num_bins = [290, 170, 300]
+    instance_model2.var_x_limits = [-.5, 4.0] # g-z
+    instance_model2.var_y_limits = [-1.5, 1.75] # r-z
+    instance_model2.gmag_limits = [18.0, 24.]
+    instance_model2.num_bins = [450, 325, 600]
 
+    instance_model.N_regular = 10**(3.5) # New regularization value.
+    instance_model2.N_regular = 10**(3.5) # New regularization value.    
 
     print "Generate the intrinsic samples for both."
-    instance_model.set_area_MC(1000)                        
+    instance_model.set_area_MC(1500)                        
     instance_model.gen_sample_intrinsic()
-    instance_model2.set_area_MC(1000)                        
+    instance_model2.set_area_MC(1500)                        
     instance_model2.gen_sample_intrinsic()
 
     print "Perform error convolutino for the first instance which will remain fixed."
