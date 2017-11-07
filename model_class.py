@@ -2788,7 +2788,7 @@ class model3(parent_model):
          N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted, ra[iselected], dec[iselected]
 
 
-    def gen_selection_volume_scipy(self, selection_ext=None, return_hists=False):
+    def gen_selection_volume_scipy(self, selection_ext=None, return_hists=False, Ndesired_var=None):
         """
         Model 3
 
@@ -2816,7 +2816,15 @@ class model3(parent_model):
 
         If selection_ext is not None, then to the generated data is applied external selction specfieid by the cell numbers
         and the resulting selection statistics is reported.
+
+        If Ndesired_var is not None, then sets all the other flags to False. Takes in an array of desired number densities and 
+        outputs an MD array that summarize the predictions corresponding to input desired numbers.
         """
+
+        if Ndesired_var is not None:
+            selection_ext = None
+            return_hists = False
+
         # Create MD histogarm of each type of objects. 
         # 0: NonELG, 1: NoZ, 2: ELG
         MD_hist_N_NonELG, MD_hist_N_NoZ, MD_hist_N_ELG_DESI, MD_hist_N_ELG_NonDESI = None, None, None, None
@@ -2917,40 +2925,67 @@ class model3(parent_model):
         MD_hist_N_total_flat = MD_hist_N_total_flat[idx_sort]
 
         # Starting from the keep including cells until the desired number is eached.        
-        Ntotal = 0
-        counter = 0
-        for ntot in MD_hist_N_total_flat:
-            if Ntotal > (self.num_desired * self.area_MC): 
-                break            
-            Ntotal += ntot
-            counter +=1
+        if Ndesired_var is not None:
+            # Place holder for answer
+            summary_array = np.zeros((Ndesired_var.size, 7))
 
-        # Predicted numbers in the selection.
-        Ntotal = np.sum(MD_hist_N_total_flat[:counter])/float(self.area_MC)
-        Ngood = np.sum(MD_hist_N_good_flat[:counter])/float(self.area_MC)
-        N_NonELG = np.sum(MD_hist_N_NonELG_flat[:counter])/float(self.area_MC)
-        N_NoZ = np.sum(MD_hist_N_NoZ_flat[:counter])/float(self.area_MC)
-        N_ELG_DESI = np.sum(MD_hist_N_ELG_DESI_flat[:counter])/float(self.area_MC)
-        N_ELG_NonDESI = np.sum(MD_hist_N_ELG_NonDESI_flat[:counter])/float(self.area_MC)
-        eff = (Ngood/float(Ntotal))        
+            for i, n in enumerate(Ndesired_var):
+                Ntotal = 0
+                counter = 0
+                for ntot in MD_hist_N_total_flat:
+                    if Ntotal > (n * self.area_MC): 
+                        break            
+                    Ntotal += ntot
+                    counter +=1
 
-        # Save the selection
-        self.cell_select = np.sort(idx_sort[:counter])
+                # Predicted numbers in the selection.
+                Ntotal = np.sum(MD_hist_N_total_flat[:counter])/float(self.area_MC)
+                Ngood = np.sum(MD_hist_N_good_flat[:counter])/float(self.area_MC)
+                N_NonELG = np.sum(MD_hist_N_NonELG_flat[:counter])/float(self.area_MC)
+                N_NoZ = np.sum(MD_hist_N_NoZ_flat[:counter])/float(self.area_MC)
+                N_ELG_DESI = np.sum(MD_hist_N_ELG_DESI_flat[:counter])/float(self.area_MC)
+                N_ELG_NonDESI = np.sum(MD_hist_N_ELG_NonDESI_flat[:counter])/float(self.area_MC)
+                eff = (Ngood/float(Ntotal))
 
-        # Return the answer
-        if selection_ext is None:
-            if return_hists:
-                return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI, MD_hist_N_total
-            else:
-                return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI                
+                summary_array[i, :] = np.array([eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI])
+
+            return summary_array
         else: 
-            if return_hists:
-                return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
-                eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext,\
-                MD_hist_N_total
-            else:
-                return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
-                eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext
+            Ntotal = 0
+            counter = 0
+            for ntot in MD_hist_N_total_flat:
+                if Ntotal > (self.num_desired * self.area_MC): 
+                    break            
+                Ntotal += ntot
+                counter +=1
+
+            # Predicted numbers in the selection.
+            Ntotal = np.sum(MD_hist_N_total_flat[:counter])/float(self.area_MC)
+            Ngood = np.sum(MD_hist_N_good_flat[:counter])/float(self.area_MC)
+            N_NonELG = np.sum(MD_hist_N_NonELG_flat[:counter])/float(self.area_MC)
+            N_NoZ = np.sum(MD_hist_N_NoZ_flat[:counter])/float(self.area_MC)
+            N_ELG_DESI = np.sum(MD_hist_N_ELG_DESI_flat[:counter])/float(self.area_MC)
+            N_ELG_NonDESI = np.sum(MD_hist_N_ELG_NonDESI_flat[:counter])/float(self.area_MC)
+            eff = (Ngood/float(Ntotal))    
+                
+
+            # Save the selection
+            self.cell_select = np.sort(idx_sort[:counter])
+
+            # Return the answer
+            if selection_ext is None:
+                if return_hists:
+                    return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI, MD_hist_N_total
+                else:
+                    return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI                
+            else: 
+                if return_hists:
+                    return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
+                    eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext,\
+                    MD_hist_N_total
+                else:
+                    return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
+                    eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext
 
 
 
