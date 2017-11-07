@@ -1943,7 +1943,7 @@ class model3(parent_model):
 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
         self.fmin_MC = mag2flux(24.25) # Note that around 23.8, the power law starts to break down.
-        self.fmax_MC = mag2flux(20.00)
+        self.fmax_MC = mag2flux(18.00)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
         # 0: NonELG, 1: NoZ, 2: ELG
