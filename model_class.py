@@ -3132,7 +3132,7 @@ class model3(parent_model):
     def gen_select_boundary_slices(self, slice_dir = 2, model_tag="", cv_tag="", centers=None, plot_ext=False,\
         gflux_ext=None, rflux_ext=None, zflux_ext=None, ibool_ext = None,\
         var_x_ext=None, var_y_ext=None, gmag_ext=None, use_parameterized_ext=False,\
-        pt_size=10, pt_size_ext=10, alpha_ext=0.5, guide=False, output_sparse=False):
+        pt_size=10, pt_size_ext=10, alpha_ext=0.5, guide=False, output_sparse=False, increment=10):
         """
         Model3
 
@@ -3187,7 +3187,7 @@ class model3(parent_model):
 
         print slice_var_tag[slice_dir]
         if output_sparse:
-            iterator = range(0, self.num_bins[slice_dir], self.num_bins[slice_dir]//10)
+            iterator = range(0, self.num_bins[slice_dir], increment)
         else:
             iterator = range(self.num_bins[slice_dir])
 
