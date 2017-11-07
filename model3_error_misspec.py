@@ -104,7 +104,7 @@ if True:
 
     print("Generating the fiducial selection boundary.")
     start = time.time()
-    instance_model.set_area_MC(1500)            
+    instance_model.set_area_MC(2000)            
     instance_model.gen_sample_intrinsic()
     instance_model.set_err_lims(23.8, 23.4, 22.4, 8)
     instance_model.gen_err_conv_sample()
@@ -150,9 +150,6 @@ if True:
             print "%.3f (%.3f), %d (%d), %d (%d), %d (%d), %d (%d), %d (%d), %d (%d)" \
             % (eff, eff_ext, Ntotal, Ntotal_ext, Ngood, Ngood_ext, N_NonELG, N_NonELG_ext, N_NoZ, N_NoZ_ext,\
              N_ELG_DESI,  N_ELG_DESI_ext, N_ELG_NonDESI, N_ELG_NonDESI_ext)
-
-            # for i in [2, 1, 0]:
-                # instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
 
             # Save the result into an array
             # 0-3: Error model
@@ -263,8 +260,6 @@ if True:
             % (eff, eff_ext, Ntotal, Ntotal_ext, Ngood, Ngood_ext, N_NonELG, N_NonELG_ext, N_NoZ, N_NoZ_ext,\
              N_ELG_DESI,  N_ELG_DESI_ext, N_ELG_NonDESI, N_ELG_NonDESI_ext)
 
-            # for i in [2, 1, 0]:
-                # instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
 
             # Save the result into an array
             # 0-3: Error model
