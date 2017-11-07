@@ -96,6 +96,7 @@ category = ["NonELG", "NoZ", "ELG"]
 # instance_model.var_y_limits = [-0.25, 1.05]
 # instance_model.gmag_limits = [21.5, 24.]
 # instance_model.num_bins = [220, 130, 250]
+# instance_model.N_regular = 1e4
 
 # # Sigma widths to be used in kernel approximation.
 # instance_model.sigmas = [5., 5., 2.5]
