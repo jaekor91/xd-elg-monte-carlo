@@ -83,11 +83,11 @@ class toy_model:
         self.cell_number_obs = [None, None]
 
         # Selection grid limits and number of bins 
-        # var_x, var_y, gmag. Width (0.05, 0.05, 0.05)
-        self.var_x_limits = [-2.5, 2.5]
-        self.var_y_limits = [-2.5, 2.5]
+        # var_x, var_y, gmag. Width (0.025, 0.025, 0.025)
+        self.var_x_limits = [-4, 4]
+        self.var_y_limits = [-4, 4]
         self.gmag_limits = [18, 24.]
-        self.num_bins = [200, 200, 240]
+        self.num_bins = [320, 320, 240]
 
         # Sigma widths to be used in kernel approximation.
         self.sigmas = [5., 5., 5.]
@@ -471,7 +471,7 @@ class toy_model:
 
 
 
-    def gen_selection_volume_scipy(self, selection_ext=None, return_hists=False, Ndesired_var=None):
+    def gen_selection_volume_scipy(self):
         """
         Given the generated sample (intrinsic val + noise), generate a selection volume,
         using kernel approximation to the number density. That is, when tallying up the 
@@ -492,45 +492,22 @@ class toy_model:
             or remember the order of the entire (or half of) the cells. Then when selection is applied
             we can include objects up to the number we want by adjust the utility threshold.
             This would require remember the number density of all the objects.
-
-        If return_hists True, then return the MD histograms along with other values.
-
-        If selection_ext is not None, then to the generated data is applied external selction specfieid by the cell numbers
-        and the resulting selection statistics is reported.
-
-        If Ndesired_var is not None, then sets all the other flags to False. Takes in an array of desired number densities and 
-        outputs an MD array that summarize the predictions corresponding to input desired numbers.
         """
-
-        if Ndesired_var is not None:
-            selection_ext = None
-            return_hists = False
-
         # Create MD histogarm of each type of objects. 
-        # 0: NonELG, 1: NoZ, 2: ELG
-        MD_hist_N_NonELG, MD_hist_N_NoZ, MD_hist_N_ELG_DESI, MD_hist_N_ELG_NonDESI = None, None, None, None
+        # 0: star, 1: galaxy
+        MD_hist_N_star, MD_hist_N_gal_good, MD_hist_N_gal_bad = None, None, None
         MD_hist_N_FoM = None # Tally of FoM corresponding to all objects in the category.
-        MD_hist_N_good = None # Tally of only good objects. For example, DESI ELGs.
         MD_hist_N_total = None # Tally of all objects.
 
-        # NonELG
+        # star
         i = 0
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
-        MD_hist_N_NonELG, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits])
+        MD_hist_N_star, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits])
         FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
         MD_hist_N_FoM = FoM_tmp
         MD_hist_N_total = np.copy(MD_hist_N_NonELG)
 
-        # NoZ
-        i=1
-        samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
-        MD_hist_N_NoZ, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits])
-        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
-        MD_hist_N_FoM += FoM_tmp
-        MD_hist_N_good = self.f_NoZ * MD_hist_N_NoZ
-        MD_hist_N_total += MD_hist_N_NoZ
-
-        # ELG (DESI and NonDESI)
+        # gal (good and bad)
         i=2
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
         w_DESI = (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]>8) # Only objects in the correct redshift and OII ranges.
