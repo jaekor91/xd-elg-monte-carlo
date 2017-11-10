@@ -83,11 +83,11 @@ class toy_model:
         self.cell_number_obs = [None, None]
 
         # Selection grid limits and number of bins 
-        # var_x, var_y, gmag. Width (0.025, 0.025, 0.025)
-        self.var_x_limits = [-4, 4]
-        self.var_y_limits = [-4, 4]
+        # var_x, var_y, gmag. Width (0.05, 0.05, 0.025)
+        self.var_x_limits = [-6, 6]
+        self.var_y_limits = [-6, 6]
         self.gmag_limits = [18, 24.]
-        self.num_bins = [320, 320, 240]
+        self.num_bins = [240, 240, 240]
 
         # Sigma widths to be used in kernel approximation.
         self.sigmas = [5., 5., 5.]
@@ -443,7 +443,7 @@ class toy_model:
         compute the appropriate FoM corresponding to each sample.
         """
         if cat == 0:
-            return np.zeros(Nsample, dtype=float)
+            return np.ones(Nsample, dtype=float) * (-1)
         elif cat == 1:
             if (oii is None) or (redz is None):
                 "You must provide oii AND redz"
@@ -505,47 +505,32 @@ class toy_model:
         MD_hist_N_star, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits])
         FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
         MD_hist_N_FoM = FoM_tmp
-        MD_hist_N_total = np.copy(MD_hist_N_NonELG)
+        MD_hist_N_total = np.copy(MD_hist_N_star)
 
         # gal (good and bad)
-        i=2
+        i=1
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
-        w_DESI = (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]>8) # Only objects in the correct redshift and OII ranges.
-        w_NonDESI = (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]<8) # Only objects in the correct redshift and OII ranges.
-        MD_hist_N_ELG_DESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_DESI)
-        MD_hist_N_ELG_NonDESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_NonDESI)
+        Nsample = self.redz_obs[i].size
+        w_good = np.ones(Nsample, dtype=bool) # (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]>8) # Only objects in the correct redshift and OII ranges.
+        w_bad = np.zeros(Nsample, dtype=bool)# (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]<8) # Only objects in the correct redshift and OII ranges.
+        MD_hist_N_gal_good, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_good)
+        MD_hist_N_gal_bad, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_bad)
         FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
         MD_hist_N_FoM += FoM_tmp
-        MD_hist_N_good += MD_hist_N_ELG_DESI
-        MD_hist_N_total += MD_hist_N_ELG_DESI 
-        MD_hist_N_total += MD_hist_N_ELG_NonDESI
+        MD_hist_N_total += MD_hist_N_gal_good
+        MD_hist_N_total += MD_hist_N_gal_bad
 
         # Applying Gaussian filtering
         sigma_limit = 3
-        gaussian_filter(MD_hist_N_NonELG, self.sigmas, order=0, output=MD_hist_N_NonELG, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_NoZ, self.sigmas, order=0, output=MD_hist_N_NoZ, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_ELG_DESI, self.sigmas, order=0, output=MD_hist_N_ELG_DESI, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_ELG_NonDESI, self.sigmas, order=0, output=MD_hist_N_ELG_NonDESI, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_star, self.sigmas, order=0, output=MD_hist_N_star, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_gal_good, self.sigmas, order=0, output=MD_hist_N_gal_good, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_gal_bad, self.sigmas, order=0, output=MD_hist_N_gal_bad, mode='constant', cval=0.0, truncate=sigma_limit)
         gaussian_filter(MD_hist_N_FoM, self.sigmas, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_good, self.sigmas, order=0, output=MD_hist_N_good, mode='constant', cval=0.0, truncate=sigma_limit)
         gaussian_filter(MD_hist_N_total, self.sigmas, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=sigma_limit)
 
-        # ---- Debug: Check that flattening operation behaves in the expected fashion ---- # 
-        # Nsample = 50
-        # bin_indicies = [np.random.randint(low=10, high=50, size=Nsample)]*3
-        # print "Values from MD array"
-        # idx = np.array(bin_indicies).T
-        # for i in range(idx.shape[0]):
-        #     print i, utility[idx[i][0], idx[i][1], idx[i][2]]
-        # print "Values from flattened array"
-        # print utility_flat[compute_cell_number(bin_indicies, self.num_bins)]
 
         # Compute utility
-        utility = MD_hist_N_FoM/(MD_hist_N_total + (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
-
-        # # Fraction of cells filled
-        # frac_filled = np.sum(utility>0)/float(utility.size) * 100
-        # print "Fraction of cells filled: %.1f precent" % frac_filled
+        utility = MD_hist_N_FoM/(MD_hist_N_total + (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins))))# Note the multiplication by the area.
 
         # Flatten utility array
         utility_flat = utility.flatten()
@@ -555,96 +540,36 @@ class toy_model:
         idx_sort = (-utility_flat).argsort()
 
         # Flatten other arrays.
-        MD_hist_N_NonELG_flat = MD_hist_N_NonELG.flatten()
-        MD_hist_N_NoZ_flat = MD_hist_N_NoZ.flatten()
-        MD_hist_N_ELG_DESI_flat = MD_hist_N_ELG_DESI.flatten()
-        MD_hist_N_ELG_NonDESI_flat = MD_hist_N_ELG_NonDESI.flatten()
-        MD_hist_N_FoM_flat = MD_hist_N_FoM.flatten()
-        MD_hist_N_good_flat = MD_hist_N_good.flatten()
-        MD_hist_N_total_flat = MD_hist_N_total.flatten()        
-
-        # If external selection result is asked for, then perform the selection now and report the result.
-        if selection_ext is not None:
-            Ntotal_ext = np.sum(MD_hist_N_total_flat[selection_ext])/float(self.area_MC)
-            Ngood_ext = np.sum(MD_hist_N_good_flat[selection_ext])/float(self.area_MC)
-            N_NonELG_ext = np.sum(MD_hist_N_NonELG_flat[selection_ext])/float(self.area_MC)
-            N_NoZ_ext = np.sum(MD_hist_N_NoZ_flat[selection_ext])/float(self.area_MC)
-            N_ELG_DESI_ext = np.sum(MD_hist_N_ELG_DESI_flat[selection_ext])/float(self.area_MC)
-            N_ELG_NonDESI_ext = np.sum(MD_hist_N_ELG_NonDESI_flat[selection_ext])/float(self.area_MC)
-            eff_ext = (Ngood_ext/float(Ntotal_ext))        
-
-        # Sort flattened arrays according to utility.
-        MD_hist_N_NonELG_flat = MD_hist_N_NonELG_flat[idx_sort]
-        MD_hist_N_NoZ_flat = MD_hist_N_NoZ_flat[idx_sort]
-        MD_hist_N_ELG_DESI_flat = MD_hist_N_ELG_DESI_flat[idx_sort]
-        MD_hist_N_ELG_NonDESI_flat = MD_hist_N_ELG_NonDESI_flat[idx_sort]
-        MD_hist_N_FoM_flat = MD_hist_N_FoM_flat[idx_sort]
-        MD_hist_N_good_flat = MD_hist_N_good_flat[idx_sort]
-        MD_hist_N_total_flat = MD_hist_N_total_flat[idx_sort]
+        # Sort flattened arrays according to utility.        
+        MD_hist_N_star_flat = MD_hist_N_star.flatten()[idx_sort]
+        MD_hist_N_gal_good_flat = MD_hist_N_gal_good.flatten()[idx_sort]
+        MD_hist_N_gal_bad_flat = MD_hist_N_gal_bad.flatten()[idx_sort]
+        MD_hist_N_FoM_flat = MD_hist_N_FoM.flatten()[idx_sort]
+        MD_hist_N_total_flat = MD_hist_N_total.flatten()[idx_sort]        
 
         # Starting from the keep including cells until the desired number is eached.        
-        if Ndesired_var is not None:
-            # Place holder for answer
-            summary_array = np.zeros((Ndesired_var.size, 7))
+        Ntotal = 0
+        counter = 0
+        for ntot in MD_hist_N_total_flat:
+            if Ntotal > (self.num_desired * self.area_MC): 
+                break            
+            Ntotal += ntot
+            counter +=1
 
-            for i, n in enumerate(Ndesired_var):
-                Ntotal = 0
-                counter = 0
-                for ntot in MD_hist_N_total_flat:
-                    if Ntotal > (n * self.area_MC): 
-                        break            
-                    Ntotal += ntot
-                    counter +=1
+        # Predicted numbers in the selection.
+        Ntotal = np.sum(MD_hist_N_total_flat[:counter])/float(self.area_MC)
+        Ngood = np.sum(MD_hist_N_gal_good_flat[:counter])/float(self.area_MC)
+        N_star = np.sum(MD_hist_N_star_flat[:counter])/float(self.area_MC)
+        N_gal_bad = np.sum(MD_hist_N_gal_bad_flat[:counter])/float(self.area_MC)
+        eff = (Ngood/float(Ntotal))    
+            
 
-                # Predicted numbers in the selection.
-                Ntotal = np.sum(MD_hist_N_total_flat[:counter])/float(self.area_MC)
-                Ngood = np.sum(MD_hist_N_good_flat[:counter])/float(self.area_MC)
-                N_NonELG = np.sum(MD_hist_N_NonELG_flat[:counter])/float(self.area_MC)
-                N_NoZ = np.sum(MD_hist_N_NoZ_flat[:counter])/float(self.area_MC)
-                N_ELG_DESI = np.sum(MD_hist_N_ELG_DESI_flat[:counter])/float(self.area_MC)
-                N_ELG_NonDESI = np.sum(MD_hist_N_ELG_NonDESI_flat[:counter])/float(self.area_MC)
-                eff = (Ngood/float(Ntotal))
+        # Save the selection
+        self.cell_select = np.sort(idx_sort[:counter])
 
-                summary_array[i, :] = np.array([eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI])
-
-            return summary_array
-        else: 
-            Ntotal = 0
-            counter = 0
-            for ntot in MD_hist_N_total_flat:
-                if Ntotal > (self.num_desired * self.area_MC): 
-                    break            
-                Ntotal += ntot
-                counter +=1
-
-            # Predicted numbers in the selection.
-            Ntotal = np.sum(MD_hist_N_total_flat[:counter])/float(self.area_MC)
-            Ngood = np.sum(MD_hist_N_good_flat[:counter])/float(self.area_MC)
-            N_NonELG = np.sum(MD_hist_N_NonELG_flat[:counter])/float(self.area_MC)
-            N_NoZ = np.sum(MD_hist_N_NoZ_flat[:counter])/float(self.area_MC)
-            N_ELG_DESI = np.sum(MD_hist_N_ELG_DESI_flat[:counter])/float(self.area_MC)
-            N_ELG_NonDESI = np.sum(MD_hist_N_ELG_NonDESI_flat[:counter])/float(self.area_MC)
-            eff = (Ngood/float(Ntotal))    
-                
-
-            # Save the selection
-            self.cell_select = np.sort(idx_sort[:counter])
-
-            # Return the answer
-            if selection_ext is None:
-                if return_hists:
-                    return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI, MD_hist_N_total
-                else:
-                    return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI                
-            else: 
-                if return_hists:
-                    return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
-                    eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext,\
-                    MD_hist_N_total
-                else:
-                    return eff, Ntotal, Ngood, N_NonELG, N_NoZ, N_ELG_DESI, N_ELG_NonDESI,\
-                    eff_ext, Ntotal_ext, Ngood_ext, N_NonELG_ext, N_NoZ_ext, N_ELG_DESI_ext, N_ELG_NonDESI_ext
-
+        # Return the answer
+        return eff, Ntotal, Ngood, N_star, N_gal_bad
+    
 
 
 
@@ -721,14 +646,15 @@ class toy_model:
         If output_sparse=True, then only 10% of the boundaries are plotted and saved.
         """
 
-        slice_var_tag = ["mu_gz", "mu_gr", "gmag"]
+        slice_var_tag = ["g-z", "g-r", "gmag"]
         var_names = [self.var_x_name, self.var_y_name, self.gmag_name]
 
         if centers is None:
             centers = self.cell_select_centers()
 
         if guide:
-            x_guide, y_guide = gen_guide_line()
+            x_guide = np.arange(-10, 10)
+            y_guide = x_guide + 0.75
 
         if plot_ext:
             if use_parameterized_ext:
