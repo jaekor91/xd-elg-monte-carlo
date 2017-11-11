@@ -90,7 +90,7 @@ class toy_model:
         self.num_bins = [240, 240, 240]
 
         # Sigma widths to be used in kernel approximation.
-        self.sigmas = [5., 5., 5.]
+        self.sigmas = [1., 1., 1.]
 
         # Cell_number in selection
         self.cell_select = None
@@ -101,6 +101,8 @@ class toy_model:
         # Regularization number when computing utility
         # In a square field, we expect about 20K objects.
         self.N_regular = 1e3
+
+        self.FoM_star = -1
 
 
 
@@ -443,7 +445,7 @@ class toy_model:
         compute the appropriate FoM corresponding to each sample.
         """
         if cat == 0:
-            return np.ones(Nsample, dtype=float) * (-1)
+            return np.ones(Nsample, dtype=float) * self.FoM_star
         elif cat == 1:
             if (oii is None) or (redz is None):
                 "You must provide oii AND redz"
@@ -521,7 +523,7 @@ class toy_model:
         MD_hist_N_total += MD_hist_N_gal_bad
 
         # Applying Gaussian filtering
-        sigma_limit = 3
+        sigma_limit = 5
         gaussian_filter(MD_hist_N_star, self.sigmas, order=0, output=MD_hist_N_star, mode='constant', cval=0.0, truncate=sigma_limit)
         gaussian_filter(MD_hist_N_gal_good, self.sigmas, order=0, output=MD_hist_N_gal_good, mode='constant', cval=0.0, truncate=sigma_limit)
         gaussian_filter(MD_hist_N_gal_bad, self.sigmas, order=0, output=MD_hist_N_gal_bad, mode='constant', cval=0.0, truncate=sigma_limit)
@@ -530,6 +532,7 @@ class toy_model:
 
 
         # Compute utility
+        # Change the FoM according to the crums.
         utility = MD_hist_N_FoM/(MD_hist_N_total + (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins))))# Note the multiplication by the area.
 
         # Flatten utility array
@@ -574,34 +577,34 @@ class toy_model:
 
 
 
-    def apply_selection(self, gflux, rflux, zflux):
-        """
-        Model 3
-        Given gflux, rflux, zflux of samples, return a boolean vector that gives the selection.
-        """
-        mu_g = flux2asinh_mag(gflux, band = "g")
-        mu_r = flux2asinh_mag(rflux, band = "r")
-        mu_z = flux2asinh_mag(zflux, band = "z")
+    # def apply_selection(self, gflux, rflux, zflux):
+    #     """
+    #     Model 3
+    #     Given gflux, rflux, zflux of samples, return a boolean vector that gives the selection.
+    #     """
+    #     mu_g = flux2asinh_mag(gflux, band = "g")
+    #     mu_r = flux2asinh_mag(rflux, band = "r")
+    #     mu_z = flux2asinh_mag(zflux, band = "z")
 
-        var_x = mu_g - mu_z
-        var_y = mu_g - mu_r
-        gmag = flux2mag(gflux)
+    #     var_x = mu_g - mu_z
+    #     var_y = mu_g - mu_r
+    #     gmag = flux2mag(gflux)
 
-        samples = [var_x, var_y, gmag]
+    #     samples = [var_x, var_y, gmag]
 
-        # Generate cell number 
-        cell_number = multdim_grid_cell_number(samples, 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
+    #     # Generate cell number 
+    #     cell_number = multdim_grid_cell_number(samples, 3, [self.var_x_limits, self.var_y_limits, self.gmag_limits], self.num_bins)
 
-        # Sort the cell number
-        idx_sort = cell_number.argsort()
-        cell_number = cell_number[idx_sort]
+    #     # Sort the cell number
+    #     idx_sort = cell_number.argsort()
+    #     cell_number = cell_number[idx_sort]
 
-        # Placeholder for selection vector
-        iselect = check_in_arr2(cell_number, self.cell_select)
+    #     # Placeholder for selection vector
+    #     iselect = check_in_arr2(cell_number, self.cell_select)
 
-        # The last step is necessary in order for iselect to have the same order as the input sample variables.
-        idx_undo_sort = idx_sort.argsort()        
-        return iselect[idx_undo_sort]
+    #     # The last step is necessary in order for iselect to have the same order as the input sample variables.
+    #     idx_undo_sort = idx_sort.argsort()        
+    #     return iselect[idx_undo_sort]
 
     def cell_select_centers(self):
         """
@@ -663,15 +666,16 @@ class toy_model:
                     var_y_ext = var_y_ext[ibool_ext]
                     gmag_ext = gmag_ext[ibool_ext]                
             else:     
-                if ibool_ext is not None:
-                    gflux_ext = gflux_ext[ibool_ext]
-                    rflux_ext = rflux_ext[ibool_ext]
-                    zflux_ext = zflux_ext[ibool_ext]
+                pass
+                # if ibool_ext is not None:
+                #     gflux_ext = gflux_ext[ibool_ext]
+                #     rflux_ext = rflux_ext[ibool_ext]
+                #     zflux_ext = zflux_ext[ibool_ext]
 
-                mu_g, mu_r, mu_z = flux2asinh_mag(gflux_ext, band="g"), flux2asinh_mag(rflux_ext, band="r"), flux2asinh_mag(zflux_ext, band="z")
-                var_x_ext = mu_g-mu_z
-                var_y_ext = mu_g-mu_r
-                gmag_ext = flux2mag(gflux_ext)
+                # mu_g, mu_r, mu_z = flux2asinh_mag(gflux_ext, band="g"), flux2asinh_mag(rflux_ext, band="r"), flux2asinh_mag(zflux_ext, band="z")
+                # var_x_ext = mu_g-mu_z
+                # var_y_ext = mu_g-mu_r
+                # gmag_ext = flux2mag(gflux_ext)
 
             variables = [var_x_ext, var_y_ext, gmag_ext]
 
