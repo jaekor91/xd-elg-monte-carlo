@@ -101,6 +101,7 @@ class toy_model:
         # Regularization number when computing utility
         # In a square field, we expect about 20K objects.
         self.N_regular = 1e3
+        self.frac_regular = 0.1
 
         self.FoM_star = -1
 
@@ -531,9 +532,25 @@ class toy_model:
         gaussian_filter(MD_hist_N_total, self.sigmas, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=sigma_limit)
 
 
-        # Compute utility
-        # Change the FoM according to the crums.
-        utility = MD_hist_N_FoM/(MD_hist_N_total + (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins))))# Note the multiplication by the area.
+        # Compute regularization factor
+        MD_hist_N_regular = np.zeros_like(MD_hist_N_total)
+
+        for e in [[-1.5, 2140*3/4.], [-3, 252.5]]: 
+            alpha, A = e
+            m_min, m_max = self.gmag_limits[0], self.gmag_limits[1]
+            m_Nbins = self.num_bins[2]
+            m = np.linspace(m_min, m_max, m_Nbins, endpoint=False)
+            dm = (m_max-m_min)/m_Nbins
+            dNdm = integrate_pow_law(alpha, A, mag2flux(m+dm), mag2flux(m)) * self.area_MC/ np.multiply.reduce((self.num_bins[:2]))
+            for i, n in enumerate(dNdm):
+                MD_hist_N_regular[:, :, i] += n * self.frac_regular
+
+        # Updating the total with regularization factor
+        MD_hist_N_total += MD_hist_N_regular
+
+
+        # Compute utility        
+        utility = MD_hist_N_FoM/MD_hist_N_total# Note the multiplication by the area.
 
         # Flatten utility array
         utility_flat = utility.flatten()
