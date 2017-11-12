@@ -2193,18 +2193,18 @@ def gen_flux_noise(Nsample, flim, sn=5):
     return np.random.normal(0, sig, Nsample).T
 
 
-def gen_err_seed(nsample, sigma=1, return_iw=False):
+def gen_err_seed(nsample, sigma=1, return_iw_factor=False):
     """
     If return_iw is True, then return importance weight as well as the error seeds. 
     The importance weights are computed assuming that the true target distribution is
     that of unit normal with zero mean whereas the proposal distribution uses the user
-    provided sigma.
+    provided sigma. Note that we return unnormalized weights since the normalization happens down stream.
     """
     if return_iw:
         err_seed = np.random.normal(0, sigma, nsample)
         r_tilde = np.exp(-err_seed**2 * (1/2. - 1/float(sigma))) # p(x)/q(x), both un-normalized
-        iw = r_tilde/r_tilde.sum()
-        return err_seed, iw
+        iw = r_tilde # Do not use "/r_tilde.sum()" to normaliz
+        return err_seed, iw_factor
     else:
         return np.random.normal(0, sigma, nsample)
     
