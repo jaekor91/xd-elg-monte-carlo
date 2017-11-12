@@ -520,17 +520,17 @@ class toy_model:
         """
         # Create MD histogarm of each type of objects. 
         # 0: star, 1: galaxy
-        MD_hist_N_star, MD_hist_N_gal_good, MD_hist_N_gal_bad = None, None, None
-        MD_hist_N_FoM = None # Tally of FoM corresponding to all objects in the category.
-        MD_hist_N_total = None # Tally of all objects.
+        MD_hist_N_star0, MD_hist_N_gal_good0, MD_hist_N_gal_bad0 = None, None, None
+        MD_hist_N_FoM0 = None # Tally of FoM corresponding to all objects in the category.
+        MD_hist_N_total0 = None # Tally of all objects.
 
         # star
         i = 0
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
-        MD_hist_N_star, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.iw[i])
+        MD_hist_N_star0, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.iw[i])
         FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i]*self.iw[i])
-        MD_hist_N_FoM = FoM_tmp
-        MD_hist_N_total = np.copy(MD_hist_N_star)
+        MD_hist_N_FoM0 = FoM_tmp
+        MD_hist_N_total0 = np.copy(MD_hist_N_star0)
 
         # gal (good and bad)
         i=1
@@ -538,20 +538,26 @@ class toy_model:
         Nsample = self.redz_obs[i].size
         w_good = np.ones(Nsample, dtype=bool) # (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]>8) # Only objects in the correct redshift and OII ranges.
         w_bad = np.zeros(Nsample, dtype=bool)# (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]<8) # Only objects in the correct redshift and OII ranges.
-        MD_hist_N_gal_good, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_good*self.iw[i])
-        MD_hist_N_gal_bad, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_bad*self.iw[i])
+        MD_hist_N_gal_good0, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_good*self.iw[i])
+        MD_hist_N_gal_bad0, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_bad*self.iw[i])
         FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i]*self.iw[i])
-        MD_hist_N_FoM += FoM_tmp
-        MD_hist_N_total += MD_hist_N_gal_good
-        MD_hist_N_total += MD_hist_N_gal_bad
+        MD_hist_N_FoM0 += FoM_tmp
+        MD_hist_N_total0 += MD_hist_N_gal_good0
+        MD_hist_N_total0 += MD_hist_N_gal_bad0
 
         # Applying Gaussian filtering
+        # Preserve the original matrices as they will be used for evaluating the resulting selection.
         sigma_limit = 5
-        gaussian_filter(MD_hist_N_star, self.sigmas, order=0, output=MD_hist_N_star, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_gal_good, self.sigmas, order=0, output=MD_hist_N_gal_good, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_gal_bad, self.sigmas, order=0, output=MD_hist_N_gal_bad, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_FoM, self.sigmas, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_total, self.sigmas, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=sigma_limit)
+        MD_hist_N_star = np.zeros_like(MD_hist_N_star0)
+        MD_hist_N_gal_bad = np.zeros_like(MD_hist_N_gal_bad0)
+        MD_hist_N_gal_good = np.zeros_like(MD_hist_N_gal_good0)
+        MD_hist_N_FoM = np.zeros_like(MD_hist_N_FoM0)
+        MD_hist_N_total = np.zeros_like(MD_hist_N_total0)        
+        gaussian_filter(MD_hist_N_star0, self.sigmas, order=0, output=MD_hist_N_star, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_gal_good0, self.sigmas, order=0, output=MD_hist_N_gal_good, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_gal_bad0, self.sigmas, order=0, output=MD_hist_N_gal_bad, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_FoM0, self.sigmas, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_total0, self.sigmas, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=sigma_limit)
 
 
         # Compute regularization factor
@@ -568,11 +574,10 @@ class toy_model:
                 MD_hist_N_regular[:, :, i] += n * self.frac_regular
 
         # Updating the total with regularization factor
-        MD_hist_N_total += MD_hist_N_regular
-
+        # MD_hist_N_total += MD_hist_N_regular
 
         # Compute utility        
-        utility = MD_hist_N_FoM/MD_hist_N_total# Note the multiplication by the area.
+        utility = MD_hist_N_FoM/(MD_hist_N_total+MD_hist_N_regular)# Note the multiplication by the area.
 
         # Flatten utility array
         utility_flat = utility.flatten()
@@ -587,22 +592,29 @@ class toy_model:
         MD_hist_N_gal_good_flat = MD_hist_N_gal_good.flatten()[idx_sort]
         MD_hist_N_gal_bad_flat = MD_hist_N_gal_bad.flatten()[idx_sort]
         MD_hist_N_FoM_flat = MD_hist_N_FoM.flatten()[idx_sort]
-        MD_hist_N_total_flat = MD_hist_N_total.flatten()[idx_sort]        
+        MD_hist_N_total_flat = MD_hist_N_total.flatten()[idx_sort]
+        # Applying the same operation to the original matrices
+        MD_hist_N_star0_flat = MD_hist_N_star0.flatten()[idx_sort]
+        MD_hist_N_gal_good0_flat = MD_hist_N_gal_good0.flatten()[idx_sort]
+        MD_hist_N_gal_bad0_flat = MD_hist_N_gal_bad0.flatten()[idx_sort]
+        MD_hist_N_FoM0_flat = MD_hist_N_FoM0.flatten()[idx_sort]
+        MD_hist_N_total0_flat = MD_hist_N_total0.flatten()[idx_sort]                        
 
         # Starting from the keep including cells until the desired number is eached.        
         Ntotal = 0
         counter = 0
-        for ntot in MD_hist_N_total_flat:
+        for ntot in MD_hist_N_total_flat: # Make the selection based on the smoothed, regularized version.
             if Ntotal > (self.num_desired * self.area_MC): 
                 break            
             Ntotal += ntot
             counter +=1
 
         # Predicted numbers in the selection.
-        Ntotal = np.sum(MD_hist_N_total_flat[:counter])/float(self.area_MC)
-        Ngood = np.sum(MD_hist_N_gal_good_flat[:counter])/float(self.area_MC)
-        N_star = np.sum(MD_hist_N_star_flat[:counter])/float(self.area_MC)
-        N_gal_bad = np.sum(MD_hist_N_gal_bad_flat[:counter])/float(self.area_MC)
+        # Make the evaluation based on the original MD histograms.
+        Ntotal = np.sum(MD_hist_N_total0_flat[:counter])/float(self.area_MC)
+        Ngood = np.sum(MD_hist_N_gal_good0_flat[:counter])/float(self.area_MC)
+        N_star = np.sum(MD_hist_N_star0_flat[:counter])/float(self.area_MC)
+        N_gal_bad = np.sum(MD_hist_N_gal_bad0_flat[:counter])/float(self.area_MC)
         eff = (Ngood/float(Ntotal))    
             
 
