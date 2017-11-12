@@ -22,11 +22,11 @@ class toy_model:
         self.colors = ["black", "red", "orange"]
 
         # Plot variables
-        # var limits
-        self.lim_x = [-2.5, 2.5] # g-z
-        self.lim_y = [-2.5, 2.5] # g-r
-        self.lim_z = [-10, 10] # g-oii
-        self.lim_gmag = [21, 24.0]
+        # # var limits
+        # self.lim_x = [-2.5, 2.5] # g-z
+        # self.lim_y = [-2.5, 2.5] # g-r
+        # self.lim_z = [-10, 10] # g-oii
+        # self.lim_gmag = [21, 24.0]
 
         # var names
         self.var_x_name = r"$g-z$"        
