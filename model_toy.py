@@ -58,11 +58,18 @@ class toy_model:
         self.rlim_err = 23.4
         self.zlim_err = 22.4
         self.oii_lim_err = 8 # 7 sigma
-        # Noise seed. err_seed ~ N(0, 1). This can be transformed by scaling appropriately.
+        # Noise seed. err_seed ~ N(0, sigma_proposal). This can be transformed by scaling appropriately.
+        # Since we assume that the noises are generated from independent normal distribution
+        # we can multiply by the importance weights from each unit normal.
+        # Note that the importance weights have been multiplied with the number of sample drawn
+        # so that each sample's weight corresponds to a number contribution.
         self.g_err_seed = [None, None] # Error seed.
         self.r_err_seed = [None, None] # Error seed.
         self.z_err_seed = [None, None] # Error seed.
         self.oii_err_seed = [None, None] # Error seed.
+        self.iw =[None, None] # Importance weights. 
+        self.sigma_proposal = 2
+
         # Noise convolved values
         self.gflux_obs = [None, None] # obs for observed
         self.rflux_obs = [None, None] # obs for observed
@@ -172,8 +179,18 @@ class toy_model:
         self.gflux0[i] = gflux
         self.rflux0[i] = rflux
         self.zflux0[i] = zflux
-        self.NSAMPLE[i] = NSAMPLE           
-        
+        self.NSAMPLE[i] = NSAMPLE
+
+        # Gen err seed and save
+        # Also, collect unormalized importance weight factors, multiply and normalize.
+        self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] = iw
+        self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw        
+        self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw
+        self.iw[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
+
 
 
         # ---- Galaxies ---- #
@@ -217,15 +234,19 @@ class toy_model:
         self.redz0[i] = redz
         self.oii0[i] = oii_flux
         self.NSAMPLE[i] = NSAMPLE
-        # oii error seed
-        self.oii_err_seed[i] = gen_err_seed(NSAMPLE)
 
-        
         # Gen err seed and save
-        for i in range(2):
-            self.g_err_seed[i] = gen_err_seed(self.NSAMPLE[i])
-            self.r_err_seed[i] = gen_err_seed(self.NSAMPLE[i])
-            self.z_err_seed[i] = gen_err_seed(self.NSAMPLE[i])             
+        self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] = iw
+        self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw
+        self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw        
+        # oii error seed
+        self.oii_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw
+        self.iw[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i]
+
         return
 
 
@@ -405,6 +426,7 @@ class toy_model:
             self.gflux_obs[i] = self.gflux_obs[i][ifcut]
             self.rflux_obs[i] = self.rflux_obs[i][ifcut]
             self.zflux_obs[i] = self.zflux_obs[i][ifcut]
+            self.iw[i] = self.iw[i][ifcut]
 
             # Compute model parametrization
             g = flux2mag(self.gflux_obs[i])
@@ -505,8 +527,8 @@ class toy_model:
         # star
         i = 0
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
-        MD_hist_N_star, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits])
-        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
+        MD_hist_N_star, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.iw[i])
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i]*self.iw[i])
         MD_hist_N_FoM = FoM_tmp
         MD_hist_N_total = np.copy(MD_hist_N_star)
 
@@ -516,9 +538,9 @@ class toy_model:
         Nsample = self.redz_obs[i].size
         w_good = np.ones(Nsample, dtype=bool) # (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]>8) # Only objects in the correct redshift and OII ranges.
         w_bad = np.zeros(Nsample, dtype=bool)# (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]<8) # Only objects in the correct redshift and OII ranges.
-        MD_hist_N_gal_good, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_good)
-        MD_hist_N_gal_bad, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_bad)
-        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
+        MD_hist_N_gal_good, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_good*self.iw[i])
+        MD_hist_N_gal_bad, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_bad*self.iw[i])
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i]*self.iw[i])
         MD_hist_N_FoM += FoM_tmp
         MD_hist_N_total += MD_hist_N_gal_good
         MD_hist_N_total += MD_hist_N_gal_bad
