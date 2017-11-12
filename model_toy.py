@@ -5,6 +5,19 @@ import os.path
 from scipy.ndimage.filters import gaussian_filter
 import matplotlib.pyplot as plt
 
+
+# Matplot ticks
+import matplotlib as mpl
+
+mpl.rcParams['xtick.major.size'] = 20
+mpl.rcParams['xtick.major.width'] = 1.
+mpl.rcParams['ytick.major.size'] = 20
+mpl.rcParams['ytick.major.width'] = 1.
+mpl.rcParams['xtick.labelsize'] = 20
+mpl.rcParams['ytick.labelsize'] = 20
+
+
+
 def mag2flux(mag):
     return 10**(0.4*(22.5-mag))
 
@@ -750,8 +763,8 @@ class toy_model:
             if plot_ext:
                 ibool = (variables[slice_dir] < bin_edges[i+1]) & (variables[slice_dir] > bin_edges[i])
                 plt.scatter(variables[idx[0]][ibool], variables[idx[1]][ibool], edgecolors="none", c="red", s=pt_size_ext, alpha=alpha_ext)
-            plt.xlabel(var_names[idx[0]], fontsize=15)
-            plt.ylabel(var_names[idx[1]], fontsize=15)
+            plt.xlabel(var_names[idx[0]], fontsize=25)
+            plt.ylabel(var_names[idx[1]], fontsize=25)
 
             if guide and (slice_dir==2):
                 plt.plot(x_guide, y_guide, c="orange", lw = 2)
@@ -760,7 +773,7 @@ class toy_model:
             plt.ylim(limits[idx[1]])
             title_str = "%s [%.3f, %.3f]" % (var_names[slice_dir], bin_edges[i], bin_edges[i+1])
             print i, title_str
-            plt.title(title_str, fontsize=15)
+            plt.title(title_str, fontsize=25)
             plt.savefig("%s-%s-boundary-%s-%d.png" % (model_tag, cv_tag, slice_var_tag[slice_dir], i), bbox_inches="tight", dpi=200)
         #     plt.show()
             plt.close()        
