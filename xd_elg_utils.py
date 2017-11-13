@@ -2202,7 +2202,7 @@ def gen_err_seed(nsample, sigma=1, return_iw_factor=False):
     """
     if return_iw_factor:
         err_seed = np.random.normal(0, sigma, nsample)
-        r_tilde = np.exp(-err_seed**2 * (1/2. - 1/float(sigma))) # p(x)/q(x), both un-normalized
+        r_tilde = np.exp(-err_seed**2 * (1/2. - 1/float(2*sigma**2))) # p(x)/q(x), both un-normalized
         iw_factor = r_tilde # Do not use "/r_tilde.sum()" to normaliz
         return err_seed, iw_factor
     else:
