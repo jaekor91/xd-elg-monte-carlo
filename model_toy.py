@@ -157,13 +157,16 @@ class toy_model:
         self.area_MC = val
         return
 
-    def gen_sample_intrinsic(self):
+    def gen_sample_intrinsic(self, importance_sampling=False):
         """
+        model1
         Generate sample from MoG x Power Law that is normalized to per sq. deg. density.
 
         The parameters are harcoded in.
 
         # dNdf tuned such that for g [21, 24] there are 6K/2K stars/galaxies.        
+
+        If importance_sampling is true, then also generate the ipmortance sample weights.
         """
 
         # ---- Stars ---- #
@@ -195,16 +198,21 @@ class toy_model:
         self.NSAMPLE[i] = NSAMPLE
 
         # Gen err seed and save
-        # Also, collect unormalized importance weight factors, multiply and normalize.
-        self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-        self.iw[i] = iw
-        self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-        self.iw[i] *= iw        
-        self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-        self.iw[i] *= iw
-        self.iw[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
-
-
+        if importance_sampling:
+            # Also, collect unormalized importance weight factors, multiply and normalize.
+            self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            # print "g_err_seed importance weights. First 10", iw[]
+            self.iw[i] = iw
+            self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            self.iw[i] *= iw        
+            self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            self.iw[i] *= iw
+            self.iw[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
+        else:
+            self.g_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
+            self.r_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
+            self.z_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
+            self.iw[i] = np.ones_like(self.g_err_seed[i])
 
         # ---- Galaxies ---- #
         i=1
@@ -249,16 +257,23 @@ class toy_model:
         self.NSAMPLE[i] = NSAMPLE
 
         # Gen err seed and save
-        self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-        self.iw[i] = iw
-        self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-        self.iw[i] *= iw
-        self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-        self.iw[i] *= iw        
-        # oii error seed
-        self.oii_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-        self.iw[i] *= iw
-        self.iw[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i]
+        if importance_sampling:
+            self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            self.iw[i] = iw
+            self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            self.iw[i] *= iw
+            self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            self.iw[i] *= iw        
+            # oii error seed
+            self.oii_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            self.iw[i] *= iw
+            self.iw[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i]
+        else:
+            self.g_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
+            self.r_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
+            self.z_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
+            self.oii_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)            
+            self.iw[i] = np.ones_like(self.g_err_seed[i])
 
         return
 
@@ -392,11 +407,11 @@ class toy_model:
 
         # Star selected
         i = 0
-        Nstar = (self.var_x_obs[i]+0.75 > self.var_y_obs[i]).sum() / float(self.area_MC)
+        Nstar = self.iw[i][(self.var_x_obs[i]+0.75 > self.var_y_obs[i])].sum() / float(self.area_MC)
 
         # Galaxy selected
         i = 1
-        Ngal = (self.var_x_obs[i]+0.75 > self.var_y_obs[i]).sum() / float(self.area_MC)
+        Ngal = self.iw[i][(self.var_x_obs[i]+0.75 > self.var_y_obs[i])].sum() / float(self.area_MC)
 
         # Ndensity
         Ndensity = Nstar+Ngal
