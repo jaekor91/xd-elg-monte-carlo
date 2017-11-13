@@ -120,11 +120,11 @@ class toy_model:
 
         # Regularization number when computing utility
         # In a square field, we expect about 20K objects.
-        self.N_regular = 1e3
+        self.N_regular = 0
         self.frac_regular = 0.1
 
         self.FoM_star = -1
-
+        self.dalpha_importance = 0.25
 
 
     def set_FoM_option(self, FoM_option):
@@ -177,14 +177,21 @@ class toy_model:
         NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MC, self.fmax_MC) *  self.area_MC))#
         print "# of star sample generated: %d" % NSAMPLE
 
-        # Sample flux
-        gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)
-        g = flux2mag(gflux)
-
-        # Generate Nsample from MoG.
-        MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)
+        if importance_sampling:
+            # Sample flux
+            gflux, iw = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC, importance_sampling=True, alpha_importance = alpha+self.dalpha_importance)
+            self.iw[i] = iw
+            # Generate Nsample from MoG.
+            MoG_sample, iw = sample_MoG(amps, means, covs, NSAMPLE, importance_sampling=True, factor_importance = self.sigma_proposal)
+            self.iw[i] *= iw            
+        else:
+            # Sample flux            
+            gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)            
+            # Generate Nsample from MoG.
+            MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)            
 
         # Compute other fluxes
+        g = flux2mag(gflux)        
         gz, gr = MoG_sample[:,0], MoG_sample[:,1]
         z = g - gz
         r = g - gr
@@ -202,7 +209,7 @@ class toy_model:
             # Also, collect unormalized importance weight factors, multiply and normalize.
             self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
             # print "g_err_seed importance weights. First 10", iw[]
-            self.iw[i] = iw
+            self.iw[i] *= iw
             self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
             self.iw[i] *= iw        
             self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
@@ -227,14 +234,22 @@ class toy_model:
         NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MC, self.fmax_MC) * self.area_MC))#
         print "# of galaxy sample generated: %d" % NSAMPLE        
 
-        # Sample flux
-        gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)
-        g = flux2mag(gflux)
+        if importance_sampling:
+            # Sample flux
+            gflux, iw = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC, importance_sampling=True, alpha_importance = alpha+self.dalpha_importance)
+            self.iw[i] = iw
+            # Generate Nsample from MoG.
+            MoG_sample, iw = sample_MoG(amps, means, covs, NSAMPLE, importance_sampling=True, factor_importance = self.sigma_proposal)
+            self.iw[i] *= iw            
+        else:
+            # Sample flux            
+            gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)            
+            # Generate Nsample from MoG.
+            MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)            
 
-        # Generate Nsample from MoG.
-        MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)
 
         # Compute other fluxes
+        g = flux2mag(gflux)        
         gz, gr = MoG_sample[:,0], MoG_sample[:,1]
         z = g - gz
         r = g - gr
@@ -259,7 +274,7 @@ class toy_model:
         # Gen err seed and save
         if importance_sampling:
             self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-            self.iw[i] = iw
+            self.iw[i] *= iw
             self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
             self.iw[i] *= iw
             self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
