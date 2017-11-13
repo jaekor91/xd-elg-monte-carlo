@@ -44,6 +44,7 @@ field = instance_model.field
 num_cv = 10
 
 #----- Creating test vs. training sets; train and test the performance
+print "Train and test on CV sets of the F234 data."
 area_total = 2.12
 area_test = 2.12 * 1/float(num_cv)
 print "CV: P_last; Precision"
@@ -85,6 +86,7 @@ print "Precision mean/std: %.3f/%.3f" % (np.mean(precision_list), np.std(precisi
 
 
 #----- Creating test vs. training set using Field splits.
+print "Train based on CV sets of F34 and test on the entire F2 data."
 # Field split 
 if2 = (field==2)
 if34 = ~if2
@@ -135,6 +137,7 @@ print "Precision mean/std: %.3f/%.3f" % (np.mean(precision_list), np.std(precisi
 
 
 #----- Using only Field 2 data
+print "Applied to only Field 2 data."
 # Field split 
 if2 = (field==2)
 
