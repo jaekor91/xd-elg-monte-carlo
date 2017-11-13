@@ -10,6 +10,7 @@ from astropy import units as u
 from os import listdir
 from os.path import isfile, join
 
+from scipy.stats import multivariate_normal
 import scipy.stats as stats
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
@@ -1252,43 +1253,83 @@ def integrate_pow_law(alpha, A, fmin, fmax):
     return A * (fmax**(1 + alpha) - fmin**(1 + alpha))/(1 + alpha)
 
 
-def gen_pow_law_sample(fmin, nsample, alpha, exact=False, fmax=None):
+def gen_pow_law_sample(fmin, nsample, alpha, exact=False, fmax=None, importance_sampling=False, alpha_importance=None):
     """
     Note the convention f**alpha, alpha>0.
     
     If exact, then return nsample number of sample exactly between fmin and fmax.
+
+    If importance_sampling, then generate the samples using the alpha_importance,
+    and return the corresponding importance weights along with the sample.
+    iw = f_sample^(-alpha+alpha_importance)
     """
     flux = None
-    if exact:
-        assert (fmax is not None)
-        flux = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha+1))
-        ibool = (flux>fmin) & (flux<fmax)
-        flux = flux[ibool]
-        nsample_counter = np.sum(ibool)
-        while nsample_counter < nsample:
-            flux_tmp = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha+1))
-            ibool = (flux_tmp>fmin) & (flux_tmp<fmax)
-            flux_tmp = flux_tmp[ibool]
-            nsample_counter += np.sum(ibool)
-            flux = np.concatenate((flux, flux_tmp))
-        flux = flux[:nsample]# np.random.choice(flux, nsample, replace=False)
-    else:
-        flux = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha+1))
-    
-    return flux
+    if importance_sampling:
+        if exact:
+            assert (fmax is not None)
+            flux = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha_importance+1))
+            ibool = (flux>fmin) & (flux<fmax)
+            flux = flux[ibool]
+            nsample_counter = np.sum(ibool)
+            while nsample_counter < nsample:
+                flux_tmp = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha_importance+1))
+                ibool = (flux_tmp>fmin) & (flux_tmp<fmax)
+                flux_tmp = flux_tmp[ibool]
+                nsample_counter += np.sum(ibool)
+                flux = np.concatenate((flux, flux_tmp))
+            flux = flux[:nsample]# np.random.choice(flux, nsample, replace=False)
+            iw = flux**(-alpha+alpha_importance)
+        else:
+            pass
 
-def sample_MoG(amps, means, covs, nsample):
+        return flux, iw
+    else:
+        if exact:
+            assert (fmax is not None)
+            flux = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha+1))
+            ibool = (flux>fmin) & (flux<fmax)
+            flux = flux[ibool]
+            nsample_counter = np.sum(ibool)
+            while nsample_counter < nsample:
+                flux_tmp = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha+1))
+                ibool = (flux_tmp>fmin) & (flux_tmp<fmax)
+                flux_tmp = flux_tmp[ibool]
+                nsample_counter += np.sum(ibool)
+                flux = np.concatenate((flux, flux_tmp))
+            flux = flux[:nsample]# np.random.choice(flux, nsample, replace=False)
+        else:
+            assert False # This mode is not supported.
+            # flux = fmin * np.exp(np.log(np.random.rand(nsample))/(alpha+1))
+        
+        return flux
+
+def sample_MoG(amps, means, covs, nsample, importance_sampling=False, factor_importance = 1.5):
     """
     Given MoG parameters, return a sample specified by nsample.
+
+    If importance_sampling, then generate sample from the MoG with a covar matrix enlarged by
+    factor_importance and then return the corresponding importance weight factor.
     """
     nsample_per_component = np.random.multinomial(nsample, amps)
     
-    sample = []
-    for i, ns in enumerate(nsample_per_component):
-        sample.append(np.random.multivariate_normal(means[i], covs[i], ns))
-    sample = np.vstack(sample)
-    
-    return sample    
+    if importance_sampling:
+        sample = []
+        iw = []
+        for i, ns in enumerate(nsample_per_component):
+            sample_tmp = np.random.multivariate_normal(means[i], factor_importance*covs[i], ns)
+            iw_tmp = multivariate_normal.pdf(sample_tmp, mean=means[i], cov=covs[i])/multivariate_normal.pdf(sample_tmp, mean=means[i], cov=factor_importance*covs[i])
+            sample.append(sample_tmp)            
+            iw.append(iw_tmp)
+        sample = np.vstack(sample)
+        iw = np.vstack(iw)
+        return sample, iw.reshape((iw.shape[1],))
+    else:
+        sample = []
+        for i, ns in enumerate(nsample_per_component):
+            sample.append(np.random.multivariate_normal(means[i], covs[i], ns))
+        sample = np.vstack(sample)
+        
+        return sample
 
 
 def pow_param_init_dNdf(left_hist, left_f, right_hist, right_f, bw, area):
