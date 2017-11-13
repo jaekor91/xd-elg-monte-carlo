@@ -778,3 +778,240 @@ class toy_model:
         #     plt.show()
             plt.close()        
 
+
+
+
+
+class toy_model2(toy_model):
+    def gen_selection_volume_scipy(self):
+        """
+        Given the generated sample (intrinsic val + noise), generate a selection volume,
+        using kernel approximation to the number density. That is, when tallying up the 
+        number of objects in each cell, use a gaussian kernel centered at the cell where
+        the particle happens to fall.
+
+        This version is different from the vanila version with kernel option in that
+        the cross correlation or convolution is done using scipy convolution function.
+
+        Note we don't alter the generated sample in any way.
+        
+        Strategy:
+            - Construct a multi-dimensional histogram.
+            - Perform FFT convolution with a gaussian kernel. Use padding.
+            - Given the resulting convolved MD histogram, we can flatten it and order them according to
+            utility. Currently, the utility is FoM divided by Ntot.
+            - We can either predict the number density to define a cell of selected cells 
+            or remember the order of the entire (or half of) the cells. Then when selection is applied
+            we can include objects up to the number we want by adjust the utility threshold.
+            This would require remember the number density of all the objects.
+        """
+        # Create MD histogarm of each type of objects. 
+        # 0: star, 1: galaxy
+        MD_hist_N_star0, MD_hist_N_gal_good0, MD_hist_N_gal_bad0 = None, None, None
+        MD_hist_N_FoM0 = None # Tally of FoM corresponding to all objects in the category.
+        MD_hist_N_total0 = None # Tally of all objects.
+
+        # star
+        i = 0
+        samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
+        MD_hist_N_star0, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.iw[i])
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i]*self.iw[i])
+        MD_hist_N_FoM0 = FoM_tmp
+        MD_hist_N_total0 = np.copy(MD_hist_N_star0)
+
+        # gal (good and bad)
+        i=1
+        samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
+        Nsample = self.redz_obs[i].size
+        w_good = np.ones(Nsample, dtype=bool) # (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]>8) # Only objects in the correct redshift and OII ranges.
+        w_bad = np.zeros(Nsample, dtype=bool)# (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]<8) # Only objects in the correct redshift and OII ranges.
+        MD_hist_N_gal_good0, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_good*self.iw[i])
+        MD_hist_N_gal_bad0, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_bad*self.iw[i])
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i]*self.iw[i])
+        MD_hist_N_FoM0 += FoM_tmp
+        MD_hist_N_total0 += MD_hist_N_gal_good0
+        MD_hist_N_total0 += MD_hist_N_gal_bad0
+
+        # Applying Gaussian filtering
+        # Preserve the original matrices as they will be used for evaluating the resulting selection.
+        sigma_limit = 5
+        MD_hist_N_star = np.zeros_like(MD_hist_N_star0)
+        MD_hist_N_gal_bad = np.zeros_like(MD_hist_N_gal_bad0)
+        MD_hist_N_gal_good = np.zeros_like(MD_hist_N_gal_good0)
+        MD_hist_N_FoM = np.zeros_like(MD_hist_N_FoM0)
+        MD_hist_N_total = np.zeros_like(MD_hist_N_total0)        
+        gaussian_filter(MD_hist_N_star0, self.sigmas, order=0, output=MD_hist_N_star, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_gal_good0, self.sigmas, order=0, output=MD_hist_N_gal_good, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_gal_bad0, self.sigmas, order=0, output=MD_hist_N_gal_bad, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_FoM0, self.sigmas, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_total0, self.sigmas, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=sigma_limit)
+
+
+        # Compute regularization factor
+        MD_hist_N_regular = np.zeros_like(MD_hist_N_total)
+
+        for e in [[-1.5, 3000], [-2.75, 300]]: 
+            alpha, A = e
+            m_min, m_max = self.gmag_limits[0], self.gmag_limits[1]
+            m_Nbins = self.num_bins[2]
+            m = np.linspace(m_min, m_max, m_Nbins, endpoint=False)
+            dm = (m_max-m_min)/m_Nbins
+            dNdm = integrate_pow_law(alpha, A, mag2flux(m+dm), mag2flux(m)) * self.area_MC/ np.multiply.reduce((self.num_bins[:2]))
+            for i, n in enumerate(dNdm):
+                MD_hist_N_regular[:, :, i] += n * self.frac_regular
+
+        # Updating the total with regularization factor
+        # MD_hist_N_total += MD_hist_N_regular
+
+        # Compute utility        
+        utility = MD_hist_N_FoM/(MD_hist_N_total+MD_hist_N_regular)# Note the multiplication by the area.
+
+        # Flatten utility array
+        utility_flat = utility.flatten()
+
+        # Order cells according to utility
+        # This corresponds to cell number of descending order sorted array.
+        idx_sort = (-utility_flat).argsort()
+
+        # Flatten other arrays.
+        # Sort flattened arrays according to utility.        
+        MD_hist_N_star_flat = MD_hist_N_star.flatten()[idx_sort]
+        MD_hist_N_gal_good_flat = MD_hist_N_gal_good.flatten()[idx_sort]
+        MD_hist_N_gal_bad_flat = MD_hist_N_gal_bad.flatten()[idx_sort]
+        MD_hist_N_FoM_flat = MD_hist_N_FoM.flatten()[idx_sort]
+        MD_hist_N_total_flat = MD_hist_N_total.flatten()[idx_sort]
+        # Applying the same operation to the original matrices
+        MD_hist_N_star0_flat = MD_hist_N_star0.flatten()[idx_sort]
+        MD_hist_N_gal_good0_flat = MD_hist_N_gal_good0.flatten()[idx_sort]
+        MD_hist_N_gal_bad0_flat = MD_hist_N_gal_bad0.flatten()[idx_sort]
+        MD_hist_N_FoM0_flat = MD_hist_N_FoM0.flatten()[idx_sort]
+        MD_hist_N_total0_flat = MD_hist_N_total0.flatten()[idx_sort]                        
+
+        # Starting from the keep including cells until the desired number is eached.        
+        Ntotal = 0
+        counter = 0
+        for ntot in MD_hist_N_total_flat: # Make the selection based on the smoothed, regularized version.
+            if Ntotal > (self.num_desired * self.area_MC): 
+                break            
+            Ntotal += ntot
+            counter +=1
+
+        # Predicted numbers in the selection.
+        # Make the evaluation based on the original MD histograms.
+        Ntotal = np.sum(MD_hist_N_total0_flat[:counter])/float(self.area_MC)
+        Ngood = np.sum(MD_hist_N_gal_good0_flat[:counter])/float(self.area_MC)
+        N_star = np.sum(MD_hist_N_star0_flat[:counter])/float(self.area_MC)
+        N_gal_bad = np.sum(MD_hist_N_gal_bad0_flat[:counter])/float(self.area_MC)
+        eff = (Ngood/float(Ntotal))    
+            
+
+        # Save the selection
+        self.cell_select = np.sort(idx_sort[:counter])
+
+        # Return the answer
+        return eff, Ntotal, Ngood, N_star, N_gal_bad
+    
+    def gen_sample_intrinsic(self):
+        """
+        Generate sample from MoG x Power Law that is normalized to per sq. deg. density.
+
+        The parameters are harcoded in.
+
+        # dNdf tuned such that for g [21, 24] there are 6K/2K stars/galaxies.        
+        """
+
+        # ---- Stars ---- #
+        i=0
+        # Load parameters
+        alpha, A = -1.5, 3000
+        amps, means, covs = np.array([1]), np.array([[-1., 1.]]), np.array([[[0.75, 0.5], [0.5, 0.75]]])
+        NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MC, self.fmax_MC) *  self.area_MC))#
+        print "# of star sample generated: %d" % NSAMPLE
+
+        # Sample flux
+        gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)
+        g = flux2mag(gflux)
+
+        # Generate Nsample from MoG.
+        MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)
+
+        # Compute other fluxes
+        gz, gr = MoG_sample[:,0], MoG_sample[:,1]
+        z = g - gz
+        r = g - gr
+        zflux = mag2flux(z)
+        rflux = mag2flux(r)        
+
+        # Save the generated fluxes
+        self.gflux0[i] = gflux
+        self.rflux0[i] = rflux
+        self.zflux0[i] = zflux
+        self.NSAMPLE[i] = NSAMPLE
+
+        # Gen err seed and save
+        # Also, collect unormalized importance weight factors, multiply and normalize.
+        self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] = iw
+        self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw        
+        self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw
+        self.iw[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
+
+
+
+        # ---- Galaxies ---- #
+        i=1
+        # Load parameters
+        alpha, A = -2.75, 300
+        amps, means = np.array([1]), np.array([[.25, -0.25, 4, 1.0]])
+        covs = np.array([[ [1, 0.5, 0.5, 0],
+                         [0.5, 1, 0.5, 0],
+                         [0.5, 0.5, 1, 0],
+                         [0, 0, 0, 0.05]]
+                         ])
+        NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MC, self.fmax_MC) * self.area_MC))#
+        print "# of galaxy sample generated: %d" % NSAMPLE        
+
+        # Sample flux
+        gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)
+        g = flux2mag(gflux)
+
+        # Generate Nsample from MoG.
+        MoG_sample = sample_MoG(amps, means, covs, NSAMPLE)
+
+        # Compute other fluxes
+        gz, gr = MoG_sample[:,0], MoG_sample[:,1]
+        z = g - gz
+        r = g - gr
+        zflux = mag2flux(z)
+        rflux = mag2flux(r)        
+
+        # Save the generated fluxes
+        self.gflux0[i] = gflux
+        self.rflux0[i] = rflux
+        self.zflux0[i] = zflux
+        self.NSAMPLE[i] = NSAMPLE    
+
+        goii, redz = MoG_sample[:,2], MoG_sample[:,3]
+        oii = g - goii # mag
+        oii_flux = mag2flux(oii)
+
+        # Saving
+        self.redz0[i] = redz
+        self.oii0[i] = oii_flux
+        self.NSAMPLE[i] = NSAMPLE
+
+        # Gen err seed and save
+        self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] = iw
+        self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw
+        self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw        
+        # oii error seed
+        self.oii_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+        self.iw[i] *= iw
+        self.iw[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i]
+
+        return
