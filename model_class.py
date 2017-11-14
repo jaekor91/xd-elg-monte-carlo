@@ -1942,7 +1942,7 @@ class model3(parent_model):
         self.FoM_option = "flat"
 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
-        self.fmin_MC = mag2flux(24.25) # Note that around 23.8, the power law starts to break down.
+        self.fmin_MC = mag2flux(24.5) # Note that around 23.8, the power law starts to break down.
         self.fmax_MC = mag2flux(18.00)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
@@ -1968,8 +1968,11 @@ class model3(parent_model):
         self.rflux_obs = [None, None, None] # obs for observed
         self.zflux_obs = [None, None, None] # obs for observed
         self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
-        # Completeness weight for each sample. If 1, the object is certain to be observed. If 0, the opposite.
-        self.cw_obs = [None, None, None]
+        # Importance weight: Used when importance sampling is asked for
+        self.iw_obs = [None, None, None]
+        self.dalpha_ELG = 0.8 # Must be smaller than -(alpha+1) = 1.8
+        self.dalpha_NonELG = 0.2 # Must be smaller than -(alpha+1) = 0.52
+        self.dalpha_NoZ = 1.5 # Must be smaller than -(alpha+1) = 2.48
         # FoM per sample. Note that FoM depends on the observed property such as OII.
         self.FoM_obs = [None, None, None]
 
