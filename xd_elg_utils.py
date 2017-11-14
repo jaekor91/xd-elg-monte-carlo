@@ -1255,13 +1255,13 @@ def integrate_pow_law(alpha, A, fmin, fmax):
 
 def gen_pow_law_sample(fmin, nsample, alpha, exact=False, fmax=None, importance_sampling=False, alpha_importance=None):
     """
-    Note the convention f**alpha, alpha>0.
+    Note the convention f**alpha, alpha>0.??
     
     If exact, then return nsample number of sample exactly between fmin and fmax.
 
     If importance_sampling, then generate the samples using the alpha_importance,
     and return the corresponding importance weights along with the sample.
-    iw = f_sample^(-alpha+alpha_importance)
+    iw = f_sample^(alpha-alpha_importance)
     """
     flux = None
     if importance_sampling:
@@ -1278,7 +1278,7 @@ def gen_pow_law_sample(fmin, nsample, alpha, exact=False, fmax=None, importance_
                 nsample_counter += np.sum(ibool)
                 flux = np.concatenate((flux, flux_tmp))
             flux = flux[:nsample]# np.random.choice(flux, nsample, replace=False)
-            iw = flux**(-alpha+alpha_importance)
+            iw = flux**(alpha-alpha_importance)
         else:
             pass
 
