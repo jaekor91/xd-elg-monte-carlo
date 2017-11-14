@@ -2343,9 +2343,11 @@ class model3(parent_model):
             self.var_y_obs[i] = mu_g - mu_r
             self.gmag_obs[i] = flux2mag(self.gflux_obs[i])
 
+            # Updating the importance weight with the cut
+            self.iw[i] = self.iw[i][ifcut]
+
             # Number of samples after the cut.
             Nsample = self.gmag_obs[i].size
-
 
             # More parametrization to compute for ELGs. Also, compute FoM.
             if i==2:
