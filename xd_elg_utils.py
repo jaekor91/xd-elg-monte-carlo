@@ -1321,8 +1321,8 @@ def sample_MoG(amps, means, covs, nsample, importance_sampling=False, factor_imp
             sample.append(sample_tmp)            
             iw.append(iw_tmp)
         sample = np.vstack(sample)
-        iw = np.vstack(iw)
-        return sample, iw.reshape((iw.shape[1],))
+        iw = np.concatenate(iw)
+        return sample, iw
     else:
         sample = []
         for i, ns in enumerate(nsample_per_component):
