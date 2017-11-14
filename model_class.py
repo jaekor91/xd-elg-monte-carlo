@@ -2246,6 +2246,7 @@ class model3(parent_model):
 
 
             # For all categories
+            mu_g = flux2asinh_mag(gflux, band = "g")
             mu_gz, mu_gr = MoG_sample[:,0], MoG_sample[:,1]
             mu_z = mu_g - mu_gz
             mu_r = mu_g - mu_gr
