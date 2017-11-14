@@ -2872,16 +2872,16 @@ class model3(parent_model):
         # NonELG
         i = 0
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
-        MD_hist_N_NonELG, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits])
-        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
+        MD_hist_N_NonELG, edges = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.iw[i])
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i]*self.iw[i])
         MD_hist_N_FoM = FoM_tmp
         MD_hist_N_total = np.copy(MD_hist_N_NonELG)
 
         # NoZ
         i=1
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
-        MD_hist_N_NoZ, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits])
-        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
+        MD_hist_N_NoZ, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.iw[i])
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i]*self.iw[i])
         MD_hist_N_FoM += FoM_tmp
         MD_hist_N_good = self.f_NoZ * MD_hist_N_NoZ
         MD_hist_N_total += MD_hist_N_NoZ
@@ -2891,9 +2891,9 @@ class model3(parent_model):
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
         w_DESI = (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]>8) # Only objects in the correct redshift and OII ranges.
         w_NonDESI = (self.redz_obs[i]>0.6) & (self.redz_obs[i]<1.6) & (self.oii_obs[i]<8) # Only objects in the correct redshift and OII ranges.
-        MD_hist_N_ELG_DESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_DESI)
-        MD_hist_N_ELG_NonDESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_NonDESI)
-        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i])
+        MD_hist_N_ELG_DESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_DESI*self.iw[i])
+        MD_hist_N_ELG_NonDESI, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=w_NonDESI*self.iw[i])
+        FoM_tmp, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits], weights=self.FoM_obs[i]*self.iw[i])
         MD_hist_N_FoM += FoM_tmp
         MD_hist_N_good += MD_hist_N_ELG_DESI
         MD_hist_N_total += MD_hist_N_ELG_DESI 
@@ -2943,7 +2943,7 @@ class model3(parent_model):
         MD_hist_N_total_flat = MD_hist_N_total.flatten()        
         print "Time taken: %.2f seconds" % (time.time() - start)        
 
-        # If external selection result is asked for, then perform the selection now and report the result.
+        # If external selection result is asked for, then perform the selection now before sorting the flattened array.
         if selection_ext is not None:
             print "Applying the external selection."
             start = time.time()                    
