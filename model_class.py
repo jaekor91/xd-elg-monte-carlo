@@ -2315,13 +2315,11 @@ class model3(parent_model):
 
 
 
-    def gen_err_conv_sample(self, detection=False):
+    def gen_err_conv_sample(self):
         """
         model3
         Given the error properties glim_err, rlim_err, zlim_err, oii_lim_err, add noise to the intrinsic density
         sample and compute the parametrization.
-
-        If detection, then apply incomplteness algorithm to get the completeness weight
         """
         print "Convolving error and re-parametrizing"        
         # NonELG, NoZ and ELG
@@ -2348,10 +2346,6 @@ class model3(parent_model):
             # Number of samples after the cut.
             Nsample = self.gmag_obs[i].size
 
-            if detection: # If the user asks 
-                pass
-            else:
-                self.cw_obs[i] = np.ones(Nsample) # Note we do not divide by area
 
             # More parametrization to compute for ELGs. Also, compute FoM.
             if i==2:
