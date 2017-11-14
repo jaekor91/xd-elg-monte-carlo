@@ -2820,7 +2820,7 @@ class model3(parent_model):
          N_NonELG, N_NonELG_weighted, N_NonELG_pred, N_leftover, N_leftover_weighted, ra[iselected], dec[iselected]
 
 
-    def gen_selection_volume_scipy(self, selection_ext=None, return_hists=False, Ndesired_var=None):
+    def gen_selection_volume_scipy(self, gaussian_smoothing=True, selection_ext=None, return_hists=False, Ndesired_var=None):
         """
         Model 3
 
@@ -2844,6 +2844,8 @@ class model3(parent_model):
             we can include objects up to the number we want by adjust the utility threshold.
             This would require remember the number density of all the objects.
 
+        If gaussian_smoothing, then the filtering is applied to the MD histograms.
+
         If return_hists True, then return the MD histograms along with other values.
 
         If selection_ext is not None, then to the generated data is applied external selction specfieid by the cell numbers
@@ -2865,7 +2867,7 @@ class model3(parent_model):
         MD_hist_N_total = None # Tally of all objects.
 
         print "Start of computing selection region."
-        print "Constructing histograms"
+        print "Constructing histograms."
         start = time.time()
         # NonELG
         i = 0
@@ -2898,17 +2900,18 @@ class model3(parent_model):
         MD_hist_N_total += MD_hist_N_ELG_NonDESI
         print "Time taken: %.2f seconds" % (time.time() - start)        
 
-        print "Applying gaussian smoothing."
-        start = time.time()
-        # Applying Gaussian filtering
-        gaussian_filter(MD_hist_N_NonELG, self.sigma_smoothing, order=0, output=MD_hist_N_NonELG, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
-        gaussian_filter(MD_hist_N_NoZ, self.sigma_smoothing, order=0, output=MD_hist_N_NoZ, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
-        gaussian_filter(MD_hist_N_ELG_DESI, self.sigma_smoothing, order=0, output=MD_hist_N_ELG_DESI, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
-        gaussian_filter(MD_hist_N_ELG_NonDESI, self.sigma_smoothing, order=0, output=MD_hist_N_ELG_NonDESI, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
-        gaussian_filter(MD_hist_N_FoM, self.sigma_smoothing, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
-        gaussian_filter(MD_hist_N_good, self.sigma_smoothing, order=0, output=MD_hist_N_good, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
-        gaussian_filter(MD_hist_N_total, self.sigma_smoothing, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
-        print "Time taken: %.2f seconds" % (time.time() - start)        
+        if gaussian_smoothing:
+            print "Applying gaussian smoothing."
+            start = time.time()
+            # Applying Gaussian filtering
+            gaussian_filter(MD_hist_N_NonELG, self.sigma_smoothing, order=0, output=MD_hist_N_NonELG, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+            gaussian_filter(MD_hist_N_NoZ, self.sigma_smoothing, order=0, output=MD_hist_N_NoZ, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+            gaussian_filter(MD_hist_N_ELG_DESI, self.sigma_smoothing, order=0, output=MD_hist_N_ELG_DESI, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+            gaussian_filter(MD_hist_N_ELG_NonDESI, self.sigma_smoothing, order=0, output=MD_hist_N_ELG_NonDESI, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+            gaussian_filter(MD_hist_N_FoM, self.sigma_smoothing, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+            gaussian_filter(MD_hist_N_good, self.sigma_smoothing, order=0, output=MD_hist_N_good, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+            gaussian_filter(MD_hist_N_total, self.sigma_smoothing, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+            print "Time taken: %.2f seconds" % (time.time() - start)        
 
         print "Computing utility and sorting."
         start = time.time()        
@@ -2928,7 +2931,8 @@ class model3(parent_model):
         print "Time taken: %.2f seconds" % (time.time() - start)        
 
 
-
+        print "Flattening the MD histograms."
+        start = time.time()        
         # Flatten other arrays.
         MD_hist_N_NonELG_flat = MD_hist_N_NonELG.flatten()
         MD_hist_N_NoZ_flat = MD_hist_N_NoZ.flatten()
@@ -2937,18 +2941,25 @@ class model3(parent_model):
         MD_hist_N_FoM_flat = MD_hist_N_FoM.flatten()
         MD_hist_N_good_flat = MD_hist_N_good.flatten()
         MD_hist_N_total_flat = MD_hist_N_total.flatten()        
+        print "Time taken: %.2f seconds" % (time.time() - start)        
 
         # If external selection result is asked for, then perform the selection now and report the result.
         if selection_ext is not None:
+            print "Applying the external selection."
+            start = time.time()                    
             Ntotal_ext = np.sum(MD_hist_N_total_flat[selection_ext])/float(self.area_MC)
             Ngood_ext = np.sum(MD_hist_N_good_flat[selection_ext])/float(self.area_MC)
             N_NonELG_ext = np.sum(MD_hist_N_NonELG_flat[selection_ext])/float(self.area_MC)
             N_NoZ_ext = np.sum(MD_hist_N_NoZ_flat[selection_ext])/float(self.area_MC)
             N_ELG_DESI_ext = np.sum(MD_hist_N_ELG_DESI_flat[selection_ext])/float(self.area_MC)
             N_ELG_NonDESI_ext = np.sum(MD_hist_N_ELG_NonDESI_flat[selection_ext])/float(self.area_MC)
-            eff_ext = (Ngood_ext/float(Ntotal_ext))        
+            eff_ext = (Ngood_ext/float(Ntotal_ext))
+            print "Time taken: %.2f seconds" % (time.time() - start)        
+
 
         # Sort flattened arrays according to utility.
+        print "Sorting the flattened arrays."
+        start = time.time()                            
         MD_hist_N_NonELG_flat = MD_hist_N_NonELG_flat[idx_sort]
         MD_hist_N_NoZ_flat = MD_hist_N_NoZ_flat[idx_sort]
         MD_hist_N_ELG_DESI_flat = MD_hist_N_ELG_DESI_flat[idx_sort]
@@ -2956,6 +2967,7 @@ class model3(parent_model):
         MD_hist_N_FoM_flat = MD_hist_N_FoM_flat[idx_sort]
         MD_hist_N_good_flat = MD_hist_N_good_flat[idx_sort]
         MD_hist_N_total_flat = MD_hist_N_total_flat[idx_sort]
+        print "Time taken: %.2f seconds" % (time.time() - start)                                       
 
         # Starting from the keep including cells until the desired number is eached.        
         if Ndesired_var is not None:
