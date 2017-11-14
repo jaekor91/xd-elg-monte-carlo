@@ -2947,7 +2947,9 @@ class model3(parent_model):
         print "Computing utility and sorting."
         start = time.time()        
         # Compute utility
-        utility = MD_hist_N_FoM_decision/(MD_hist_N_total_decision + MD_hist_N_regular) 
+        MD_hist_N_total_decision += MD_hist_N_regular
+        MD_hist_N_total += MD_hist_N_regular
+        utility = MD_hist_N_FoM_decision/MD_hist_N_total_decision 
 
         # # Fraction of cells filled
         # frac_filled = np.sum(utility>0)/float(utility.size) * 100
