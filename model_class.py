@@ -1971,9 +1971,10 @@ class model3(parent_model):
         # Importance weight: Used when importance sampling is asked for
         self.iw = [None, None, None]
         self.dalpha_ELG = 0.8 # Must be smaller than -(alpha+1) = 1.8
-        self.dalpha_NonELG = 0.2 # Must be smaller than -(alpha+1) = 0.52
-        self.dalpha_NoZ = 1.5 # Must be smaller than -(alpha+1) = 2.48
-        self.sigma_proposal = 1.5 # sigma factor for the proposal        
+        self.dalpha_NonELG = 0.1 # Must be smaller than -(alpha+1) = 0.52
+        self.dalpha_NoZ = 1.75 # Must be smaller than -(alpha+1) = 2.48
+        self.sigma_proposal = 1.0 # sigma factor for the proposal        
+
         # FoM per sample. Note that FoM depends on the observed property such as OII.
         self.FoM_obs = [None, None, None]
 
@@ -1995,7 +1996,7 @@ class model3(parent_model):
         self.num_bins = [375, 250, 600]
 
         # Number of pixels width to be used during Gaussian smoothing.
-        self.sigma_smoothing = [5., 5., 2.5]
+        self.sigma_smoothing = [5., 5., 5.]
         self.sigma_smoothing_limit = 5
 
         # Cell_number in selection
