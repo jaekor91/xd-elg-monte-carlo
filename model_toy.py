@@ -55,7 +55,7 @@ class toy_model:
         self.FoM_option = "flat"
 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
-        self.fmin_MC = mag2flux(24.25) # Note that around 23.8, the power law starts to break down.
+        self.fmin_MC = mag2flux(25.) # Since the noise will grade our ability to predict.
         self.fmax_MC = mag2flux(18.00)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
@@ -81,7 +81,7 @@ class toy_model:
         self.z_err_seed = [None, None] # Error seed.
         self.oii_err_seed = [None, None] # Error seed.
         self.iw =[None, None] # Importance weights. 
-        self.sigma_proposal = 2
+        self.sigma_proposal = 1.5
 
         # Noise convolved values
         self.gflux_obs = [None, None] # obs for observed
@@ -124,7 +124,8 @@ class toy_model:
         self.frac_regular = 0.1
 
         self.FoM_star = -1
-        self.dalpha_importance = 0.25
+        self.dalpha_star = 0.2 # must be much less than 0.5
+        self.dalpha_gal = 1.2 # Must be less than 2.
 
 
     def set_FoM_option(self, FoM_option):
@@ -179,7 +180,7 @@ class toy_model:
 
         if importance_sampling:
             # Sample flux
-            gflux, iw = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC, importance_sampling=True, alpha_importance = alpha+self.dalpha_importance)
+            gflux, iw = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC, importance_sampling=True, alpha_importance = alpha+self.dalpha_star)
             self.iw[i] = iw
             # Generate Nsample from MoG.
             MoG_sample, iw = sample_MoG(amps, means, covs, NSAMPLE, importance_sampling=True, factor_importance = self.sigma_proposal)
@@ -236,7 +237,7 @@ class toy_model:
 
         if importance_sampling:
             # Sample flux
-            gflux, iw = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC, importance_sampling=True, alpha_importance = alpha+self.dalpha_importance)
+            gflux, iw = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC, importance_sampling=True, alpha_importance = alpha+self.dalpha_gal)
             self.iw[i] = iw
             # Generate Nsample from MoG.
             MoG_sample, iw = sample_MoG(amps, means, covs, NSAMPLE, importance_sampling=True, factor_importance = self.sigma_proposal)
@@ -293,7 +294,7 @@ class toy_model:
         return
 
 
-    def plot_grz_g(self, option=0, save_fig=False, plot_fig=True, title_str="test.png"):
+    def plot_grz_g(self, option=0, save_fig=False, plot_fig=True, title_str="test.png", gcut = 24):
         """
         Make a two-panel plot of observed distribution.
         1) g-z vs. g-r
@@ -310,7 +311,8 @@ class toy_model:
         if option == 0:
             for i in range(2):
                 # plot g-z vs. g-r
-                ax1.scatter(self.var_x_obs[i], self.var_y_obs[i], edgecolors="none", c="black", s=5)
+                ibool = self.gmag_obs[i] < gcut
+                ax1.scatter(self.var_x_obs[i][ibool], self.var_y_obs[i][ibool], edgecolors="none", c="black", s=5)
             ax1.set_xlabel(r"$g-z$", fontsize=20)
             ax1.set_ylabel(r"$g-r$", fontsize=20)
             ax1.axis("equal")
@@ -318,7 +320,7 @@ class toy_model:
             ax1.set_ylim([-4, 4])
             # plot g hist
             ax2.hist(np.concatenate((self.gmag_obs[0], self.gmag_obs[1])), \
-                bins=np.arange(22, 24.1, 0.05), histtype="step", color="black", lw=2)
+                bins=np.arange(22, 24.1, 0.05), histtype="step", color="black", lw=2, weights=np.concatenate((self.iw[0], self.iw[1])))
             ax2.set_xlabel(r"$g$", fontsize=20)
             ax2.set_ylabel(r"$dN/dg$", fontsize=20)
             ax2.set_ylim([0, 360])
@@ -328,11 +330,12 @@ class toy_model:
             colors = ["black", "red"]
             labels= ["star", "galaxy"]
             for i in [1, 0]:
+                ibool = self.gmag_obs[i] < gcut
                 # plot g-z vs. g-r
-                ax1.scatter(self.var_x_obs[i], self.var_y_obs[i], edgecolors="none", c=colors[i], s=5, label=labels[i])
+                ax1.scatter(self.var_x_obs[i][ibool], self.var_y_obs[i][ibool], edgecolors="none", c=colors[i], s=5, label=labels[i])
                 # plot g hist
                 ax2.hist(self.gmag_obs[i], \
-                    bins=np.arange(22, 24.1, 0.05), histtype="step", color=colors[i], lw=2, label=labels[i])
+                    bins=np.arange(22, 24.1, 0.05), histtype="step", color=colors[i], lw=2, label=labels[i], weights=self.iw[i])
             # ax1 deocorations 
             ax1.set_xlabel(r"$g-z$", fontsize=20)
             ax1.set_ylabel(r"$g-r$", fontsize=20)
@@ -361,7 +364,7 @@ class toy_model:
         return
 
 
-    def plot_grz(self, option=0, save_fig=False, plot_fig=True, title_str="test.png", color_cut = False):
+    def plot_grz(self, option=0, save_fig=False, plot_fig=True, title_str="test.png", color_cut = False, gcut=24):
         """
         Plot g-z vs. g-r with a color cut boundary
         """
@@ -377,8 +380,9 @@ class toy_model:
 
         if option == 0:
             for i in range(2):
+                ibool = self.gmag_obs[i] < gcut                
                 # plot g-z vs. g-r
-                ax1.scatter(self.var_x_obs[i], self.var_y_obs[i], edgecolors="none", c="black", s=5)
+                ax1.scatter(self.var_x_obs[i][ibool], self.var_y_obs[i][ibool], edgecolors="none", c="black", s=5)
                 ax1.plot([-4, 4], [y(-4), y(4)], c="green", lw=2)
             ax1.set_xlabel(r"$g-z$", fontsize=20)
             ax1.set_ylabel(r"$g-r$", fontsize=20)
@@ -389,8 +393,9 @@ class toy_model:
             colors = ["black", "red"]
             labels= ["star", "galaxy"]
             for i in [1, 0]:
+                ibool = self.gmag_obs[i] < gcut                
                 # plot g-z vs. g-r
-                ax1.scatter(self.var_x_obs[i], self.var_y_obs[i], edgecolors="none", c=colors[i], s=5, label=labels[i])
+                ax1.scatter(self.var_x_obs[i][ibool], self.var_y_obs[i][ibool], edgecolors="none", c=colors[i], s=5, label=labels[i])
 
             # ax1 deocorations 
             ax1.plot([-4, 4], [y(-4), y(4)], c="green", lw=2)            
@@ -413,7 +418,7 @@ class toy_model:
         return        
 
 
-    def apply_color_cut(self):
+    def apply_color_cut(self, gcut=24.):
         """
         g-r< g-z selection.  
 
@@ -422,11 +427,13 @@ class toy_model:
 
         # Star selected
         i = 0
-        Nstar = self.iw[i][(self.var_x_obs[i]+0.75 > self.var_y_obs[i])].sum() / float(self.area_MC)
+        ibool = (self.gmag_obs[i] < gcut)
+        Nstar = self.iw[i][ibool][(self.var_x_obs[i][ibool]+0.75 > self.var_y_obs[i][ibool])].sum() / float(self.area_MC)
 
         # Galaxy selected
         i = 1
-        Ngal = self.iw[i][(self.var_x_obs[i]+0.75 > self.var_y_obs[i])].sum() / float(self.area_MC)
+        ibool = (self.gmag_obs[i] < gcut)
+        Ngal = self.iw[i][ibool][(self.var_x_obs[i][ibool]+0.75 > self.var_y_obs[i][ibool])].sum() / float(self.area_MC)
 
         # Ndensity
         Ndensity = Nstar+Ngal
