@@ -6,7 +6,7 @@ import sys
 import os.path
 from scipy.ndimage.filters import gaussian_filter
 
-import numpy as np
+import time
 import matplotlib.pyplot as plt
 
 def mag2flux(mag):
@@ -1989,13 +1989,14 @@ class model3(parent_model):
 
         # Selection grid limits and number of bins 
         # var_x, var_y, gmag. Width (0.01, 0.01, 0.01)
-        self.var_x_limits = [0.25, 2.45]
-        self.var_y_limits = [-0.25, 1.05]
-        self.gmag_limits = [21.5, 24.]
-        self.num_bins = [220, 130, 250]
+        self.var_x_limits = [-.25, 3.5] # g-z
+        self.var_y_limits = [-1., 1.5] # r-z
+        self.gmag_limits = [18.0, 24.]
+        self.num_bins = [375, 250, 600]
 
-        # Sigma widths to be used in kernel approximation.
-        self.sigmas = [5., 5., 2.5]
+        # Number of pixels width to be used during Gaussian smoothing.
+        self.sigma_smoothing = [5., 5., 2.5]
+        self.sigma_smoothing_limit = 5
 
         # Cell_number in selection
         self.cell_select = None
@@ -2863,6 +2864,9 @@ class model3(parent_model):
         MD_hist_N_good = None # Tally of only good objects. For example, DESI ELGs.
         MD_hist_N_total = None # Tally of all objects.
 
+        print "Start of computing selection region."
+        print "Constructing histograms"
+        start = time.time()
         # NonELG
         i = 0
         samples = np.array([self.var_x_obs[i], self.var_y_obs[i], self.gmag_obs[i]]).T
@@ -2892,27 +2896,22 @@ class model3(parent_model):
         MD_hist_N_good += MD_hist_N_ELG_DESI
         MD_hist_N_total += MD_hist_N_ELG_DESI 
         MD_hist_N_total += MD_hist_N_ELG_NonDESI
+        print "Time taken: %.2f seconds" % (time.time() - start)        
 
+        print "Applying gaussian smoothing."
+        start = time.time()
         # Applying Gaussian filtering
-        sigma_limit = 3
-        gaussian_filter(MD_hist_N_NonELG, self.sigmas, order=0, output=MD_hist_N_NonELG, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_NoZ, self.sigmas, order=0, output=MD_hist_N_NoZ, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_ELG_DESI, self.sigmas, order=0, output=MD_hist_N_ELG_DESI, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_ELG_NonDESI, self.sigmas, order=0, output=MD_hist_N_ELG_NonDESI, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_FoM, self.sigmas, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_good, self.sigmas, order=0, output=MD_hist_N_good, mode='constant', cval=0.0, truncate=sigma_limit)
-        gaussian_filter(MD_hist_N_total, self.sigmas, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=sigma_limit)
+        gaussian_filter(MD_hist_N_NonELG, self.sigma_smoothing, order=0, output=MD_hist_N_NonELG, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+        gaussian_filter(MD_hist_N_NoZ, self.sigma_smoothing, order=0, output=MD_hist_N_NoZ, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+        gaussian_filter(MD_hist_N_ELG_DESI, self.sigma_smoothing, order=0, output=MD_hist_N_ELG_DESI, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+        gaussian_filter(MD_hist_N_ELG_NonDESI, self.sigma_smoothing, order=0, output=MD_hist_N_ELG_NonDESI, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+        gaussian_filter(MD_hist_N_FoM, self.sigma_smoothing, order=0, output=MD_hist_N_FoM, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+        gaussian_filter(MD_hist_N_good, self.sigma_smoothing, order=0, output=MD_hist_N_good, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+        gaussian_filter(MD_hist_N_total, self.sigma_smoothing, order=0, output=MD_hist_N_total, mode='constant', cval=0.0, truncate=self.sigma_smoothing_limit)
+        print "Time taken: %.2f seconds" % (time.time() - start)        
 
-        # ---- Debug: Check that flattening operation behaves in the expected fashion ---- # 
-        # Nsample = 50
-        # bin_indicies = [np.random.randint(low=10, high=50, size=Nsample)]*3
-        # print "Values from MD array"
-        # idx = np.array(bin_indicies).T
-        # for i in range(idx.shape[0]):
-        #     print i, utility[idx[i][0], idx[i][1], idx[i][2]]
-        # print "Values from flattened array"
-        # print utility_flat[compute_cell_number(bin_indicies, self.num_bins)]
-
+        print "Computing utility and sorting."
+        start = time.time()        
         # Compute utility
         utility = MD_hist_N_FoM/(MD_hist_N_total + (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
 
@@ -2926,6 +2925,9 @@ class model3(parent_model):
         # Order cells according to utility
         # This corresponds to cell number of descending order sorted array.
         idx_sort = (-utility_flat).argsort()
+        print "Time taken: %.2f seconds" % (time.time() - start)        
+
+
 
         # Flatten other arrays.
         MD_hist_N_NonELG_flat = MD_hist_N_NonELG.flatten()
