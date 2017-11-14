@@ -2217,7 +2217,7 @@ class model3(parent_model):
             K_selected = self.K_best
 
         # NonELG, NoZ and ELG
-        dalpha = [self.dalpha_NonELG, dalpha_NoZ, dalpha_ELG]
+        dalpha = [self.dalpha_NonELG, self.dalpha_NoZ, self.dalpha_ELG]
         for i in range(3):
             # MoG model
             MODELS = self.MODELS[i]
