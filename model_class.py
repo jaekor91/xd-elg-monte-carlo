@@ -2005,8 +2005,7 @@ class model3(parent_model):
         self.num_desired = 2400
 
         # Regularization number when computing utility
-        # In a square field, we expect about 20K objects.
-        self.N_regular = 1e4
+        self.frac_regular = 0.05
 
         # Fraction of NoZ objects that we expect to be good
         self.f_NoZ = 0.25
@@ -2932,7 +2931,7 @@ class model3(parent_model):
         print "Computing magnitude dependent regularization."
         start = time.time()
         MD_hist_N_regular = np.zeros_like(MD_hist_N_total)
-        for e in MODELS_pow: 
+        for e in self.MODELS_pow: 
             alpha, A = e
             m_min, m_max = self.gmag_limits[0], self.gmag_limits[1]
             m_Nbins = self.num_bins[2]
@@ -2947,7 +2946,7 @@ class model3(parent_model):
         print "Computing utility and sorting."
         start = time.time()        
         # Compute utility
-        utility = MD_hist_N_FoM_decision/(MD_hist_N_total_decision + (self.N_regular * self.area_MC / float(np.multiply.reduce(self.num_bins)))) # Note the multiplication by the area.
+        utility = MD_hist_N_FoM_decision/(MD_hist_N_total_decision + MD_hist_N_regular) 
 
         # # Fraction of cells filled
         # frac_filled = np.sum(utility>0)/float(utility.size) * 100
