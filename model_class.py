@@ -1969,7 +1969,7 @@ class model3(parent_model):
         self.zflux_obs = [None, None, None] # obs for observed
         self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
         # Importance weight: Used when importance sampling is asked for
-        self.iw_obs = [None, None, None]
+        self.iw = [None, None, None]
         self.dalpha_ELG = 0.8 # Must be smaller than -(alpha+1) = 1.8
         self.dalpha_NonELG = 0.2 # Must be smaller than -(alpha+1) = 0.52
         self.dalpha_NoZ = 1.5 # Must be smaller than -(alpha+1) = 2.48
