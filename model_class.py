@@ -70,8 +70,8 @@ class parent_model:
     def __init__(self, sub_sample_num, tag=""):
         # Basic class variables
         self.areas = np.load("spec-area-DR5-matched.npy")
-        self.mag_max = 24 # We model moderately deeper than 24.
-        self.mag_min = 21.5
+        self.mag_max = 24.25 # We model moderately deeper than 24.
+        self.mag_min = 18
         self.mag_min_model = 22.
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
@@ -2289,7 +2289,7 @@ class model3(parent_model):
                     # Saving
                     self.redz0[i] = redz
                     self.oii0[i] = oii
-                self.iw0[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
+                self.iw0[i] = (self.iw0[i]/self.iw0[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
             else:
                 self.g_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
                 self.r_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
