@@ -2011,6 +2011,12 @@ class model3(parent_model):
         # Fraction of NoZ objects that we expect to be good
         self.f_NoZ = 0.25
 
+        # FoM values for individual NoZ and NonELG objects.
+        self.FoM_NoZ = 0.25
+        self.FoM_NonELG = 0.0
+
+
+
 
 
     def var_reparam(self, gflux, rflux, zflux, oii = None):
@@ -2527,9 +2533,9 @@ class model3(parent_model):
         compute the appropriate FoM corresponding to each sample.
         """
         if cat == 0:
-            return np.zeros(Nsample, dtype=float)
+            return np.ones(Nsample, dtype=float) * self.FoM_NonELG
         elif cat == 1:
-            return np.ones(Nsample, dtype=float) * self.f_NoZ # Some arbitrary number. 25% success rate.
+            return np.ones(Nsample, dtype=float) * self.FoM_NoZ # Some arbitrary number. 25% success rate.
         elif cat == 2:
             if (oii is None) or (redz is None):
                 "You must provide oii AND redz"
