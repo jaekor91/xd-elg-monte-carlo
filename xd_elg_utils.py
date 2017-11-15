@@ -1137,7 +1137,7 @@ def broken_pow_law(params, flux):
     beta = params[1]
     fs = params[2]
     phi = params[3]
-    return phi/((flux/fs)**alpha+(flux/fs)**beta + 1e-12)
+    return phi/((flux/fs)**(-alpha)+(flux/fs)**(-beta) + 1e-12)
 
 
 def dNdm2dNdf(m):
