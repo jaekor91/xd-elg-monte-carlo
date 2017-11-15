@@ -1133,11 +1133,18 @@ def pow_law(params, flux):
     return A* flux**alpha
 
 def broken_pow_law(params, flux):
+    """
+    If alpha < beta, then for f > fs, f**alpha, and for f < fs, f**beta.
+    fs: The break point where the behavior of the function changes from one power law to the other.
+    phi: Sets the overall height of the function    
+    """
+
     alpha = params[0]
     beta = params[1]
     fs = params[2]
     phi = params[3]
     return phi/((flux/fs)**(-alpha)+(flux/fs)**(-beta) + 1e-12)
+
 
 
 def dNdm2dNdf(m):
