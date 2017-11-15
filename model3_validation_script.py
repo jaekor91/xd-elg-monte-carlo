@@ -46,7 +46,8 @@ MC_AREA = 1000  # In sq. deg.
 # 15 seconds
 
 nums_list = [] # Keeps trac of validation information. 1st and 2nd levels -- cv and field.
-for j in range(12):
+# for j in range(12):
+for j in [0, 1, 2, 11]:
     print "/----- %s -----/" % sub_sample_name[j]
 
     print("# ----- Model3 ----- #")
@@ -61,10 +62,11 @@ for j in range(12):
         instance_model.fit_MoG(NK_list, "model3", sub_sample_name[j], cache=True, Niter=Niter)
         print "\n"
         print "Fit Pow"
-        if (j < 8) or (j == 11):
-            instance_model.fit_dNdf("model3", sub_sample_name[j], cache=True, Niter=Niter)
-        else:
-            instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)            
+        instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)                    
+        # if (j < 8) or (j == 11):
+        #     instance_model.fit_dNdf("model3", sub_sample_name[j], cache=True, Niter=Niter)
+        # else:
+        #     instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)            
         print "\n"
 
 #     # if visualize_fit:
@@ -86,7 +88,7 @@ for j in range(12):
         print "Generate Nsample from intrinsic density proportional to area: %.1f" % MC_AREA
         instance_model.set_area_MC(MC_AREA)
         start = time.time()
-        instance_model.gen_sample_intrinsic()
+        instance_model.gen_sample_intrinsic(importance_sampling=True)
         print "Time for generating samples: %.1f seconds" % (time.time()-start)
         print "Validate on the DEEP2 sample by field"
         nums_list_2nd = []
@@ -131,4 +133,4 @@ for j in range(12):
 # Part of validation scheme 
 # np.save("validation_set_model3_Full_PowerLaw", np.asarray(nums_list))
 np.save("validation_set_model3_Sub_PowerLaw", np.asarray(nums_list))
-# 
+
