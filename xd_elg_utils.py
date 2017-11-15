@@ -1317,7 +1317,7 @@ def sample_MoG(amps, means, covs, nsample, importance_sampling=False, factor_imp
         iw = []
         for i, ns in enumerate(nsample_per_component):
             sample_tmp = np.random.multivariate_normal(means[i], (factor_importance**2)*covs[i], ns)
-            iw_tmp = multivariate_normal.pdf(sample_tmp, mean=means[i], cov=covs[i])/multivariate_normal.pdf(sample_tmp, mean=means[i], cov=(factor_importance**2)*covs[i])
+            iw_tmp = multivariate_normal.pdf(sample_tmp, mean=means[i], cov=(factor_importance**2)*covs[i])/multivariate_normal.pdf(sample_tmp, mean=means[i], cov=(factor_importance**2)*covs[i])
             sample.append(sample_tmp)            
             iw.append(iw_tmp)
         sample = np.vstack(sample)
