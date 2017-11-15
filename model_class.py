@@ -1970,6 +1970,7 @@ class model3(parent_model):
         self.oii_obs = [None, None, None] # Although only ELG class has oii and redz, for consistency, we have three elements lists.
         # Importance weight: Used when importance sampling is asked for
         self.iw = [None, None, None]
+        self.iw0 = [None, None, None] # 0 denotes intrinsic sample
         self.dalpha_ELG = 0.8 # Must be smaller than -(alpha+1) = 1.8
         self.dalpha_NonELG = 0.1 # Must be smaller than -(alpha+1) = 0.52
         self.dalpha_NoZ = 1.75 # Must be smaller than -(alpha+1) = 2.48
@@ -2241,10 +2242,10 @@ class model3(parent_model):
             if importance_sampling:
                 # Sample flux
                 gflux, iw = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC, importance_sampling=True, alpha_importance = alpha+dalpha[i])
-                self.iw[i] = iw
+                self.iw0[i] = iw
                 # Generate Nsample from MoG.
                 MoG_sample, iw = sample_MoG(amps, means, covs, NSAMPLE, importance_sampling=True, factor_importance = self.sigma_proposal)
-                self.iw[i] *= iw            
+                self.iw0[i] *= iw            
             else:
                 # Sample flux            
                 gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, alpha, exact=True, fmax=self.fmax_MC)            
@@ -2272,11 +2273,11 @@ class model3(parent_model):
                 # Also, collect unormalized importance weight factors, multiply and normalize.
                 self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
                 # print "g_err_seed importance weights. First 10", iw[]
-                self.iw[i] *= iw
+                self.iw0[i] *= iw
                 self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-                self.iw[i] *= iw        
+                self.iw0[i] *= iw        
                 self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-                self.iw[i] *= iw
+                self.iw0[i] *= iw
                 if i==2: #ELG 
                     mu_goii, redz = MoG_sample[:,2], MoG_sample[:,3]
                     mu_oii = mu_g - mu_goii
@@ -2284,11 +2285,11 @@ class model3(parent_model):
 
                     # oii error seed
                     self.oii_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
-                    self.iw[i] *= iw
+                    self.iw0[i] *= iw
                     # Saving
                     self.redz0[i] = redz
                     self.oii0[i] = oii
-                self.iw[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
+                self.iw0[i] = (self.iw[i]/self.iw[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
             else:
                 self.g_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
                 self.r_err_seed[i] = gen_err_seed(self.NSAMPLE[i], sigma=1, return_iw_factor=False)
@@ -2304,7 +2305,7 @@ class model3(parent_model):
                     # Saving
                     self.redz0[i] = redz
                     self.oii0[i] = oii
-                self.iw[i] = np.ones_like(self.g_err_seed[i])
+                self.iw0[i] = np.ones_like(self.g_err_seed[i])
 
         return
 
@@ -2351,7 +2352,7 @@ class model3(parent_model):
             self.gmag_obs[i] = flux2mag(self.gflux_obs[i])
 
             # Updating the importance weight with the cut
-            self.iw[i] = self.iw[i][ifcut]
+            self.iw[i] = self.iw0[i][ifcut]
 
             # Number of samples after the cut.
             Nsample = self.gmag_obs[i].size
