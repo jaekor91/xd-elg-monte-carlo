@@ -2687,7 +2687,7 @@ class model3(parent_model):
         self.gen_err_conv_sample()
 
         # Create the selection.
-        eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred = self.gen_selection_volume_scipy()
+        eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred = self.gen_selection_volume_scipy(gaussian_smoothing=True)
 
         # Used for debugging
         # print self.cell_select.size
