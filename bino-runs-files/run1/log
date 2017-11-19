@@ -86,4 +86,4 @@ elif self.FoM_option == "Quadratic_redz": # FoM linearly scale with redshift
 
 
 
-Note: It is important to note that
+Note: It is important to note that the NDM selection algorithm used here is different from other versions. Therefore, when studying the precision of various selections, the most up-to-date version should be used.
