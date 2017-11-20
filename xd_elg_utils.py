@@ -1419,7 +1419,7 @@ def dNdf_fit_broken_pow(flux, weight, bw, fmin, fmax, area, niter = 5, pow_tol =
         # Generate initial parameters
         init_params = pow_param_init_dNdf(left_hist, left_f, right_hist, right_f, bw, area)
 #         print init_params
-        init_params = np.array([init_params[0], -1.05, mag2flux(22.25), 1]) #init_params[1]*5])
+        init_params = np.array([init_params[0], -1.05, mag2flux(23.), 1]) #init_params[1]*5])
     
         # Optimize the parameters.
         res = opt.minimize(ntotal_loglike_pow, init_params,tol=pow_tol,method="Nelder-Mead" )
