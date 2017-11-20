@@ -1949,7 +1949,7 @@ class model3(parent_model):
 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
         self.fmin_MC = mag2flux(24.5) # Note that around 23.8, the power law starts to break down.
-        self.fmax_MC = mag2flux(18.00)
+        self.fmax_MC = mag2flux(17.50)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
         # 0: NonELG, 1: NoZ, 2: ELG
@@ -1980,7 +1980,9 @@ class model3(parent_model):
         # Power law from which to generate importance samples.
         self.alpha_q = [-1.52+0.1, -3.479+1.75, -2.82+0.8]
         self.phi_q = [6108, 255.39,869] # This information is not needed.
-        self.sigma_proposal = 1.0 # sigma factor for the proposal        
+
+        # For MoG
+        self.sigma_proposal = 1.25 # sigma factor for the proposal        
 
         # FoM per sample. Note that FoM depends on the observed property such as OII.
         self.FoM_obs = [None, None, None]
@@ -1999,7 +2001,7 @@ class model3(parent_model):
         # var_x, var_y, gmag. Width (0.01, 0.01, 0.01)
         self.var_x_limits = [-.25, 3.5] # g-z
         self.var_y_limits = [-1., 1.5] # r-z
-        self.gmag_limits = [18.0, 24.]
+        self.gmag_limits = [18, 24.]
         self.num_bins = [375, 250, 600]
 
         # Number of pixels width to be used during Gaussian smoothing.
@@ -2251,6 +2253,8 @@ class model3(parent_model):
         Given MoG x dNdf parameters specified by [amps, means, covs] corresponding to K_selected[i] components
         and either MODELS_pow or MODELS_broken_pow, return a sample proportional to area.
 
+        Currently broken power law version is not supported.
+
         Importance sampling is always used.
         """
         if K_selected is None:
@@ -2263,7 +2267,7 @@ class model3(parent_model):
             MODELS = MODELS[MODELS.keys()[0]][K_selected[i]] # We only want the model with K components
             amps, means, covs = MODELS["amps"], MODELS["means"], MODELS["covs"]
 
-            if self.use_broken_dNdf:
+            if False:# self.use_broken_dNdf:
                 # Compute the number of sample to draw.
                 NSAMPLE = int(round(integrate_broken_pow_law(self.MODELS_broken_pow[i], self.fmin_MC, self.fmax_MC, df=1e-3) * self.area_MC))#
 
