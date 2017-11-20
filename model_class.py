@@ -1978,7 +1978,7 @@ class model3(parent_model):
         self.iw = [None, None, None]
         self.iw0 = [None, None, None] # 0 denotes intrinsic sample
         # Power law from which to generate importance samples.
-        self.alpha_q = [-1.52+0.1, -3.479+1.75, -2.82+0.8]
+        self.alpha_q = [-1.52+0.1, -2.95+1.25, -2.33+0.5]
         self.phi_q = [6108, 255.39,869] # This information is not needed.
 
         # For MoG
