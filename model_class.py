@@ -2260,12 +2260,14 @@ class model3(parent_model):
             MODELS = MODELS[MODELS.keys()[0]][K_selected[i]] # We only want the model with K components
             amps, means, covs = MODELS["amps"], MODELS["means"], MODELS["covs"]
 
-            if False:# self.use_broken_dNdf:
-                # Broken pow law model
-                alpha, beta, fs, phi = self.MODELS_broken_pow[i]
-
+            if self.use_broken_dNdf:
                 # Compute the number of sample to draw.
-                NSAMPLE = int(round(integrate_broken_pow_law(alpha, A, self.fmin_MC, self.fmax_MC) * self.area_MC))#
+                NSAMPLE = int(round(integrate_broken_pow_law(self.MODELS_broken_pow[i], self.fmin_MC, self.fmax_MC, df=1e-3) * self.area_MC))#
+
+                # Sample flux
+                gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, self.alpha_q[i], exact=True, fmax=self.fmax_MC, importance_sampling=False)
+                r_tilde = broken_pow_law(self.MODELS_broken_pow[i], gflux)/pow_law([self.alpha_q[i], self.phi_q[i]], gflux)
+                self.iw0[i] = (r_tilde/r_tilde.sum()) 
 
             else:
                 # Pow law model
@@ -2274,13 +2276,14 @@ class model3(parent_model):
                 # Compute the number of sample to draw.
                 NSAMPLE = int(round(integrate_pow_law(alpha, A, self.fmin_MC, self.fmax_MC) * self.area_MC))#
 
+                # Sample flux
+                gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, self.alpha_q[i], exact=True, fmax=self.fmax_MC, importance_sampling=False)
+                r_tilde = pow_law([alpha, A], gflux)/pow_law([self.alpha_q[i], self.phi_q[i]], gflux)
+                self.iw0[i] = (r_tilde/r_tilde.sum()) 
+
+
             print "%s sample number: %d" % (self.category[i], NSAMPLE)
 
-            # ---- pow law
-            # Sample flux
-            gflux = gen_pow_law_sample(self.fmin_MC, NSAMPLE, self.alpha_q[i], exact=True, fmax=self.fmax_MC, importance_sampling=False)
-            r_tilde = pow_law([alpha, A], gflux)/pow_law([self.alpha_q[i], self.phi_q[i]], gflux)
-            self.iw0[i] = (r_tilde/r_tilde.sum()) 
 
             # Generate Nsample from MoG.
             MoG_sample, iw = sample_MoG(amps, means, covs, NSAMPLE, importance_sampling=True, factor_importance = self.sigma_proposal)
