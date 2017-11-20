@@ -70,9 +70,9 @@ class parent_model:
     def __init__(self, sub_sample_num, tag=""):
         # Basic class variables
         self.areas = np.load("spec-area-DR5-matched.npy")
-        self.mag_max = 24.25 # We model moderately deeper than 24.
-        self.mag_min = 18
-        self.mag_min_model = 22.
+        self.mag_max = 24.25 # Magnitude range considered.
+        self.mag_min = 17.5
+        self.mag_min_model = 22.75
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
 
@@ -243,34 +243,35 @@ class parent_model:
         """
         area_F34 = self.areas[1]+self.areas[2]
 
+        mag_min = self.mag_min_model
+
         if self.sub_sample_num == -1: # F2
             area_train = self.areas[0]
-            iTrain = (self.field ==2) & (self.gflux < mag2flux(17.5))        
+            iTrain = (self.field ==2) & (self.gflux < mag2flux(mag_min))        
 
         # 0: Full F34 data
         if self.sub_sample_num == 0:
-            iTrain = (self.field !=2) & (self.gflux < mag2flux(17.5))
+            iTrain = (self.field !=2) & (self.gflux < mag2flux(mag_min))
             area_train = area_F34
         # 1: F3 data only
         if self.sub_sample_num == 1:
-            iTrain = (self.field == 3) & (self.gflux < mag2flux(17.5))
+            iTrain = (self.field == 3) & (self.gflux < mag2flux(mag_min))
             area_train = self.areas[1]
         # 2: F4 data only
         if self.sub_sample_num == 2:
-            iTrain = (self.field == 4) & (self.gflux < mag2flux(17.5))
+            iTrain = (self.field == 4) & (self.gflux < mag2flux(mag_min))
             area_train = self.areas[2]
         # 3-7: CV1-CV5: Sub-sample F34 into five-fold CV sets.
         if self.sub_sample_num in [3, 4, 5, 6, 7]:
             iTrain, area_train = self.gen_train_set_idx_cv(tag)
-            iTrain = iTrain & (self.gflux < mag2flux(17.5))
+            iTrain = iTrain & (self.gflux < mag2flux(mag_min))
         # 8-10: Magnitude changes. For power law use full data. 
-        # Originally, g in [22, 23], [22.5, 23.5], [23, 24]. 
-        # Now, g in [17.5, 23], [22, 23.5], [23, 24].         
+        # Originally, g in [22, 23], [22.5, 23.5], [23, 24].  
         if self.sub_sample_num == 8:
-            iTrain = (self.gflux > mag2flux(23)) & (self.gflux < mag2flux(17.5))  & (self.field!=2)
+            iTrain = (self.gflux > mag2flux(23)) & (self.gflux < mag2flux(22.))  & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 9:
-            iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(22)) & (self.field!=2)
+            iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(22.5)) & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 10:
             iTrain = (self.gflux > mag2flux(24.)) & (self.gflux < mag2flux(23.)) & (self.field!=2)
@@ -288,7 +289,7 @@ class parent_model:
         """
         cache_success = False
         if cache:
-            for i in range(3):
+            for i in range(3):  
                 model_fname = "./MODELS-%s-%s-%s.npy" % (self.category[i], model_tag, cv_tag)
                 if os.path.isfile(model_fname):
                     self.MODELS[i] = np.load(model_fname).item()
@@ -2218,7 +2219,7 @@ class model3(parent_model):
         return 
 
 
-    def fit_dNdf_broken_pow(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.01):
+    def fit_dNdf_broken_pow(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=1e-2):
         """
         Model 3
         Fit mag pow laws
@@ -2233,7 +2234,7 @@ class model3(parent_model):
                     print "Cached result will be used for MODELS-%s-%s-%s-broken-pow." % (self.category[i], model_tag, cv_tag)
         if not cache_success:
             for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
-                print "Fitting power law for %s" % self.category[i]
+                print "Fitting broken power law for %s" % self.category[i]
                 ifit = self.iTrain & ibool
                 flux = self.gflux[ifit]
                 weight = self.w[ifit]
