@@ -12,6 +12,7 @@ from os.path import isfile, join
 
 from scipy.stats import multivariate_normal
 import scipy.stats as stats
+from scipy.integrate import simps, trapz, cumtrapz
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 import extreme_deconvolution as XD
@@ -1145,6 +1146,10 @@ def broken_pow_law(params, flux):
     phi = params[3]
     return phi/((flux/fs)**(-alpha)+(flux/fs)**(-beta) + 1e-12)
 
+def integrate_broken_pow_law(params, fmin, fmax, df):
+    farray = np.arange(fmin, fmax+df/2., df)
+    dNdf_grid = broken_pow_law(params, farray)
+    return trapz(dNdf_grid, farray)
 
 
 def dNdm2dNdf(m):
