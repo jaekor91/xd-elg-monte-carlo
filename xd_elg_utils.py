@@ -1362,6 +1362,83 @@ def pow_param_init_dNdf(left_hist, left_f, right_hist, right_f, bw, area):
     ans[1] = A_init
     return ans
 
+
+def dNdf_fit_broken_pow(flux, weight, bw, fmin, fmax, area, niter = 5, pow_tol =1e-5):
+    """
+    Given the fluxes and the corresponding weight, and the parameters for the histogram, 
+    return the best fit parameters for a *broken* pow law.
+    
+    Note: This function could be much more modular. But for now I keep it as it is.
+    """
+    # Computing the histogram.
+    bins = np.arange(fmin, fmax+bw/2., bw)
+    hist, bin_edges = np.histogram(flux, weights=weight, bins=bins)
+
+    # Compute the median magnitude
+    fmed = np.median(flux)
+
+    # Compute bin centers. Left set and right set.
+    bin_centers = (bin_edges[:-1]+bin_edges[1:])/2.
+    ileft = bin_centers < fmed
+    # left and right counts
+    left_hist = hist[ileft]
+    right_hist = hist[~ileft]
+    # left and right flux
+    left_f = bin_centers[ileft]
+    right_f = bin_centers[~ileft]
+
+    # Place holder for the best parameters
+    best_params_pow = np.zeros(4, dtype=np.float) 
+
+    # Empty list for the negative log-likelihood
+    list_nloglike = []
+    best_nloglike = -np.inf # -100
+
+    # Define negative total loglikelihood function given the histogram.
+    def ntotal_loglike_pow(params):
+        """
+        Total log likelihood.
+        """
+        total_loglike = 0
+
+        for i in range(bin_centers.size):
+            total_loglike += stats.poisson.logpmf(hist[i].astype(int), broken_pow_law(params, bin_centers[i]) * bw * area)
+
+        return -total_loglike
+
+    # fit for niter times 
+    counter = 0
+    while counter < niter:
+        print "Try %d" % counter
+
+        # Generate initial parameters
+        init_params = pow_param_init_dNdf(left_hist, left_f, right_hist, right_f, bw, area)
+#         print init_params
+        init_params = np.array([init_params[0], -1.05, mag2flux(22.25), 1]) #init_params[1]*5])
+    
+        # Optimize the parameters.
+        res = opt.minimize(ntotal_loglike_pow, init_params,tol=pow_tol,method="Nelder-Mead" )
+        counter+=1
+#         if counter % 2 == 0:
+        if res["success"]:
+            fitted_params = res["x"]
+
+            # Calculate the negative total likelihood
+            nloglike = ntotal_loglike_pow(fitted_params)
+            list_nloglike.append(nloglike)
+
+            # If loglike is the highest among seen, then update the parameters.
+            if nloglike > best_nloglike:
+                best_nloglike = nloglike
+                best_params_pow = fitted_params
+            print "Optimization success"
+        else:
+            print "Optimization failed."
+
+#     print(best_params_pow)
+
+    return best_params_pow
+
 def dNdf_fit(flux, weight, bw, fmin, fmax, area, niter = 5, pow_tol =1e-5):
     """
     Given the fluxes and the corresponding weight, and the parameters for the histogram, 
