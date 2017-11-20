@@ -1927,8 +1927,11 @@ class model3(parent_model):
         self.redz_lines = [0.6, 1.1, 1.6] # Redz
         self.gmag_lines = [21, 22, 23, 24]
 
-        # Fit parameters for pow law
+        # Fit parameters for pow/broken pow law
         self.MODELS_pow = [None, None, None]
+        self.MODELS_broken_pow = [None, None, None]
+        self.use_broken_dNdf = True # If true, use broken pow law.
+
 
         # Number of components chosen for each category based on the training sample.
         self.K_best = self.gen_K_best()
@@ -2190,6 +2193,7 @@ class model3(parent_model):
 
     def fit_dNdf(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.025):
         """
+        Model 3
         Fit mag pow laws
         """
         cache_success = False
@@ -2212,12 +2216,37 @@ class model3(parent_model):
         return 
 
 
+    def fit_dNdf_broken_pow(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.01):
+        """
+        Model 3
+        Fit mag pow laws
+        """
+        cache_success = False
+        if cache:
+            for i in range(3):
+                model_fname = "./MODELS-%s-%s-%s-broken-pow.npy" % (self.category[i], model_tag, cv_tag)
+                if os.path.isfile(model_fname):
+                    self.MODELS_broken_pow[i] = np.load(model_fname)
+                    cache_success = True
+                    print "Cached result will be used for MODELS-%s-%s-%s-broken-pow." % (self.category[i], model_tag, cv_tag)
+        if not cache_success:
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+                print "Fitting power law for %s" % self.category[i]
+                ifit = self.iTrain & ibool
+                flux = self.gflux[ifit]
+                weight = self.w[ifit]
+                self.MODELS_broken_pow[i] = dNdf_fit_broken_pow(flux, weight, bw, mag2flux(self.mag_max), mag2flux(self.mag_min_model), self.area_train, niter = Niter)
+                np.save("MODELS-%s-%s-%s-broken-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_broken_pow[i])
+
+        return 
+
+
 
     def gen_sample_intrinsic(self, K_selected=None, importance_sampling=False):
         """
         model 3
-        Given MoG x power law parameters specified by [amps, means, covs] corresponding to K_selected[i] components
-        and MODELS_pow, return a sample proportional to area.
+        Given MoG x dNdf parameters specified by [amps, means, covs] corresponding to K_selected[i] components
+        and either MODELS_pow or MODELS_broken_pow, return a sample proportional to area.
 
         If importance_sampling is True, then use user specified proposal distribution.
         """
