@@ -243,36 +243,38 @@ class parent_model:
         """
         area_F34 = self.areas[1]+self.areas[2]
 
+        if self.sub_sample_num == -1: # F2
+            area_train = self.areas[0]
+            iTrain = (self.field ==2) & (self.gflux < mag2flux(17.5))        
+
         # 0: Full F34 data
         if self.sub_sample_num == 0:
-            iTrain = (self.field !=2) & (self.gflux < mag2flux(22))
+            iTrain = (self.field !=2) & (self.gflux < mag2flux(17.5))
             area_train = area_F34
         # 1: F3 data only
         if self.sub_sample_num == 1:
-            iTrain = (self.field == 3) & (self.gflux < mag2flux(22))
+            iTrain = (self.field == 3) & (self.gflux < mag2flux(17.5))
             area_train = self.areas[1]
         # 2: F4 data only
         if self.sub_sample_num == 2:
-            iTrain = (self.field == 4) & (self.gflux < mag2flux(22))
+            iTrain = (self.field == 4) & (self.gflux < mag2flux(17.5))
             area_train = self.areas[2]
         # 3-7: CV1-CV5: Sub-sample F34 into five-fold CV sets.
         if self.sub_sample_num in [3, 4, 5, 6, 7]:
             iTrain, area_train = self.gen_train_set_idx_cv(tag)
-            iTrain = iTrain & (self.gflux < mag2flux(22))
+            iTrain = iTrain & (self.gflux < mag2flux(17.5))
         # 8-10: Magnitude changes. For power law use full data. 
-        # g in [22, 23], [22.5, 23.5], [23, 24]. 
+        # Originally, g in [22, 23], [22.5, 23.5], [23, 24]. 
+        # Now, g in [17.5, 23], [22, 23.5], [23, 24].         
         if self.sub_sample_num == 8:
-            iTrain = (self.gflux > mag2flux(23)) & (self.gflux < mag2flux(22))  & (self.field!=2)
+            iTrain = (self.gflux > mag2flux(23)) & (self.gflux < mag2flux(17.5))  & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 9:
-            iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(22.5)) & (self.field!=2)
+            iTrain = (self.gflux > mag2flux(23.5)) & (self.gflux < mag2flux(22)) & (self.field!=2)
             area_train = area_F34
         if self.sub_sample_num == 10:
             iTrain = (self.gflux > mag2flux(24.)) & (self.gflux < mag2flux(23.)) & (self.field!=2)
             area_train = area_F34                        
-        if self.sub_sample_num == 11: # F2
-            area_train = self.areas[0]
-            iTrain = (self.field ==2) & (self.gflux < mag2flux(22))
 
         return iTrain, area_train
 
