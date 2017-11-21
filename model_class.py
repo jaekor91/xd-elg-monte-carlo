@@ -3111,7 +3111,7 @@ class model3(parent_model):
             m = np.linspace(m_min, m_max, m_Nbins, endpoint=False)
             dm = (m_max-m_min)/m_Nbins
 
-            for m_tmp in m:
+            for i, m_tmp in enumerate(m):
                 MD_hist_N_regular[:, :, i] += self.frac_regular * integrate_mag_broken_pow_law(e, m_tmp, m_tmp+dm, area=self.area_MC) / np.multiply.reduce((self.num_bins[:2]))
         # dNdf pow law version
         # for e in self.MODELS_pow: 
