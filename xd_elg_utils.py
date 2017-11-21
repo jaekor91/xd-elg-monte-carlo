@@ -1158,28 +1158,32 @@ def dNdm2dNdf(m):
     """
     return (2*np.log(10)/5.)*mag2flux(m)
 
-def pow_param_init(left_hist, left_f, right_hist, right_f, bw, area):
+def pow_mag_param_init(bin_centers, left_hist, right_hist, bw, area):
     """
     Return initial guess for the exponent and normalization.
     """
-    # selecting non-zero bin one from left and one from right. 
-    c_L = 0; c_R = 0
-    while c_L==0 or c_R == 0 or c_L >= c_R:
-        L = np.random.randint(low=0,high=left_hist.size,size=1)
-        f_L = left_f[L]
-        c_L = left_hist[L]
-        R = np.random.randint(low=0,high=right_hist.size,size=1)
-        f_R = right_f[R]
-        c_R = right_hist[R]
-#     print(L,R)
-    # exponent
-    alpha_init = -1 + (np.log(c_L/np.float(c_R))/np.log(f_L/np.float(f_R)))
-    A_init = c_R/(f_R**(alpha_init+1) * bw * (0.4 * np.log(10)) * area)
+    # Size of the left and right histogram length
+    N_left = left_hist.size
+    N_right = right_hist.size
     
-    ans = np.zeros(2, dtype=np.float)
-    ans[0] = alpha_init
-    ans[1] = A_init
-    return ans
+    # Randomly pick a bin from the left and the right
+    idx_left = np.random.choice(range(N_left))
+    idx_right = np.random.choice(range(N_right))
+    
+    # Corresponding mag values and counts
+    mag_left = bin_centers[idx_left]
+    mag_right= bin_centers[idx_right+N_left]
+    c_left = left_hist[idx_left]
+    c_right = right_hist[idx_right]
+
+    print mag_left, mag_right, c_left, c_right
+    # assert False
+    
+    # Solve for A and alpha 
+    alpha =  np.log((c_left+1)/float(c_right+1)) / np.log(mag_left/float(mag_right)) # +1 for regularization
+    A = c_left / ((mag_left ** alpha) * bw * area)
+    
+    return A, alpha
 
 
 def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
@@ -1202,12 +1206,8 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
     # left and right counts
     left_hist = hist[ileft]
     right_hist = hist[~ileft]
-    # left and right flux
-    left_f = mag2flux(bin_centers[ileft])
-    right_f = mag2flux(bin_centers[~ileft])
-    flux_centers = mag2flux(bin_centers)
 
-    # Place holder for the best parameters
+    # Place holder for the best parameters A, alpha
     best_params_pow = np.zeros(2,dtype=np.float) 
 
     # Empty list for the negative log-likelihood
@@ -1220,23 +1220,25 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
         Total log likelihood.
         """
         total_loglike = 0
-
-        for i in range(flux_centers.size):
-            total_loglike += stats.poisson.logpmf(hist[i].astype(int), pow_law(params, flux_centers[i]) * bw * (0.4 * np.log(10) * flux_centers[i]) * area)
+        A, alpha = params
+        for i in range(bin_centers.size):
+            total_loglike += stats.poisson.logpmf(hist[i].astype(int), A * bin_centers[i]**alpha * bw * area)
 
         return -total_loglike
 
     # fit for niter times 
     counter = 0
     while counter < niter:
+        print "Try %d" % counter
         # Generate initial parameters
-        init_params = pow_param_init(left_hist, left_f, right_hist, right_f, bw, area)
-
+        init_params = pow_mag_param_init(bin_centers, left_hist, right_hist, bw, area)
+        print init_params
+        # assert False
+        
         # Optimize the parameters.
         res = opt.minimize(ntotal_loglike_pow, init_params,tol=pow_tol,method="Nelder-Mead" )
         counter+=1
-        if counter % 2 == 0:
-            print(counter)
+
         if res["success"]:
             fitted_params = res["x"]
 
@@ -1248,12 +1250,49 @@ def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
             if nloglike > best_nloglike:
                 best_nloglike = nloglike
                 best_params_pow = fitted_params
+            print "Optimization suceed."
         else:
             print "Optimization failed."
 
 #     print(best_params_pow)
 
     return best_params_pow
+
+
+def gen_mag_pow_law_samples(params, mag_min, mag_max, Nsample):
+    """
+    Generate Nsample power law samples in the specified range.
+    """
+    A, alpha = params
+    
+    if Nsample > 1e5:
+        N_per_iter = int(1e5)
+    else:
+        N_per_iter = Nsample
+        
+    N_counter = 0 # Tallying the number of samples generate so far
+    mag_list = [] 
+    while N_counter < Nsample:
+        uni = np.random.random(N_per_iter) # Sample uniform randoms
+        mag_tmp = mag_max * uni**(1/float(alpha+1)) # Use inverse cdf function to compute samples
+#         print mag_tmp
+        
+        ibool = (mag_tmp > mag_min) & (mag_tmp < mag_max) # Check if in the range
+        mag_tmp = mag_tmp[ibool]
+        mag_list.append(mag_tmp)
+        N_counter += mag_tmp.size # Update the siae
+#         assert False
+    mag_list = np.concatenate(mag_list)[:Nsample]
+    
+    return mag_list
+
+
+def integrate_mag_pow_law(params, mag_min, mag_max, area = 1):
+    # Returns integrated number given the law
+    A, alpha = params
+    return (A/float(alpha+1)) * (mag_max**(alpha+1) - mag_min**(alpha+1)) * area
+
+
 
 
 
