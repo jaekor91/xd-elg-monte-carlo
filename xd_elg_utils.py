@@ -1185,6 +1185,9 @@ def pow_mag_param_init(bin_centers, left_hist, right_hist, bw, area):
     
     return A, alpha
 
+
+
+
 def dNdm_fit_broken_pow(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
     """
     Given the magnitudes and the corresponding weight, and the parameters for the histogram, 
@@ -1230,13 +1233,15 @@ def dNdm_fit_broken_pow(mag, weight, bw, magmin, magmax, area, niter = 5, pow_to
         print "Try %d" % counter
         # Generate initial parameters
         init_params = pow_mag_param_init(bin_centers, left_hist, right_hist, bw, area)
-        print init_params
         A, alpha = init_params
         # assert False
         
         # Optimize the parameters.
         ms_guess = 22.5
-        res = opt.minimize(ntotal_loglike_pow, [A*(ms_guess**alpha), ms_guess, alpha, -1], tol=pow_tol,method="Nelder-Mead" )
+
+        init_params = [max(A*ms_guess**2, 100), ms_guess, min(alpha, 10), np.random.choice([-0.1, 0.1])]        
+        print init_params        
+        res = opt.minimize(ntotal_loglike_pow, init_params, tol=pow_tol,method="Powell")
         counter+=1
 
         if res["success"]:
@@ -1252,6 +1257,8 @@ def dNdm_fit_broken_pow(mag, weight, bw, magmin, magmax, area, niter = 5, pow_to
                 best_params_pow = fitted_params
             print "Optimization suceed."
         else:
+            fitted_params = res["x"]
+            print "Stopped at", fitted_params
             print "Optimization failed."
 
 #     print(best_params_pow)
@@ -1271,7 +1278,7 @@ def integrate_mag_broken_pow_law(params, mag_min, mag_max, area=1):
     dm = 5e-3
     mag_bins = np.arange(mag_min, mag_max, dm)
     return trapz(mag_broken_pow_law(params, mag_bins), mag_bins)
-    
+
 
 
 def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
