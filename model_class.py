@@ -1951,7 +1951,7 @@ class model3(parent_model):
 
         # Flux range to draw the sample from. Slightly larger than the range we are interested.
         self.fmin_MC = mag2flux(24.5) # Note that around 23.8, the power law starts to break down.
-        self.fmax_MC = mag2flux(17.50)
+        self.fmax_MC = mag2flux(19.5)
         self.fcut = mag2flux(24.) # After noise addition, we make a cut at 24.
         # Original sample.
         # 0: NonELG, 1: NoZ, 2: ELG
@@ -2004,9 +2004,9 @@ class model3(parent_model):
         # Selection grid limits and number of bins 
         # var_x, var_y, gmag. Width (0.01, 0.01, 0.01)
         self.var_x_limits = [-.25, 3.5] # g-z
-        self.var_y_limits = [-1., 1.5] # r-z
-        self.gmag_limits = [18, 24.]
-        self.num_bins = [375, 250, 600]
+        self.var_y_limits = [-0.6, 1.5] # g-r
+        self.gmag_limits = [19.5, 24.]
+        self.num_bins = [375, 210, 450]
 
         # Number of pixels width to be used during Gaussian smoothing.
         self.sigma_smoothing = [5., 5., 5.]
