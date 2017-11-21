@@ -1933,7 +1933,9 @@ class model3(parent_model):
         # Fit parameters for pow/broken pow law
         self.MODELS_pow = [None, None, None]
         self.MODELS_broken_pow = [None, None, None]
-        self.use_broken_dNdf = True # If true, use broken pow law.
+        self.MODELS_mag_pow = [None, None, None] # magnitude space power law.
+        self.use_dNdm = True # If true, use magnitude space number density distribution.
+        # self.use_broken_dNdf = True # If true, use broken pow law.
 
 
         # Number of components chosen for each category based on the training sample.
@@ -2219,6 +2221,34 @@ class model3(parent_model):
                 np.save("MODELS-%s-%s-%s-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
 
         return 
+
+
+    def fit_dNdm(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.025):
+        """
+        Model 3
+        Fit mag pow laws
+        """
+        cache_success = False
+        if cache:
+            for i in range(3):
+                model_fname = "./MODELS-%s-%s-%s-mag-pow.npy" % (self.category[i], model_tag, cv_tag)
+                if os.path.isfile(model_fname):
+                    self.MODELS_mag_pow[i] = np.load(model_fname)
+                    cache_success = True
+                    print "Cached result will be used for MODELS-%s-%s-%s-mag-pow." % (self.category[i], model_tag, cv_tag)
+        if not cache_success:
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+                print "Fitting power law for %s" % self.category[i]
+                ifit = self.iTrain & ibool
+                flux = self.gflux[ifit]
+                weight = self.w[ifit]
+                self.MODELS_mag_pow[i] = dNdm_fit(flux, weight, bw, mag2flux(self.mag_max), mag2flux(self.mag_min_model), self.area_train, niter = Niter)
+                np.save("MODELS-%s-%s-%s-mag-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
+
+        return None
+
+
+
 
 
     def fit_dNdf_broken_pow(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=1e-2):
