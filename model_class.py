@@ -2249,6 +2249,31 @@ class model3(parent_model):
 
 
 
+    def fit_dNdm_broken_pow(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.05):
+        """
+        Model 3
+        Fit mag pow laws
+        """
+        cache_success = False
+        if cache:
+            for i in range(3):
+                model_fname = "./MODELS-%s-%s-%s-mag-broken-pow.npy" % (self.category[i], model_tag, cv_tag)
+                if os.path.isfile(model_fname):
+                    self.MODELS_mag_pow[i] = np.load(model_fname)
+                    cache_success = True
+                    print "Cached result will be used for MODELS-%s-%s-%s-mag-broken-pow." % (self.category[i], model_tag, cv_tag)
+        if not cache_success:
+            for i, ibool in enumerate([self.iNonELG, self.iNoZ, self.iELG]):
+                print "Fitting broken power law for %s" % self.category[i]
+                ifit = self.iTrain & ibool
+                flux = self.gflux[ifit]
+                weight = self.w[ifit]
+                self.MODELS_mag_pow[i] = dNdm_fit_broken_pow(flux2mag(flux), weight, bw, self.mag_min_model, self.mag_max, self.area_train, niter = Niter)                
+                np.save("MODELS-%s-%s-%s-mag-broken-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_mag_pow[i])
+
+        return None
+
+
 
 
     def fit_dNdf_broken_pow(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=1e-2):
