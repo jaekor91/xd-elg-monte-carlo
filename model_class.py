@@ -71,8 +71,8 @@ class parent_model:
         # Basic class variables
         self.areas = np.load("spec-area-DR5-matched.npy")
         self.mag_max = 24.25 # Magnitude range considered.
-        self.mag_min = 17.5
-        self.mag_min_model = 22.75
+        self.mag_min = 17.
+        self.mag_min_model = 17.
         self.category = ["NonELG", "NoZ", "ELG"]
         self.colors = ["black", "red", "blue"]
 
@@ -2223,7 +2223,7 @@ class model3(parent_model):
         return 
 
 
-    def fit_dNdm(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.025):
+    def fit_dNdm(self, model_tag="", cv_tag="", cache=False, Niter=5, bw=0.05):
         """
         Model 3
         Fit mag pow laws
@@ -2242,8 +2242,8 @@ class model3(parent_model):
                 ifit = self.iTrain & ibool
                 flux = self.gflux[ifit]
                 weight = self.w[ifit]
-                self.MODELS_mag_pow[i] = dNdm_fit(flux, weight, bw, mag2flux(self.mag_max), mag2flux(self.mag_min_model), self.area_train, niter = Niter)
-                np.save("MODELS-%s-%s-%s-mag-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_pow[i])
+                self.MODELS_mag_pow[i] = dNdm_fit(flux2mag(flux), weight, bw, self.mag_min_model, self.mag_max, self.area_train, niter = Niter)                
+                np.save("MODELS-%s-%s-%s-mag-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_mag_pow[i])
 
         return None
 
