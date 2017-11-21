@@ -1979,12 +1979,14 @@ class model3(parent_model):
         # Importance weight: Used when importance sampling is asked for
         self.iw = [None, None, None]
         self.iw0 = [None, None, None] # 0 denotes intrinsic sample
-        # Power law from which to generate importance samples.
-        self.alpha_q = [-1.52+0.1, -2.95+1.25, -2.33+0.5]
-        self.phi_q = [6108, 255.39,869] # This information is not needed.
+
+        # Mag Power law from which to generate importance samples.
+        self.alpha_q = [9, 20, 20]
+        self.A_q = [1, 1, 1] # This information is not needed.
+        # These are not really used anymore.
 
         # For MoG
-        self.sigma_proposal = 1.25 # sigma factor for the proposal        
+        self.sigma_proposal = 1.5 # sigma factor for the proposal        
 
         # FoM per sample. Note that FoM depends on the observed property such as OII.
         self.FoM_obs = [None, None, None]
@@ -2396,6 +2398,81 @@ class model3(parent_model):
             self.iw0[i] = (self.iw0[i]/self.iw0[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
 
         return
+
+
+
+    def gen_sample_intrinsic_mag(self, K_selected=None):
+        """
+        model 3
+        Given MoG x dNdm parameters specified by [amps, means, covs] corresponding to K_selected[i] components
+        and either MODELS_mag_pow. Broken power law version is used. 
+
+        Importance sampling is always used.
+        """
+        if K_selected is None:
+            K_selected = self.K_best
+
+        # NonELG, NoZ and ELG
+        for i in range(3):
+            # MoG model
+            MODELS = self.MODELS[i]
+            MODELS = MODELS[MODELS.keys()[0]][K_selected[i]] # We only want the model with K components
+            amps, means, covs = MODELS["amps"], MODELS["means"], MODELS["covs"]
+
+            # Compute the number of sample to draw.
+            NSAMPLE = int(integrate_mag_broken_pow_law(self.MODELS_mag_pow[i], flux2mag(self.fmax_MC), flux2mag(self.fmin_MC), area = self.area_MC))
+            # Sample flux ***************************
+            gmag = gen_mag_pow_law_samples([self.A_q[i], self.alpha_q[i]], flux2mag(self.fmax_MC), flux2mag(self.fmin_MC), NSAMPLE)
+            # assert False            
+            r_tilde = mag_broken_pow_law(self.MODELS_mag_pow[i], gmag)/mag_pow_law([self.A_q[i], self.alpha_q[i]], gmag)
+            self.iw0[i] = (r_tilde/r_tilde.sum()) 
+
+            print "%s sample number: %d" % (self.category[i], NSAMPLE)
+            gflux = mag2flux(gmag)
+            # assert False
+
+            # Generate Nsample from MoG.
+            MoG_sample, iw = sample_MoG(amps, means, covs, NSAMPLE, importance_sampling=True, factor_importance = self.sigma_proposal)
+            self.iw0[i] *= iw            
+
+            # For all categories
+            mu_g = flux2asinh_mag(gflux, band = "g")
+            mu_gz, mu_gr = MoG_sample[:,0], MoG_sample[:,1]
+            mu_z = mu_g - mu_gz
+            mu_r = mu_g - mu_gr
+
+            zflux = asinh_mag2flux(mu_z, band = "z")
+            rflux = asinh_mag2flux(mu_r, band = "r")
+            
+            # Saving
+            self.gflux0[i] = gflux
+            self.rflux0[i] = rflux
+            self.zflux0[i] = zflux
+            self.NSAMPLE[i] = NSAMPLE
+
+            # Gen err seed and save
+            # Also, collect unormalized importance weight factors, multiply and normalize.
+            self.g_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            # print "g_err_seed importance weights. First 10", iw[]
+            self.iw0[i] *= iw
+            self.r_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            self.iw0[i] *= iw        
+            self.z_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+            self.iw0[i] *= iw
+            if i==2: #ELG 
+                mu_goii, redz = MoG_sample[:,2], MoG_sample[:,3]
+                mu_oii = mu_g - mu_goii
+                oii = asinh_mag2flux(mu_oii, band = "oii")
+
+                # oii error seed
+                self.oii_err_seed[i], iw = gen_err_seed(self.NSAMPLE[i], sigma=self.sigma_proposal, return_iw_factor=True)
+                self.iw0[i] *= iw
+                # Saving
+                self.redz0[i] = redz
+                self.oii0[i] = oii
+            self.iw0[i] = (self.iw0[i]/self.iw0[i].sum()) * self.NSAMPLE[i] # Normalization and multiply by the number of samples generated.
+
+        return        
 
 
     def set_err_lims(self, glim, rlim, zlim, oii_lim):
@@ -3027,15 +3104,25 @@ class model3(parent_model):
         print "Computing magnitude dependent regularization."
         start = time.time()
         MD_hist_N_regular = np.zeros_like(MD_hist_N_total)
-        for e in self.MODELS_pow: 
-            alpha, A = e
+        # dNdm - broken pow law version
+        for e in self.MODELS_mag_pow: 
             m_min, m_max = self.gmag_limits[0], self.gmag_limits[1]
             m_Nbins = self.num_bins[2]
             m = np.linspace(m_min, m_max, m_Nbins, endpoint=False)
             dm = (m_max-m_min)/m_Nbins
-            dNdm = integrate_pow_law(alpha, A, mag2flux(m+dm), mag2flux(m)) * self.area_MC/ np.multiply.reduce((self.num_bins[:2]))
-            for i, n in enumerate(dNdm):
-                MD_hist_N_regular[:, :, i] += n * self.frac_regular
+
+            for m_tmp in m:
+                MD_hist_N_regular[:, :, i] += self.frac_regular * integrate_mag_broken_pow_law(e, m_tmp, m_tmp+dm, area=self.area_MC) / np.multiply.reduce((self.num_bins[:2]))
+        # dNdf pow law version
+        # for e in self.MODELS_pow: 
+        #     alpha, A = e
+        #     m_min, m_max = self.gmag_limits[0], self.gmag_limits[1]
+        #     m_Nbins = self.num_bins[2]
+        #     m = np.linspace(m_min, m_max, m_Nbins, endpoint=False)
+        #     dm = (m_max-m_min)/m_Nbins
+        #     dNdm = integrate_pow_law(alpha, A, mag2flux(m+dm), mag2flux(m)) * self.area_MC/ np.multiply.reduce((self.num_bins[:2]))
+        #     for i, n in enumerate(dNdm):
+        #         MD_hist_N_regular[:, :, i] += n * self.frac_regular
 
         print "Time taken: %.2f seconds" % (time.time() - start)        
 
