@@ -37,7 +37,7 @@ use_cached = True # Use cached models?
 visualize_fit = False
 validate = True
 plot_boundary = False 
-MC_AREA = 1000  # In sq. deg.
+MC_AREA = 2000  # In sq. deg.
 
 # Correspond to 1,000 sq. deg.
 # NonELG sample number: 16,896,579
@@ -51,7 +51,8 @@ for j in [0]: # , 1, 2, 11]:
     print "/----- %s -----/" % sub_sample_name[j]
 
     print("# ----- Model3 ----- #")
-    instance_model = model3(j)        
+    instance_model = model3(j)
+    instance_model.frac_regular = 0.025 # If using 2000 sq. deg.
     if plot_data:
         print "Plot original data points"
         instance_model.plot_data("model3", sub_sample_name[j], guide=True) # Plot all together
@@ -62,7 +63,7 @@ for j in [0]: # , 1, 2, 11]:
         instance_model.fit_MoG(NK_list, "model3", sub_sample_name[j], cache=True, Niter=Niter)
         print "\n"
         print "Fit Pow"
-        instance_model.fit_dNdf("model3", "Full", cache=True, Niter=Niter)                    
+        instance_model.fit_dNdm_broken_pow("model3", "Full", cache=True, Niter=Niter)                    
         # if (j < 8) or (j == 11):
         #     instance_model.fit_dNdf("model3", sub_sample_name[j], cache=True, Niter=Niter)
         # else:
@@ -88,7 +89,7 @@ for j in [0]: # , 1, 2, 11]:
         print "Generate Nsample from intrinsic density proportional to area: %.1f" % MC_AREA
         instance_model.set_area_MC(MC_AREA)
         start = time.time()
-        instance_model.gen_sample_intrinsic()
+        instance_model.gen_sample_intrinsic_mag()
         print "Time for generating samples: %.1f seconds" % (time.time()-start)
         print "Validate on the DEEP2 sample by field"
         nums_list_2nd = []
@@ -102,33 +103,33 @@ for j in [0]: # , 1, 2, 11]:
             print "\n"
         nums_list.append(np.asarray(nums_list_2nd))
 
-    if plot_boundary:
-        print "/---- Plotting boundary ----/"
-        if j ==0:
-            instance_model.set_area_MC(MC_AREA)            
-            instance_model.gen_sample_intrinsic()
+    # if plot_boundary:
+    #     print "/---- Plotting boundary ----/"
+    #     if j ==0:
+    #         instance_model.set_area_MC(MC_AREA)            
+    #         instance_model.gen_sample_intrinsic()
 
-            print "Typcial depths"
-            # Convolve error to the intrinsic sample.
-            start = time.time()
-            instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
-            instance_model.gen_err_conv_sample()
-            print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
+    #         print "Typcial depths"
+    #         # Convolve error to the intrinsic sample.
+    #         start = time.time()
+    #         instance_model.set_err_lims(23.8, 23.4, 22.4, 8) 
+    #         instance_model.gen_err_conv_sample()
+    #         print "Time for convolving error sample: %.2f seconds" % (time.time() - start)
 
-            # Create the selection.
-            start = time.time()            
-            eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-                N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
-            print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
+    #         # Create the selection.
+    #         start = time.time()            
+    #         eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+    #             N_ELG_NonDESI_pred = instance_model.gen_selection_volume_scipy()
+    #         print "Time for generating selection volume: %.2f seconds" % (time.time() - start)
 
 
-            print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
-            print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
-                N_ELG_NonDESI_pred
+    #         print "Eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred, N_ELG_NonDESI_pred"
+    #         print eff_pred, Ntotal_pred, Ngood_pred, N_NonELG_pred, N_NoZ_pred, N_ELG_DESI_pred,\
+    #             N_ELG_NonDESI_pred
 
-            for i in [2, 1, 0]:
-                    instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
-            print "\n"
+    #         for i in [2, 1, 0]:
+    #                 instance_model.gen_select_boundary_slices(slice_dir = i, model_tag="model3", cv_tag="Full-typical", guide=True)
+    #         print "\n"
 
     # Part of validation scheme 
     # np.save("validation_set_model3_Full_PowerLaw", np.asarray(nums_list))
