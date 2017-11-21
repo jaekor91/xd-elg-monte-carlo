@@ -1277,7 +1277,7 @@ def mag_pow_law(params, mags):
 def integrate_mag_broken_pow_law(params, mag_min, mag_max, area=1):
     dm = 5e-3
     mag_bins = np.arange(mag_min, mag_max, dm)
-    return trapz(mag_broken_pow_law(params, mag_bins), mag_bins)
+    return trapz(mag_broken_pow_law(params, mag_bins), mag_bins) * area
 
 
 
