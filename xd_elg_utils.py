@@ -1176,7 +1176,7 @@ def pow_mag_param_init(bin_centers, left_hist, right_hist, bw, area):
     c_left = left_hist[idx_left]
     c_right = right_hist[idx_right]
 
-    print mag_left, mag_right, c_left, c_right
+    # print mag_left, mag_right, c_left, c_right
     # assert False
     
     # Solve for A and alpha 
@@ -1184,6 +1184,94 @@ def pow_mag_param_init(bin_centers, left_hist, right_hist, bw, area):
     A = c_left / ((mag_left ** alpha) * bw * area)
     
     return A, alpha
+
+def dNdm_fit_broken_pow(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
+    """
+    Given the magnitudes and the corresponding weight, and the parameters for the histogram, 
+    return the best fit parameters for a broken power law.
+    
+    Note: This function could be much more modular. But for now I keep it as it is.
+    """
+    # Computing the histogram.
+    bins = np.arange(magmin, magmax+bw/2., bw)
+    hist, bin_edges = np.histogram(mag, weights=weight, bins=bins)
+
+    # Compute the median magnitude
+    magmed = np.median(mag)
+
+    # Compute bin centers. Left set and right set.
+    bin_centers = (bin_edges[:-1]+bin_edges[1:])/2.
+    ileft = bin_centers < magmed
+    # left and right counts
+    left_hist = hist[ileft]
+    right_hist = hist[~ileft]
+
+    # Place holder for the best parameters. phi, ms, alpha, beta 
+    best_params_pow = np.zeros(4, dtype=np.float) 
+
+    # Empty list for the negative log-likelihood
+    list_nloglike = []
+    best_nloglike = -np.inf # -100
+
+    # Define negative total loglikelihood function given the histogram.
+    def ntotal_loglike_pow(params):
+        """
+        Total log likelihood.
+        """
+        total_loglike = 0
+        for i in range(bin_centers.size):
+            total_loglike += stats.poisson.logpmf(hist[i].astype(int), mag_broken_pow_law(params, bin_centers[i]) * bw * area)
+
+        return -total_loglike
+
+    # fit for niter times 
+    counter = 0
+    while counter < niter:
+        print "Try %d" % counter
+        # Generate initial parameters
+        init_params = pow_mag_param_init(bin_centers, left_hist, right_hist, bw, area)
+        print init_params
+        A, alpha = init_params
+        # assert False
+        
+        # Optimize the parameters.
+        ms_guess = 22.5
+        res = opt.minimize(ntotal_loglike_pow, [A*(ms_guess**alpha), ms_guess, alpha, -1], tol=pow_tol,method="Nelder-Mead" )
+        counter+=1
+
+        if res["success"]:
+            fitted_params = res["x"]
+
+            # Calculate the negative total likelihood
+            nloglike = ntotal_loglike_pow(fitted_params)
+            list_nloglike.append(nloglike)
+
+            # If loglike is the highest among seen, then update the parameters.
+            if nloglike > best_nloglike:
+                best_nloglike = nloglike
+                best_params_pow = fitted_params
+            print "Optimization suceed."
+        else:
+            print "Optimization failed."
+
+#     print(best_params_pow)
+
+    return best_params_pow
+
+
+def mag_broken_pow_law(params, mags):
+    phi, ms, alpha, beta = params    
+    return phi/((mags/ms)**(-alpha) +  (mags/ms)**(-beta))    
+
+def mag_pow_law(params, mags):
+    A, alpha = params
+    return A * mags**alpha
+
+def integrate_mag_broken_pow_law(params, mag_min, mag_max, area=1):
+    dm = 5e-3
+    mag_bins = np.arange(mag_min, mag_max, dm)
+    return trapz(mag_broken_pow_law(params, mag_bins), mag_bins)
+    
 
 
 def dNdm_fit(mag, weight, bw, magmin, magmax, area, niter = 5, pow_tol =1e-5):
