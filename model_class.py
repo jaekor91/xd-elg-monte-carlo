@@ -2268,7 +2268,14 @@ class model3(parent_model):
                 ifit = self.iTrain & ibool
                 flux = self.gflux[ifit]
                 weight = self.w[ifit]
-                self.MODELS_mag_pow[i] = dNdm_fit_broken_pow(flux2mag(flux), weight, bw, self.mag_min_model, self.mag_max, self.area_train, niter = Niter)                
+                if i == 0:
+                    mag_max = 24.
+                    mag_min = 17.
+                else:
+                    mag_max = 24.25                 
+                    mag_min = 22.
+
+                self.MODELS_mag_pow[i] = dNdm_fit_broken_pow(flux2mag(flux), weight, bw, mag_min, mag_max, self.area_train, niter = Niter)                
                 np.save("MODELS-%s-%s-%s-mag-broken-pow.npy" % (self.category[i], model_tag, cv_tag), self.MODELS_mag_pow[i])
 
         return None
