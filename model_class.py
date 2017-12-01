@@ -41,6 +41,8 @@ def load_tractor_DR5_matched_to_DEEP2_full(ibool=None):
     bp = tbl["brick_primary"]
     r_dev, r_exp = tbl["shapedev_r"], tbl["shapeexp_r"]
     gflux_raw, rflux_raw, zflux_raw = tbl["flux_g"], tbl["flux_r"], tbl["flux_z"]
+    w1_raw, w2_raw = tbl["flux_w1"], tbl["flux_w2"]
+    w1_flux, w2_flux = w1_raw/tbl["mw_transmission_w1"], w2_raw/tbl["mw_transmission_w2"]
     gflux, rflux, zflux = gflux_raw/tbl["mw_transmission_g"], rflux_raw/tbl["mw_transmission_r"],zflux_raw/tbl["mw_transmission_z"]
     mw_g, mw_r, mw_z = tbl["mw_transmission_g"], tbl["mw_transmission_r"], tbl["mw_transmission_z"]    
     givar, rivar, zivar = tbl["flux_ivar_g"], tbl["flux_ivar_r"], tbl["flux_ivar_z"]
@@ -61,7 +63,7 @@ def load_tractor_DR5_matched_to_DEEP2_full(ibool=None):
     
     return bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
         rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut, cn,\
-        w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field
+        w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field, w1_flux, w2_flux
 
 
 
@@ -79,7 +81,7 @@ class parent_model:
         # Model variables
         self.gflux, self.gf_err, self.rflux, self.rf_err, self.zflux, self.zf_err, self.rex_expr, self.rex_expr_ivar,\
         self.red_z, self.z_err, self.oii, self.oii_err, self.w, self.field, self.iELG, self.iNoZ, self.iNonELG, self.objtype,\
-        self.ra, self.dec = self.import_data_DEEP2_full()
+        self.ra, self.dec, self.w1_flux, self.w2_flux = self.import_data_DEEP2_full()
 
         # Extended vs non-extended
         self.ipsf = (self.objtype=="PSF")
@@ -643,7 +645,8 @@ class parent_model:
     def import_data_DEEP2_full(self):
         """Return DEEP2-DR5 data."""
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
-        rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut, cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field\
+        rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut,\
+        cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field, w1_flux, w2_flux\
             = load_tractor_DR5_matched_to_DEEP2_full()
 
         ifcut = (gflux > mag2flux(self.mag_max)) & (gflux < mag2flux(self.mag_min))
@@ -657,7 +660,8 @@ class parent_model:
         print "We multiply the correction to the weights before training."
 
         bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar,\
-        rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut, cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field\
+        rivar, zivar, mw_g, mw_r, mw_z, r_dev, r_exp, g_allmask, r_allmask, z_allmask, B, R, I, BRI_cut,\
+        cn, w, red_z, z_err, z_quality, oii, oii_err, D2matched, rex_expr, rex_expr_ivar, field, w1_flux, w2_flux\
             = load_tractor_DR5_matched_to_DEEP2_full(ibool = ibool)
 
         # Define categories
@@ -672,7 +676,7 @@ class parent_model:
         w *= unmatched_frac_correction
 
         return gflux, gf_err, rflux, rf_err, zflux, zf_err, rex_expr, rex_expr_ivar,\
-            red_z, z_err, oii, oii_err, w, field, iELG, iNoZ, iNonELG, objtype, ra, dec
+            red_z, z_err, oii, oii_err, w, field, iELG, iNoZ, iNonELG, objtype, ra, dec, w1_flux, w2_flux
 
 
 
