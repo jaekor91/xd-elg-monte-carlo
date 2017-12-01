@@ -15,22 +15,10 @@ import time
 
 category = ["NonELG", "NoZ", "ELG"]
 
-# 0: Full F34 data
-# 1: F3 data only
-# 2: F4 data only
-# 3-7: CV1-CV5: Sub-sample F34 into five-fold CV sets.
-# 8-10: Magnitude changes. For power law use full data. Not used. 
-# g in [22.5, 23.5], [22.75, 23.75], [23, 24]. 
-
-sub_sample_name = ["Full", "F3", "F4", "CV1", "CV2", "CV3", "CV4", "CV5", "Mag1", "Mag2", "Mag3"] # No need to touch this
-NK_list = [1]#, 3, 4, 5, 6, 7]
-Niter = 1
 
 j = 0 
 instance_model = model3(j)        
 
-# fg, fr, fz = instance_model.var_x, instance_model.var_y, instance_model.gmag
-# X = np.array([fg, fr, fz]).T # X inputs
 fNoZ = 0.25
 
 x, y, z = instance_model.var_x, instance_model.var_y, instance_model.gmag
