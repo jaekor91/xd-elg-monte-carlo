@@ -39,6 +39,14 @@ print "Weigthed f2/f3/f4: %.1f, %.1f, %.1f" % (np.sum(ws0[field0==2])/areas[0], 
 print "Raw f2/f3/f4: %.1f, %.1f, %.1f" % (np.sum(field0==2)/areas[0], np.sum(field0==3)/areas[1], np.sum(field0==4)/areas[2])
 print "\n"
 
+# Importing DEEP2-DR5 F234 dataset
+# Fraction of unmatched objects with g [17.0, 24.2]: 6.97 percent
+# We multiply the correction to the weights before training.
+# area [ 0.70405384  0.8495537   0.57206704]
+# Total Ndensity in each field and total (g<24.25)
+# Weigthed f2/f3/f4: 28096.8, 32132.8, 38365.5
+# Raw f2/f3/f4: 27372.9, 31677.8, 37247.4
+
 
 
 print "Random grid-search for optimal hyper-parameters"
