@@ -3437,7 +3437,7 @@ class model3(parent_model):
             summary_array = np.zeros((Ndesired_var.size, 7))
 
             for i, n in enumerate(Ndesired_var):
-                print "Predicting boundary for Ndensity = %d" % n
+                # print "Predicting boundary for Ndensity = %d" % n
                 Ntotal = 0
                 counter = 0
                 for ncell in MD_hist_N_cal_flat:
