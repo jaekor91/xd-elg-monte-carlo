@@ -40,7 +40,7 @@ def load_tractor_DR5(fname):
 areas = np.load("spec-area-DR5-matched.npy")
 lw=3
 lw2=2
-mag_bins = np.arange(20, 25.05, 0.1)
+mag_bins = np.arange(19, 25.05, 0.1)
 gmag_nominal = 23.8
 rmag_nominal = 23.4
 zmag_nominal = 22.4
@@ -71,7 +71,7 @@ for gmag_max in [24]:
         ax_list[i].axvline(x=gmag_nominal, c="green", lw=lw, ls="--")    
         ax_list[i].axvline(x=rmag_nominal, c="red", lw=lw, ls="--")
         ax_list[i].axvline(x=zmag_nominal, c="purple", lw=lw, ls="--")
-        ax_list[i].set_xlim([20., 25.])
+        ax_list[i].set_xlim([19., 25.])
         ax_list[i].legend(loc="upper left")
         ax_list[i].set_xlabel("mag", fontsize=20)
         ax_list[i].set_title("Field %d"%(i+2), fontsize=20)
@@ -94,7 +94,7 @@ for gmag_max in [24]:
             ax_list[i].hist(m, bins=mag_bins, histtype="step", color=colors[j], label="DR5 "+field_names[j], alpha=1, lw=lw2, weights=np.ones(numobjs)/areas[j])
             # Nominal depth
         ax_list[i].axvline(x=nominal_depths[i], c="orange", lw=lw, ls="--")    
-        ax_list[i].set_xlim([20., 25.])
+        ax_list[i].set_xlim([19., 25.])
         ax_list[i].legend(loc="upper left")
         ax_list[i].set_xlabel("mag", fontsize=20)
         ax_list[i].set_title(mag_subtitles[i], fontsize=20)
@@ -134,7 +134,7 @@ for gmag_max in [24]:
         ax_list[i].axvline(x=gmag_nominal, c="green", lw=lw, ls="--")    
         ax_list[i].axvline(x=rmag_nominal, c="red", lw=lw, ls="--")
         ax_list[i].axvline(x=zmag_nominal, c="purple", lw=lw, ls="--")    
-        ax_list[i].set_xlim([20., 25.])
+        ax_list[i].set_xlim([19., 25.])
         ax_list[i].legend(loc="upper left")
         ax_list[i].set_xlabel("mag", fontsize=20)
         ax_list[i].set_title("Field %d"%(i+2), fontsize=20)
@@ -159,7 +159,7 @@ for gmag_max in [24]:
             ax_list[i].hist(m, bins=mag_bins, histtype="step", color=colors[j], label="DR5 "+field_names[j], alpha=1, lw=lw2, weights=np.ones(numobjs)/areas[j])
             # Nominal depth
         ax_list[i].axvline(x=nominal_depths[i], c="orange", lw=lw, ls="--")    
-        ax_list[i].set_xlim([20., 25.])
+        ax_list[i].set_xlim([19., 25.])
         ax_list[i].legend(loc="upper left")
         ax_list[i].set_xlabel("mag", fontsize=20)
         ax_list[i].set_title(mag_subtitles[i], fontsize=20)
@@ -172,7 +172,107 @@ for gmag_max in [24]:
         
 
 
+    # ----- Blue objects with no exp. cut.
+    gmag = []
+    rmag = []
+    zmag = []
+    for i, fnum in enumerate([2, 3, 4]):
+
+        # DR5 data
+        bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask, D2matched = load_tractor_DR5("DR5-matched-to-DEEP2-f%d-glim24p25.fits"%fnum)
+
+        # Compute asinh parameterization
+        mu_g = flux2asinh_mag(gflux, band = "g")
+        mu_r = flux2asinh_mag(rflux, band = "r")
+        mu_z = flux2asinh_mag(zflux, band = "z")
+
+        var_x = mu_g - mu_z
+        var_y = mu_g - mu_r    
+
+        iblue = np.logical_or(((0.55*(var_x)+0.) > (var_y)) & (var_y < 0.5), var_y <0.2) # Reject most of low redshift conntaminants by line cuts
+        ibool = iblue & bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0) & (gflux > mag2flux(gmag_max))
+
+
+
+        gmag.append(flux2mag(gflux[ibool]))
+        rmag.append(flux2mag(rflux[ibool]))
+        zmag.append(flux2mag(zflux[ibool]))
 
 
 
 
+    mags_list = [gmag, rmag, zmag]
+    mag_subtitles = ["g", "r", "z"]
+    field_names = ["2", "3", "4"]
+    nominal_depths = [gmag_nominal, rmag_nominal, zmag_nominal]
+    colors = ["black", "red", "blue"]
+    figure, ax_list = plt.subplots(1, 3, figsize=(25,6))
+    for i in range(3): # Index for filter
+        for j in range(3): # Index for field
+            m = mags_list[i][j]
+            numobjs = m.size
+            ax_list[i].hist(m, bins=mag_bins, histtype="step", color=colors[j], label="DR5 "+field_names[j], alpha=1, lw=lw2, weights=np.ones(numobjs)/areas[j])
+            # Nominal depth
+        ax_list[i].axvline(x=nominal_depths[i], c="orange", lw=lw, ls="--")    
+        ax_list[i].set_xlim([19., 25.])
+        ax_list[i].legend(loc="upper left")
+        ax_list[i].set_xlabel("mag", fontsize=20)
+        ax_list[i].set_title(mag_subtitles[i], fontsize=20)
+    plt.suptitle("blue objects g < 24: \"np.logical_or(((0.55*(var_x)+0.) > (var_y)) & (var_y < 0.5), var_y <0.2)\"", fontsize=30, y=1.05)
+    plt.savefig("dNdm-blue-DR5-by-field-%d.png" % int(gmag_max), dpi=200, bbox_inches="tight")
+    # plt.show()
+    plt.close()
+
+
+
+
+    # ----- Red objects with no exp. cut.
+    gmag = []
+    rmag = []
+    zmag = []
+    for i, fnum in enumerate([2, 3, 4]):
+
+        # DR5 data
+        bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask, D2matched = load_tractor_DR5("DR5-matched-to-DEEP2-f%d-glim24p25.fits"%fnum)
+
+        # Compute asinh parameterization
+        mu_g = flux2asinh_mag(gflux, band = "g")
+        mu_r = flux2asinh_mag(rflux, band = "r")
+        mu_z = flux2asinh_mag(zflux, band = "z")
+
+        var_x = mu_g - mu_z
+        var_y = mu_g - mu_r    
+
+        ired = np.logical_or(((0.55*(var_x)+0.) < (var_y)) & (var_y > 0.2), (var_y > 1.5)) # Reject most of low redshift conntaminants by line cuts
+        ibool = ired & bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (tycho==0) & (gflux > mag2flux(gmag_max))
+
+
+
+        gmag.append(flux2mag(gflux[ibool]))
+        rmag.append(flux2mag(rflux[ibool]))
+        zmag.append(flux2mag(zflux[ibool]))
+
+
+
+
+    mags_list = [gmag, rmag, zmag]
+    mag_subtitles = ["g", "r", "z"]
+    field_names = ["2", "3", "4"]
+    nominal_depths = [gmag_nominal, rmag_nominal, zmag_nominal]
+    colors = ["black", "red", "blue"]
+    figure, ax_list = plt.subplots(1, 3, figsize=(25,6))
+    for i in range(3): # Index for filter
+        for j in range(3): # Index for field
+            m = mags_list[i][j]
+            numobjs = m.size
+            ax_list[i].hist(m, bins=mag_bins, histtype="step", color=colors[j], label="DR5 "+field_names[j], alpha=1, lw=lw2, weights=np.ones(numobjs)/areas[j])
+            # Nominal depth
+        ax_list[i].axvline(x=nominal_depths[i], c="orange", lw=lw, ls="--")    
+        ax_list[i].set_xlim([19., 25.])
+        ax_list[i].legend(loc="upper left")
+        ax_list[i].set_xlabel("mag", fontsize=20)
+        ax_list[i].set_title(mag_subtitles[i], fontsize=20)
+    plt.suptitle("red objects g < 24: \"np.logical_or(((0.55*(var_x)+0.) < (var_y)) & var_y > 0.2, (var_y > 1.5))\"", fontsize=30, y=1.05)
+    plt.savefig("dNdm-red-DR5-by-field-%d.png" % int(gmag_max), dpi=200, bbox_inches="tight")
+    # plt.show()
+    plt.close()
