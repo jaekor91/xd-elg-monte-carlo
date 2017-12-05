@@ -75,7 +75,7 @@ for gmag_max in [24]:
         ax_list[i].legend(loc="upper left")
         ax_list[i].set_xlabel("mag", fontsize=20)
         ax_list[i].set_title("Field %d"%(i+2), fontsize=20)
-    plt.suptitle("All objects mags", fontsize=30, y=1.05)
+    plt.suptitle("All objects g < 24", fontsize=30, y=1.05)
     plt.savefig("dNdm-all-objects-DR5-%d.png" % int(gmag_max), dpi=200, bbox_inches="tight")
     # plt.show()
     plt.close()
@@ -98,7 +98,7 @@ for gmag_max in [24]:
         ax_list[i].legend(loc="upper left")
         ax_list[i].set_xlabel("mag", fontsize=20)
         ax_list[i].set_title(mag_subtitles[i], fontsize=20)
-    plt.suptitle("All objects mags", fontsize=30, y=1.05)
+    plt.suptitle("All objects g < 24", fontsize=30, y=1.05)
     plt.savefig("dNdm-all-objects-DR5-by-field-%d.png" % int(gmag_max), dpi=200, bbox_inches="tight")
     # plt.show()
     plt.close()
@@ -110,19 +110,14 @@ for gmag_max in [24]:
 
 
 
-
-
-
-
-
-    # With exponential cut
+    # ----- With exponential cut
     gmag = []
     rmag = []
     zmag = []
     for i, fnum in enumerate([2, 3, 4]):
 
         # DR5 data
-        bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask = load_tractor_DR5("DR5-Tractor-D2f%d.fits"%fnum)
+        bid, objtype, tycho, bp, ra, dec, gflux_raw, rflux_raw, zflux_raw, gflux, rflux, zflux, givar, rivar, zivar, r_dev, r_exp, g_allmask, r_allmask, z_allmask, D2matched = load_tractor_DR5("DR5-matched-to-DEEP2-f%d-glim24p25.fits"%fnum)
         ibool = bp & (g_allmask==0) & (r_allmask==0) & (z_allmask==0) & (givar>0) & (rivar>0) & (zivar>0) & (r_exp>0.35) & (r_exp<0.55)  & (tycho==0) & (gflux > mag2flux(gmag_max))
         gmag.append(flux2mag(gflux[ibool]))
         rmag.append(flux2mag(rflux[ibool]))
@@ -143,7 +138,7 @@ for gmag_max in [24]:
         ax_list[i].legend(loc="upper left")
         ax_list[i].set_xlabel("mag", fontsize=20)
         ax_list[i].set_title("Field %d"%(i+2), fontsize=20)
-    plt.suptitle("r_exp [0.35, 0.55] dNdm-all-objects-DR5", fontsize=30, y=1.05)
+    plt.suptitle("r_exp [0.35, 0.55] g < 24", fontsize=30, y=1.05)
     plt.savefig("dNdm-rexp-DR5-%d.png"% int(gmag_max), dpi=200, bbox_inches="tight")
     # plt.show()
     plt.close()
@@ -168,7 +163,7 @@ for gmag_max in [24]:
         ax_list[i].legend(loc="upper left")
         ax_list[i].set_xlabel("mag", fontsize=20)
         ax_list[i].set_title(mag_subtitles[i], fontsize=20)
-    plt.suptitle("r_exp [0.35, 0.55] objects", fontsize=30, y=1.05)
+    plt.suptitle("r_exp [0.35, 0.55] objects g < 24", fontsize=30, y=1.05)
     plt.savefig("dNdm-rexp-DR5-by-field-%d.png" % int(gmag_max), dpi=200, bbox_inches="tight")
     # plt.show()
     plt.close()
