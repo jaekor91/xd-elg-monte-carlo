@@ -2036,6 +2036,8 @@ class model3(parent_model):
         self.FoM_NoZ = 0.25
         self.FoM_NonELG = 0.0
 
+        # Exernal calibration data historgram
+        self.MD_hist_N_cal_flat = None        
 
 
 
@@ -3328,9 +3330,6 @@ class model3(parent_model):
         print "Time taken: %.2f seconds" % (time.time() - start)
 
 
-        # Load the calibration data and sort them.
-
-
         if gaussian_smoothing:
             # Note that we only need to smooth the quantities used for making decisiosns.
             print "Applying gaussian smoothing."
@@ -3410,7 +3409,7 @@ class model3(parent_model):
         MD_hist_N_ELG_DESI_flat = MD_hist_N_ELG_DESI.flatten()
         MD_hist_N_ELG_NonDESI_flat = MD_hist_N_ELG_NonDESI.flatten()
         MD_hist_N_FoM_flat = MD_hist_N_FoM.flatten()
-        MD_hist_N_good_flat = MD_hist_N_good.flatten()
+        MD_hist_N_good_flat = MD_hist_N_good.flatten()        
         # Decisions are based on *decision* arrays
         MD_hist_N_total_flat = MD_hist_N_total.flatten()
         MD_hist_N_total_flat_decision = MD_hist_N_total_decision.flatten()                
@@ -3427,7 +3426,10 @@ class model3(parent_model):
         MD_hist_N_FoM_flat = MD_hist_N_FoM_flat[idx_sort]
         MD_hist_N_good_flat = MD_hist_N_good_flat[idx_sort]
         MD_hist_N_total_flat = MD_hist_N_total_flat[idx_sort]
-        MD_hist_N_total_flat_decision = MD_hist_N_total_flat_decision[idx_sort]        
+        MD_hist_N_total_flat_decision = MD_hist_N_total_flat_decision[idx_sort]
+        # Calibration data histogram.
+        # MD_hist_N_cal_flat = ....
+
         print "Time taken: %.2f seconds" % (time.time() - start)                                       
 
         # Starting from the keep including cells until the desired number is eached.        
@@ -3754,4 +3756,24 @@ class model3(parent_model):
 
     def set_num_desired(self, Ntot):
         self.num_desired = Ntot
+        return None
+
+    def load_calibration_data(self):
+        g, r, z, w1, w2, A = load_DR5_calibration()
+        # Asinh magnitude
+        gmag = flux2mag(g)
+        asinh_r = flux2asinh_mag(r, band="r")
+        asinh_g = flux2asinh_mag(g, band="g")
+        asinh_z = flux2asinh_mag(z, band="z")
+
+        # Variable changes
+        varx = asinh_g - asinh_z
+        vary = asinh_g - asinh_r
+
+        # Samples
+        samples = np.array([varx, vary, gmag]).T
+        
+        
+        hist, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits]) # A is for normalization.
+        self.MD_hist_N_cal_flat = hist.flatten() / float(A)
         return None
