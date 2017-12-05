@@ -3428,7 +3428,7 @@ class model3(parent_model):
         MD_hist_N_total_flat = MD_hist_N_total_flat[idx_sort]
         MD_hist_N_total_flat_decision = MD_hist_N_total_flat_decision[idx_sort]
         # Calibration data histogram.
-        # MD_hist_N_cal_flat = ....
+        MD_hist_N_cal_flat = self.MD_hist_N_cal_flat[idx_sort]
 
         print "Time taken: %.2f seconds" % (time.time() - start)                                       
 
@@ -3461,8 +3461,8 @@ class model3(parent_model):
         else: 
             Ntotal = 0
             counter = 0
-            for ntot in MD_hist_N_total_flat_decision:
-                if Ntotal > (self.num_desired * self.area_MC): 
+            for ncell in MD_hist_N_cal_flat:
+                if Ntotal > self.num_desired:  # MD_hist_N_cal_flat is already normalized.
                     break            
                 Ntotal += ntot
                 counter +=1
@@ -3773,7 +3773,7 @@ class model3(parent_model):
         # Samples
         samples = np.array([varx, vary, gmag]).T
         
-        
+
         hist, _ = np.histogramdd(samples, bins=self.num_bins, range=[self.var_x_limits, self.var_y_limits, self.gmag_limits]) # A is for normalization.
         self.MD_hist_N_cal_flat = hist.flatten() / float(A)
         return None
