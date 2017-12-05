@@ -3267,6 +3267,15 @@ class model3(parent_model):
 
         This version is different from *_scipy version as external dataset is used to
         calibrate the resulting number density of selection.
+
+        - Construct histogram of generate samples
+        - Construct histogram of external calibration dataset (In future versions, this should be done externally.)
+        - Smooth the MC sample histograms.
+        - Add in the regularization. 
+        - Compute the utility and sort "All" histograms.
+        - Get the last utility threshold from external calibration to get Ndensity 2400.
+        - Compute the predicted number density and precision. (Get the break down if possible.)
+        - Evaluate the selection on DEEP2 F234 data seperately.
         
         If gaussian_smoothing, then the filtering is applied to the MD histograms.
             If smoothing is asked for, the selection region is computed based on the smoothed array
@@ -3317,6 +3326,10 @@ class model3(parent_model):
         MD_hist_N_total += MD_hist_N_ELG_DESI 
         MD_hist_N_total += MD_hist_N_ELG_NonDESI
         print "Time taken: %.2f seconds" % (time.time() - start)
+
+
+        # Load the calibration data and sort them.
+
 
         if gaussian_smoothing:
             # Note that we only need to smooth the quantities used for making decisiosns.
@@ -3380,10 +3393,6 @@ class model3(parent_model):
         MD_hist_N_total += MD_hist_N_regular
         utility = MD_hist_N_FoM_decision/MD_hist_N_total_decision 
 
-        # # Fraction of cells filled
-        # frac_filled = np.sum(utility>0)/float(utility.size) * 100
-        # print "Fraction of cells filled: %.1f precent" % frac_filled
-
         # Flatten utility array
         utility_flat = utility.flatten()
 
@@ -3406,19 +3415,6 @@ class model3(parent_model):
         MD_hist_N_total_flat = MD_hist_N_total.flatten()
         MD_hist_N_total_flat_decision = MD_hist_N_total_decision.flatten()                
         print "Time taken: %.2f seconds" % (time.time() - start)        
-
-        # If external selection result is asked for, then perform the selection now before sorting the flattened array.
-        if selection_ext is not None:
-            print "Applying the external selection."
-            start = time.time()                    
-            Ntotal_ext = np.sum(MD_hist_N_total_flat[selection_ext])/float(self.area_MC)
-            Ngood_ext = np.sum(MD_hist_N_good_flat[selection_ext])/float(self.area_MC)
-            N_NonELG_ext = np.sum(MD_hist_N_NonELG_flat[selection_ext])/float(self.area_MC)
-            N_NoZ_ext = np.sum(MD_hist_N_NoZ_flat[selection_ext])/float(self.area_MC)
-            N_ELG_DESI_ext = np.sum(MD_hist_N_ELG_DESI_flat[selection_ext])/float(self.area_MC)
-            N_ELG_NonDESI_ext = np.sum(MD_hist_N_ELG_NonDESI_flat[selection_ext])/float(self.area_MC)
-            eff_ext = (Ngood_ext/float(Ntotal_ext))
-            print "Time taken: %.2f seconds" % (time.time() - start)        
 
 
         # Sort flattened arrays according to utility.
