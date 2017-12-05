@@ -3359,7 +3359,6 @@ class model3(parent_model):
             # MD_hist_N_good_decision = MD_hist_N_good # Tally of only good objects. For example, DESI ELGs.
             MD_hist_N_total_decision = MD_hist_N_total # Tally of all objects.            
 
-
         print "Computing magnitude dependent regularization."
         start = time.time()
         MD_hist_N_regular = np.zeros_like(MD_hist_N_total)
@@ -3440,10 +3439,10 @@ class model3(parent_model):
             for i, n in enumerate(Ndesired_var):
                 Ntotal = 0
                 counter = 0
-                for ntot in MD_hist_N_total_flat_decision:
-                    if Ntotal > (n * self.area_MC): 
+                for ncell in MD_hist_N_cal_flat:
+                    if Ntotal > n: 
                         break            
-                    Ntotal += ntot
+                    Ntotal += ncell
                     counter +=1
 
                 # Predicted numbers in the selection.
@@ -3464,7 +3463,7 @@ class model3(parent_model):
             for ncell in MD_hist_N_cal_flat:
                 if Ntotal > self.num_desired:  # MD_hist_N_cal_flat is already normalized.
                     break            
-                Ntotal += ntot
+                Ntotal += ncell
                 counter +=1
 
             # Predicted numbers in the selection.
@@ -3475,6 +3474,8 @@ class model3(parent_model):
             N_ELG_DESI = np.sum(MD_hist_N_ELG_DESI_flat[:counter])/float(self.area_MC)
             N_ELG_NonDESI = np.sum(MD_hist_N_ELG_NonDESI_flat[:counter])/float(self.area_MC)
             eff = (Ngood/float(Ntotal))    
+
+            # Validation on DEEP2 F234
                 
 
             # Save the selection
