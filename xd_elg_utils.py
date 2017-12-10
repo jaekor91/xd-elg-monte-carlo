@@ -21,6 +21,10 @@ import numba as nb
 
 from matplotlib.patches import Ellipse
 
+import numpy as np
+from scipy.stats import norm, chi2
+
+
 
 # Matplot ticks
 import matplotlib as mpl
@@ -3223,8 +3227,6 @@ def gen_diag_data_covar(Nsample, var):
     return np.asarray([np.diag(var)]*Nsample)
 
 
-import numpy as np
-from scipy.stats import norm, chi2
 
 def cov_ellipse(cov, q=None, nsig=None, **kwargs):
     """
